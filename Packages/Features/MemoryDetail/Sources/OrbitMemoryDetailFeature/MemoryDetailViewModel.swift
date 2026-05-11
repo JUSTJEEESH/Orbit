@@ -17,6 +17,7 @@ public final class MemoryDetailViewModel {
     public private(set) var state: LoadState = .loading
     public private(set) var memory: Memory?
     public private(set) var image: UIImage?
+    public private(set) var voiceFileURL: URL?
 
     private let memoryID: UUID
     private let repository: any MemoryRepository
@@ -45,6 +46,7 @@ public final class MemoryDetailViewModel {
             self.memory = memory
             self.state = .loaded
             await loadAttachedImageIfNeeded(for: memory)
+            await loadAttachedAudioIfNeeded(for: memory)
         } catch {
             self.state = .failed(String(describing: error))
         }
@@ -68,6 +70,19 @@ public final class MemoryDetailViewModel {
     /// the resulting `UIImage` on the MainActor so SwiftUI re-renders. We
     /// only decode the first matching asset; multi-attachment memories
     /// arrive in a later phase.
+    /// Resolves the on-disk URL for the memory's audio attachment, if any.
+    /// Lets `MemoryDetailView` render a play/pause button without needing
+    /// MediaStorage access of its own.
+    private func loadAttachedAudioIfNeeded(for memory: Memory) async {
+        guard case .voiceNote = memory.content,
+              let asset = memory.media.first(where: { $0.kind == .audio })
+        else {
+            self.voiceFileURL = nil
+            return
+        }
+        self.voiceFileURL = await mediaStorage.url(forFilename: asset.filename)
+    }
+
     private func loadAttachedImageIfNeeded(for memory: Memory) async {
         let kindNeeded: Bool
         switch memory.content {

@@ -96,7 +96,7 @@ let package = Package(
         // MARK: - Features
         .target(
             name: "OrbitHomeFeature",
-            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain"],
+            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitMemoryDetailFeature"],
             path: "Packages/Features/Home/Sources/OrbitHomeFeature",
             swiftSettings: swiftSettings
         ),

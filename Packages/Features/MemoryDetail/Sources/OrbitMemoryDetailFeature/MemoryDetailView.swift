@@ -2,9 +2,11 @@ import SwiftUI
 import OrbitDesignSystem
 import OrbitDomain
 import OrbitKit
+import OrbitMedia
 
 public struct MemoryDetailView: View {
     @State private var model: MemoryDetailViewModel
+    @State private var voicePlayer = VoicePlayer()
     @Environment(\.dismiss) private var dismiss
     @State private var showDeleteConfirmation = false
     private let onDeleted: @MainActor () -> Void
@@ -141,16 +143,13 @@ public struct MemoryDetailView: View {
             }
         case .voiceNote(let transcript, let duration):
             OrbitCard {
-                VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
-                    HStack(spacing: OrbitSpacing.xs) {
-                        Image(systemName: "waveform")
-                        Text(Self.formatDuration(duration))
-                            .font(OrbitTypography.monoNumeric)
-                    }
-                    .foregroundStyle(OrbitColor.textSecondary)
-                    Text(transcript?.isEmpty == false ? transcript! : "No transcript")
+                VStack(alignment: .leading, spacing: OrbitSpacing.md) {
+                    voicePlaybackBar(duration: duration)
+                    Text(transcript?.isEmpty == false ? transcript! : "No transcript yet")
                         .font(OrbitTypography.body)
-                        .foregroundStyle(OrbitColor.textPrimary)
+                        .foregroundStyle(transcript?.isEmpty == false
+                            ? OrbitColor.textPrimary
+                            : OrbitColor.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -217,6 +216,65 @@ public struct MemoryDetailView: View {
                         .font(OrbitTypography.body)
                         .foregroundStyle(OrbitColor.textPrimary)
                         .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
+    /// The voice card's transport: play / pause icon, scrubbing progress
+    /// bar, and current-time / total-duration readout. Disabled with a
+    /// quiet message when the source audio file isn't available (the
+    /// memory was captured via the share extension, deleted from disk,
+    /// or AppGroup hasn't resolved yet).
+    private func voicePlaybackBar(duration: TimeInterval) -> some View {
+        let url = model.voiceFileURL
+        let isPlaying = voicePlayer.state.isPlaying
+        let resolvedDuration: TimeInterval = {
+            switch voicePlayer.state {
+            case .playing(_, let total), .paused(_, let total): return total
+            case .idle: return duration
+            }
+        }()
+        let currentTime: TimeInterval = {
+            switch voicePlayer.state {
+            case .playing(let current, _), .paused(let current, _): return current
+            case .idle: return 0
+            }
+        }()
+
+        return HStack(spacing: OrbitSpacing.md) {
+            Button {
+                guard let url else { return }
+                if isPlaying {
+                    voicePlayer.pause()
+                } else {
+                    Haptics.play(.tap)
+                    voicePlayer.play(url: url)
+                }
+            } label: {
+                Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(OrbitColor.textInverted)
+                    .frame(width: 44, height: 44)
+                    .background(OrbitColor.textPrimary, in: .circle)
+            }
+            .buttonStyle(.plain)
+            .disabled(url == nil)
+            .opacity(url == nil ? 0.4 : 1)
+            .accessibilityLabel(isPlaying ? "Pause" : "Play")
+
+            VStack(alignment: .leading, spacing: 6) {
+                ProgressView(value: voicePlayer.state.progress)
+                    .progressViewStyle(.linear)
+                    .tint(OrbitColor.textPrimary)
+                HStack {
+                    Text(Self.formatDuration(currentTime))
+                        .font(OrbitTypography.monoNumeric)
+                        .foregroundStyle(OrbitColor.textSecondary)
+                    Spacer()
+                    Text(Self.formatDuration(resolvedDuration))
+                        .font(OrbitTypography.monoNumeric)
+                        .foregroundStyle(OrbitColor.textTertiary)
                 }
             }
         }

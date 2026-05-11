@@ -49,11 +49,16 @@ public actor VoiceRecorder {
         try session.setActive(true, options: [])
 
         let file = await storage.reserveURL(kind: .audio)
+        // 16 kHz mono LPCM — the format SFSpeechRecognizer ingests most
+        // reliably, especially on the simulator where AAC/.m4a containers
+        // sometimes export with corrupt headers.
         let settings: [String: Any] = [
-            AVFormatIDKey: kAudioFormatMPEG4AAC,
-            AVSampleRateKey: 44_100,
+            AVFormatIDKey: kAudioFormatLinearPCM,
+            AVSampleRateKey: 16_000,
             AVNumberOfChannelsKey: 1,
-            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue,
+            AVLinearPCMBitDepthKey: 16,
+            AVLinearPCMIsFloatKey: false,
+            AVLinearPCMIsBigEndianKey: false,
         ]
 
         let recorder: AVAudioRecorder

@@ -10,7 +10,7 @@ public actor MediaStorage {
 
         var fileExtension: String {
             switch self {
-            case .audio: return "m4a"
+            case .audio: return "wav" // LPCM uncompressed — most reliable for transcription pipelines
             case .image: return "jpg"
             }
         }

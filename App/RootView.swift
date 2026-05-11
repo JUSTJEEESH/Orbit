@@ -75,7 +75,8 @@ struct RootView: View {
                 HomeView(
                     listMemories: env.listMemories,
                     refreshToken: env.memoryListVersion,
-                    clock: env.clock
+                    clock: env.clock,
+                    makeDetailViewModel: makeDetailViewModel
                 )
                 .navigationTitle("")
                 .navigationBarTitleDisplayMode(.inline)

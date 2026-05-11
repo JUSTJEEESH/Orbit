@@ -2,25 +2,30 @@ import SwiftUI
 import OrbitDesignSystem
 import OrbitDomain
 import OrbitKit
+import OrbitMemoryDetailFeature
 
 public struct HomeView: View {
     private let listMemories: ListMemoriesUseCase
     private let refreshToken: Int
     private let clock: any OrbitClock
+    private let makeDetailViewModel: @MainActor (UUID) -> MemoryDetailViewModel
 
     @State private var memories: [Memory] = []
     @State private var loadState: LoadState = .idle
+    @Namespace private var heroNamespace
 
     private enum LoadState: Equatable { case idle, loading, loaded, failed(String) }
 
     public init(
         listMemories: ListMemoriesUseCase,
         refreshToken: Int = 0,
-        clock: any OrbitClock = SystemClock()
+        clock: any OrbitClock = SystemClock(),
+        makeDetailViewModel: @escaping @MainActor (UUID) -> MemoryDetailViewModel
     ) {
         self.listMemories = listMemories
         self.refreshToken = refreshToken
         self.clock = clock
+        self.makeDetailViewModel = makeDetailViewModel
     }
 
     public var body: some View {
@@ -35,6 +40,13 @@ public struct HomeView: View {
             }
             .scrollIndicators(.hidden)
             .refreshable { await reload() }
+        }
+        .navigationDestination(for: MemoryDetailRoute.self) { route in
+            MemoryDetailView(
+                viewModel: makeDetailViewModel(route.memoryID),
+                onDeleted: {}
+            )
+            .navigationTransition(.zoom(sourceID: route.memoryID, in: heroNamespace))
         }
         .task(id: refreshToken) { await reload() }
     }
@@ -152,26 +164,32 @@ public struct HomeView: View {
         VStack(alignment: .leading, spacing: OrbitSpacing.md) {
             OrbitSectionHeader("Recent")
             ForEach(memories.prefix(3)) { memory in
-                OrbitCard(elevation: .resting) {
-                    VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
-                        OrbitEyebrow(
-                            label: eyebrowLabel(for: memory),
-                            suffix: memory.createdAt.formatted(.relative(presentation: .named)),
-                            tint: OrbitCategoryPalette.tint(for: memory.ai.category)
-                        )
-                        HStack(alignment: .top, spacing: OrbitSpacing.sm) {
-                            Image(systemName: icon(for: memory.content.kind))
-                                .font(.system(size: 14, weight: .regular))
-                                .foregroundStyle(OrbitColor.textTertiary)
-                                .padding(.top, 3)
-                            Text(headlineText(for: memory))
-                                .font(OrbitTypography.body)
-                                .foregroundStyle(OrbitColor.textPrimary)
-                                .lineLimit(3)
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                NavigationLink(value: MemoryDetailRoute(memoryID: memory.id)) {
+                    OrbitCard(elevation: .resting) {
+                        VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+                            OrbitEyebrow(
+                                label: eyebrowLabel(for: memory),
+                                suffix: memory.createdAt.formatted(.relative(presentation: .named)),
+                                tint: OrbitCategoryPalette.tint(for: memory.ai.category)
+                            )
+                            HStack(alignment: .top, spacing: OrbitSpacing.sm) {
+                                Image(systemName: icon(for: memory.content.kind))
+                                    .font(.system(size: 14, weight: .regular))
+                                    .foregroundStyle(OrbitColor.textTertiary)
+                                    .padding(.top, 3)
+                                Text(headlineText(for: memory))
+                                    .font(OrbitTypography.body)
+                                    .foregroundStyle(OrbitColor.textPrimary)
+                                    .lineLimit(3)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
                         }
                     }
                 }
+                .buttonStyle(OrbitBloomButtonStyle(
+                    tint: OrbitCategoryPalette.tint(for: memory.ai.category)
+                ))
+                .matchedTransitionSource(id: memory.id, in: heroNamespace)
             }
         }
     }

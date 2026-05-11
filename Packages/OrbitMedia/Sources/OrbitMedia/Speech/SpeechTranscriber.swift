@@ -1,5 +1,8 @@
 import Foundation
+import OSLog
 import Speech
+
+private let log = Logger(subsystem: "com.orbit.app", category: "speech")
 
 /// Wraps `SFSpeechRecognizer` for transcription of a recorded audio file.
 ///
@@ -30,12 +33,21 @@ public actor SpeechTranscriber {
         let permission = await ensurePermission()
         guard permission == .granted else { throw Failure.permissionDenied }
 
+        let fileSize = (try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? Int64) ?? 0
+        log.notice("Transcribing \(url.lastPathComponent, privacy: .public) (\(fileSize) bytes)")
+
+        // Refuse early if the recorder produced an empty file — every
+        // SFSpeechRecognizer error path downstream gets confusing if we
+        // hand it nothing.
+        guard fileSize > 1024 else {
+            log.error("Audio file too small (\(fileSize) bytes) — skipping transcription")
+            throw Failure.recognitionFailed("Recording was empty.")
+        }
+
         do {
             return try await runRecognition(url: url, requireOnDevice: true)
         } catch {
-            // On-device failed (most often: model not installed). Retry
-            // with the network-backed path so the user still gets a
-            // transcript instead of a silent failure.
+            log.notice("On-device path failed (\(String(describing: error), privacy: .public)) — falling back to default")
             return try await runRecognition(url: url, requireOnDevice: false)
         }
     }
@@ -52,6 +64,32 @@ public actor SpeechTranscriber {
         request.shouldReportPartialResults = false
         request.requiresOnDeviceRecognition = requireOnDevice
 
+        // Race the recognition against a hard timeout — Apple's framework
+        // sometimes never invokes the callback when the audio export
+        // stage fails internally, and we'd hang the capture flow forever.
+        return try await withThrowingTaskGroup(of: String.self) { group in
+            group.addTask {
+                try await Self.runRecognitionInternal(
+                    recognizer: recognizer,
+                    request: request
+                )
+            }
+            group.addTask {
+                try await Task.sleep(for: .seconds(20))
+                throw Failure.recognitionFailed("Transcription timed out.")
+            }
+            defer { group.cancelAll() }
+            guard let result = try await group.next() else {
+                throw Failure.recognitionFailed("No result.")
+            }
+            return result
+        }
+    }
+
+    private static func runRecognitionInternal(
+        recognizer: SFSpeechRecognizer,
+        request: SFSpeechURLRecognitionRequest
+    ) async throws -> String {
         // `SFSpeechRecognizer` can call its callback multiple times for
         // a single request (partial errors, retries). `withChecked*` traps
         // on double-resume — we serialize through a tiny guard so only
