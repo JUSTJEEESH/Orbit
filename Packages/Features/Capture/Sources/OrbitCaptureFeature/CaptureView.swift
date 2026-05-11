@@ -211,28 +211,11 @@ public struct CaptureView: View {
                 }
             } else {
                 PhotosPicker(selection: $photoPickerItem, matching: .images) {
-                    photoPlaceholder
+                    PhotoPlaceholder()
                 }
                 .buttonStyle(.plain)
             }
         }
-    }
-
-    private var photoPlaceholder: some View {
-        VStack(spacing: OrbitSpacing.sm) {
-            Image(systemName: "photo.badge.plus")
-                .font(.system(size: 36, weight: .regular))
-                .foregroundStyle(OrbitColor.textSecondary)
-            Text("Choose a photo")
-                .font(OrbitTypography.bodyEmphasized)
-                .foregroundStyle(OrbitColor.textPrimary)
-            Text("Pick from your library. Camera arrives later.")
-                .font(OrbitTypography.footnote)
-                .foregroundStyle(OrbitColor.textSecondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, OrbitSpacing.xxxl)
-        .background(OrbitColor.surfaceMuted, in: .rect(cornerRadius: OrbitRadius.lg))
     }
 
     private func loadPhoto(_ item: PhotosPickerItem?) async {
@@ -296,5 +279,27 @@ public struct CaptureView: View {
         let minutes = total / 60
         let seconds = total % 60
         return String(format: "%02d:%02d", minutes, seconds)
+    }
+}
+
+/// Extracted into its own `View` so the `PhotosPicker` label closure doesn't
+/// have to capture a computed property on the parent — that capture trips
+/// strict-concurrency isolation under Swift 6.
+private struct PhotoPlaceholder: View {
+    var body: some View {
+        VStack(spacing: OrbitSpacing.sm) {
+            Image(systemName: "photo.badge.plus")
+                .font(.system(size: 36, weight: .regular))
+                .foregroundStyle(OrbitColor.textSecondary)
+            Text("Choose a photo")
+                .font(OrbitTypography.bodyEmphasized)
+                .foregroundStyle(OrbitColor.textPrimary)
+            Text("Pick from your library. Camera arrives later.")
+                .font(OrbitTypography.footnote)
+                .foregroundStyle(OrbitColor.textSecondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, OrbitSpacing.xxxl)
+        .background(OrbitColor.surfaceMuted, in: .rect(cornerRadius: OrbitRadius.lg))
     }
 }

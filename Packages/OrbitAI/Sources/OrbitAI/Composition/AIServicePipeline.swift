@@ -30,7 +30,7 @@ public actor AIServicePipeline: AIService {
     private func firstSuccess<T>(
         _ run: (any AIService) async throws -> T
     ) async throws -> T {
-        var lastError: Error?
+        var lastError: (any Error)?
         for service in services {
             do { return try await run(service) }
             catch { lastError = error }
