@@ -87,10 +87,7 @@ public actor LocalSearchService: SearchService {
     private static func highlight(_ query: String, in haystack: String) -> String? {
         let lowercase = haystack.lowercased()
         let q = query.lowercased()
-
-        let token = q.split(whereSeparator: { !$0.isLetter && !$0.isNumber })
-            .max(by: { $0.count < $1.count })
-            .map(String.init) ?? q
+        let token = Self.longestToken(in: q) ?? q
         guard let matchRange = lowercase.range(of: token) else { return nil }
 
         let offset = lowercase.distance(from: lowercase.startIndex, to: matchRange.lowerBound)
@@ -102,5 +99,15 @@ public actor LocalSearchService: SearchService {
         if windowStart > 0 { snippet = "…" + snippet }
         if windowEnd < haystack.count { snippet += "…" }
         return snippet
+    }
+
+    /// Foundation-based tokenizer. Avoids Swift's ambiguous
+    /// `String.split(whereSeparator:)` overloads.
+    private static func longestToken(in text: String) -> String? {
+        let separators = CharacterSet.alphanumerics.inverted
+        return text
+            .components(separatedBy: separators)
+            .filter { !$0.isEmpty }
+            .max(by: { $0.count < $1.count })
     }
 }

@@ -30,9 +30,9 @@ public enum SearchScoring {
         let h = haystack.lowercased()
         guard !q.isEmpty, !h.isEmpty else { return 0 }
 
+        let separators = CharacterSet.alphanumerics.inverted
         let tokens = q
-            .split(whereSeparator: { !$0.isLetter && !$0.isNumber })
-            .map(String.init)
+            .components(separatedBy: separators)
             .filter { $0.count > 1 }
         guard !tokens.isEmpty else {
             // Single-character or punctuation-only query: substring fallback.
