@@ -77,33 +77,16 @@ targets:
           - CFBundleURLName: com.orbit.app
             CFBundleURLSchemes:
               - orbit
-        # Alternate app-icon variants. The primary AppIcon comes from
-        # Assets.xcassets/AppIcon.appiconset; alts are bare PNG files
-        # at the bundle root (App/Resources/AltIcons/*.png — see README).
-        # Missing PNGs degrade gracefully: setAlternateIconName throws
-        # and IconService keeps the current icon.
-        CFBundleIcons:
-          CFBundlePrimaryIcon:
-            CFBundleIconFiles:
-              - AppIcon
-            CFBundleIconName: AppIcon
-          CFBundleAlternateIcons:
-            Orbit-Sunset:
-              CFBundleIconFiles:
-                - Orbit-Sunset
-              UIPrerenderedIcon: false
-            Orbit-Cosmic:
-              CFBundleIconFiles:
-                - Orbit-Cosmic
-              UIPrerenderedIcon: false
-            Orbit-Forest:
-              CFBundleIconFiles:
-                - Orbit-Forest
-              UIPrerenderedIcon: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app
         CODE_SIGN_ENTITLEMENTS: App/Resources/Orbit.entitlements
+        # Tells the asset-catalog compiler to ship these App Icon image
+        # sets alongside the primary AppIcon so
+        # UIApplication.setAlternateIconName can find them at runtime.
+        # Xcode auto-generates the matching CFBundleAlternateIcons entries
+        # in Info.plist from this list.
+        ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES: Orbit-Sunset Orbit-Cosmic Orbit-Forest
     dependencies:
       - package: OrbitWorkspace
         product: OrbitKit

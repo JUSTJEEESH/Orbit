@@ -11,6 +11,7 @@ public struct SettingsView: View {
     @Bindable private var entitlements: EntitlementService
     private let currentTheme: OrbitTheme
     private let onSelectTheme: @MainActor @Sendable (OrbitTheme) async -> Void
+    private let iconError: String?
     private let onPresentPaywall: @MainActor () -> Void
     private let onDeleteAccount: @MainActor @Sendable () async throws -> Void
     private let onReindexAll: @MainActor @Sendable () async -> Void
@@ -26,6 +27,7 @@ public struct SettingsView: View {
         entitlements: EntitlementService,
         currentTheme: OrbitTheme,
         onSelectTheme: @escaping @MainActor @Sendable (OrbitTheme) async -> Void,
+        iconError: String? = nil,
         onPresentPaywall: @escaping @MainActor () -> Void,
         onDeleteAccount: @escaping @MainActor @Sendable () async throws -> Void,
         onReindexAll: @escaping @MainActor @Sendable () async -> Void,
@@ -36,6 +38,7 @@ public struct SettingsView: View {
         self.entitlements = entitlements
         self.currentTheme = currentTheme
         self.onSelectTheme = onSelectTheme
+        self.iconError = iconError
         self.onPresentPaywall = onPresentPaywall
         self.onDeleteAccount = onDeleteAccount
         self.onReindexAll = onReindexAll
@@ -159,6 +162,12 @@ public struct SettingsView: View {
                 ForEach(OrbitTheme.all) { theme in
                     themeTile(theme)
                 }
+            }
+            if let iconError {
+                Text("Couldn't change the home-screen icon: \(iconError)")
+                    .font(OrbitTypography.footnote)
+                    .foregroundStyle(OrbitColor.warning)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }

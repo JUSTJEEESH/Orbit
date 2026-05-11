@@ -60,6 +60,7 @@ struct RootView: View {
                             await env.iconService.select(variant)
                         }
                     },
+                    iconError: env.iconService.lastError,
                     onPresentPaywall: { env.requestedModal = .paywall },
                     onDeleteAccount: { try await env.wipeAccountAndData() },
                     onReindexAll: { await env.reenrichAllMemories() },
