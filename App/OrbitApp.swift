@@ -5,7 +5,6 @@ import OrbitDesignSystem
 @main
 struct OrbitApp: App {
     @State private var environment: AppEnvironment
-    @State private var onboardingComplete: Bool = OnboardingView.hasCompleted
 
     init() {
         let config = AppConfig.resolveFromBundle()
@@ -28,10 +27,7 @@ struct OrbitApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentRoot(
-                environment: environment,
-                onboardingComplete: $onboardingComplete
-            )
+            ContentRoot(environment: environment)
         }
     }
 }
@@ -40,16 +36,15 @@ struct OrbitApp: App {
 /// modifiers (deep links, credential-state refresh) at a single place.
 private struct ContentRoot: View {
     let environment: AppEnvironment
-    @Binding var onboardingComplete: Bool
 
     var body: some View {
         Group {
-            if onboardingComplete {
+            if environment.onboardingComplete {
                 RootView()
             } else {
                 OnboardingView(
                     account: environment.account,
-                    onComplete: { onboardingComplete = true }
+                    onComplete: { environment.onboardingComplete = true }
                 )
             }
         }

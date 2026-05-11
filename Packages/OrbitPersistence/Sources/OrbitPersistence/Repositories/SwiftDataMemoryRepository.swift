@@ -36,6 +36,13 @@ public actor SwiftDataMemoryRepository: MemoryRepository {
         try modelContext.save()
     }
 
+    public func deleteAll() async throws {
+        try modelContext.delete(model: MemoryEntity.self)
+        try modelContext.delete(model: TagEntity.self)
+        try modelContext.delete(model: MediaAssetEntity.self)
+        try modelContext.save()
+    }
+
     public func memory(with id: UUID) async throws -> Memory? {
         var descriptor = FetchDescriptor<MemoryEntity>(predicate: #Predicate { $0.id == id })
         descriptor.fetchLimit = 1

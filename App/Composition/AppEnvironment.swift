@@ -53,6 +53,18 @@ final class AppEnvironment {
     /// observes it and presents the corresponding sheet.
     var requestedModal: AppModal?
 
+    /// Mirrors the `orbit.onboarding.completed` UserDefaults flag. We hold
+    /// it on the env so the delete-account flow can flip it back to false
+    /// and the app re-presents onboarding on the next render without a
+    /// relaunch.
+    var onboardingComplete: Bool {
+        didSet {
+            UserDefaults.standard.set(onboardingComplete, forKey: Self.onboardingKey)
+        }
+    }
+
+    private static let onboardingKey = "orbit.onboarding.completed"
+
     func memoriesDidChange() {
         memoryListVersion &+= 1
         // Nudge the widget bundle so the Recent widget picks up new content
@@ -79,6 +91,17 @@ final class AppEnvironment {
     func removeMemory(id: UUID) async throws {
         try await deleteMemory(id: id)
         await spotlight.deindex(memoryID: id)
+        memoriesDidChange()
+    }
+
+    /// Wipes every memory, clears Spotlight, signs the user out, and resets
+    /// onboarding so the next render starts from a clean slate. Used by the
+    /// in-app account-deletion flow (Apple 5.1.1(v) requirement).
+    func wipeAccountAndData() async throws {
+        try await memories.deleteAll()
+        await spotlight.deindexAll()
+        account.signOut()
+        onboardingComplete = false
         memoriesDidChange()
     }
 
@@ -112,6 +135,8 @@ final class AppEnvironment {
         self.spotlight = spotlight
         self.account = account
         self.entitlements = entitlements
+
+        self.onboardingComplete = UserDefaults.standard.bool(forKey: Self.onboardingKey)
 
         self.captureMemory = CaptureMemoryUseCase(repository: memories, clock: clock)
         self.listMemories = ListMemoriesUseCase(repository: memories)

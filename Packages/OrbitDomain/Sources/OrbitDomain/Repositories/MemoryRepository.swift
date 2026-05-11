@@ -7,6 +7,7 @@ public protocol MemoryRepository: Sendable {
     func save(_ memory: Memory) async throws
     func update(_ memory: Memory) async throws
     func delete(id: UUID) async throws
+    func deleteAll() async throws
     func memory(with id: UUID) async throws -> Memory?
     func list(filter: MemoryFilter) async throws -> [Memory]
     func count(filter: MemoryFilter) async throws -> Int

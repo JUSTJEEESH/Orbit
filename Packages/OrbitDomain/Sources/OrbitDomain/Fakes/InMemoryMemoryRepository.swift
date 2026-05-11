@@ -22,6 +22,10 @@ public actor InMemoryMemoryRepository: MemoryRepository {
         storage.removeValue(forKey: id)
     }
 
+    public func deleteAll() async throws {
+        storage.removeAll()
+    }
+
     public func memory(with id: UUID) async throws -> Memory? {
         storage[id]
     }

@@ -205,6 +205,18 @@ private struct MemoryRow: View {
             }
         }
         .contentShape(.rect(cornerRadius: OrbitRadius.lg))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityHint("Double-tap to open. Swipe with two fingers up or down to delete.")
+    }
+
+    private var accessibilityLabel: String {
+        var parts: [String] = [kindLabel, headline]
+        if let category = memory.ai.category, !category.isEmpty {
+            parts.append(category)
+        }
+        parts.append(timestamp)
+        return parts.joined(separator: ", ")
     }
 
     @ViewBuilder

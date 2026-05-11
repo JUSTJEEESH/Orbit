@@ -10,19 +10,25 @@ public struct SettingsView: View {
     @Bindable private var account: AccountService
     @Bindable private var entitlements: EntitlementService
     private let onPresentPaywall: @MainActor () -> Void
+    private let onDeleteAccount: @MainActor @Sendable () async throws -> Void
     private let onDismiss: @MainActor () -> Void
+
+    @State private var showDeleteConfirmation = false
+    @State private var deletionError: String?
 
     public init(
         appConfig: AppConfig,
         account: AccountService,
         entitlements: EntitlementService,
         onPresentPaywall: @escaping @MainActor () -> Void,
+        onDeleteAccount: @escaping @MainActor @Sendable () async throws -> Void,
         onDismiss: @escaping @MainActor () -> Void
     ) {
         self.appConfig = appConfig
         self.account = account
         self.entitlements = entitlements
         self.onPresentPaywall = onPresentPaywall
+        self.onDeleteAccount = onDeleteAccount
         self.onDismiss = onDismiss
     }
 
@@ -34,6 +40,7 @@ public struct SettingsView: View {
                         accountSection
                         subscriptionSection
                         aboutSection
+                        dangerSection
                         #if DEBUG
                         developerSection
                         #endif
@@ -47,6 +54,27 @@ public struct SettingsView: View {
                     Button("Done") { onDismiss() }
                         .font(OrbitTypography.bodyEmphasized)
                 }
+            }
+            .confirmationDialog(
+                "Delete account?",
+                isPresented: $showDeleteConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("Delete everything", role: .destructive) {
+                    Task { @MainActor in
+                        do {
+                            try await onDeleteAccount()
+                            Haptics.play(.success)
+                            onDismiss()
+                        } catch {
+                            deletionError = error.localizedDescription
+                            Haptics.play(.failure)
+                        }
+                    }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This signs you out and permanently erases every memory on this device. This can't be undone.")
             }
         }
     }
@@ -149,6 +177,34 @@ public struct SettingsView: View {
                 return "Renews \(expiresAt.formatted(date: .abbreviated, time: .omitted))."
             }
             return "Lifetime plan. Yours forever."
+        }
+    }
+
+    // MARK: - Danger
+
+    private var dangerSection: some View {
+        VStack(alignment: .leading, spacing: OrbitSpacing.md) {
+            OrbitSectionHeader("Danger zone")
+            OrbitCard {
+                VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+                    Text("Delete account & data")
+                        .font(OrbitTypography.bodyEmphasized)
+                        .foregroundStyle(OrbitColor.textPrimary)
+                    Text("Sign out and erase every memory on this device. There's no recovery.")
+                        .font(OrbitTypography.footnote)
+                        .foregroundStyle(OrbitColor.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let deletionError {
+                        Text(deletionError)
+                            .font(OrbitTypography.footnote)
+                            .foregroundStyle(OrbitColor.danger)
+                    }
+                    OrbitButton("Delete account", systemImage: "trash", style: .destructive) {
+                        Haptics.play(.warning)
+                        showDeleteConfirmation = true
+                    }
+                }
+            }
         }
     }
 

@@ -5,26 +5,29 @@ import OrbitKit
 import OrbitAccount
 
 /// First-launch flow. Four paged screens, ending with Sign in with Apple
-/// (optional) + Continue as Guest. Marks completion in UserDefaults so we
-/// never show it twice.
+/// (optional) + Continue as Guest. Completion is persisted on
+/// `AppEnvironment.onboardingComplete` so it survives relaunches and the
+/// delete-account flow can flip it back to false to re-present onboarding.
 struct OnboardingView: View {
     @State private var page: Int = 0
     @Bindable var account: AccountService
     let onComplete: @MainActor () -> Void
 
-    private static let storageKey = "orbit.onboarding.completed"
-
-    static var hasCompleted: Bool {
-        UserDefaults.standard.bool(forKey: storageKey)
-    }
-
-    static func markCompleted() {
-        UserDefaults.standard.set(true, forKey: storageKey)
-    }
-
     var body: some View {
         OrbitScreen {
             VStack(spacing: 0) {
+                HStack {
+                    Spacer()
+                    if page < 3 {
+                        Button("Skip", action: finish)
+                            .font(OrbitTypography.footnote)
+                            .foregroundStyle(OrbitColor.textSecondary)
+                            .padding(.trailing, OrbitSpacing.pageHorizontal)
+                            .padding(.top, OrbitSpacing.md)
+                            .accessibilityLabel("Skip onboarding")
+                    }
+                }
+
                 TabView(selection: $page) {
                     welcomePage.tag(0)
                     capturePage.tag(1)
@@ -32,7 +35,7 @@ struct OnboardingView: View {
                     signInPage.tag(3)
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
-                .animation(OrbitMotion.smooth, value: page)
+                .orbitAnimation(OrbitMotion.smooth, value: page)
 
                 dotsAndAction
                     .padding(.bottom, OrbitSpacing.xxxl)
@@ -157,7 +160,6 @@ struct OnboardingView: View {
     }
 
     private func finish() {
-        Self.markCompleted()
         onComplete()
     }
 }

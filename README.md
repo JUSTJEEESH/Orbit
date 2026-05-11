@@ -98,6 +98,50 @@ configuration. To swap to real products later, point the
 `EntitlementService` `productIdentifiers` set at your App Store Connect
 IDs (or leave the defaults and create them in App Store Connect).
 
+## App Store submission checklist
+
+Before archiving for the App Store, walk through:
+
+**App Store Connect setup**
+
+- Create the app record with the bundle ID you used in
+  `rename-identifiers.sh`.
+- Create the three in-app products (monthly / yearly / lifetime) with
+  matching identifiers from `EntitlementService`.
+- Provision the App Group and (when CloudKit lands) the iCloud
+  container.
+
+**Compliance**
+
+- ✅ In-app account deletion: Settings → Danger zone → Delete account.
+  Required by App Store Review Guideline 5.1.1(v).
+- ✅ Sign in with Apple is offered (no other social sign-in present
+  means no "must offer SIWA" obligation either way).
+- ✅ Microphone, Speech Recognition, and Photo Library usage strings
+  are present and user-friendly.
+- ❌ Privacy nutrition label needs to be filled in App Store Connect
+  (data types collected, linked to identity, used for tracking — all
+  "Not collected" for Orbit at launch).
+
+**Testing**
+
+- Cold-launch under one second.
+- Capture → enrichment → Timeline updates without main-thread hitches.
+- Capture from Share Extension persists after force-quitting the app.
+- Widgets refresh after capture (within ~5 seconds).
+- Sign in with Apple flow works on a real device.
+- Delete account confirmation actually wipes everything and returns
+  to onboarding.
+- Reduce Motion: enable in Settings → Accessibility → Motion. Hero
+  transitions should be flat, page transitions instant.
+- Dynamic Type: set system to XXL. No layouts crop or truncate.
+
+**Performance with Instruments**
+
+Profile the Orbit scheme with the **Points of Interest** instrument.
+`OrbitSignpost.measure(_:_:)` spans bracket the critical paths so they
+show up automatically.
+
 ## Documentation
 
 - `PRODUCT_REQUIREMENTS.md` — product vision and feature scope
