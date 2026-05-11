@@ -29,18 +29,17 @@ git-ignored).
 ### First-time provisioning (real device)
 
 The default identifiers (`com.orbit.app`, `group.com.orbit.app`) live in a
-globally-unique namespace you don't own. Before installing on a device,
-write your personal identifiers to a gitignored config file:
+globally-unique namespace you don't own. To install on a real device,
+patch the project to your personal IDs:
 
 ```bash
 ./Scripts/setup-identity.sh com.<yourname>.orbit group.com.<yourname>.orbit
 xcodegen generate
 ```
 
-That writes `Config/Identity.xcconfig` (gitignored) and the build picks it
-up automatically. `project.yml` and the entitlements files reference
-`$(ORBIT_BUNDLE_ID)` / `$(ORBIT_APP_GROUP)` rather than literal strings,
-so future `git pull` operations never conflict with your IDs.
+The script (a) rewrites `project.yml`, the three `.entitlements` files,
+and the Swift literals that reference the canonical identifiers, and
+(b) records your IDs in `Config/Identity.xcconfig` (gitignored).
 
 Then in Xcode, for each of **Orbit**, **OrbitShareExtension**, and
 **OrbitWidgets**:
@@ -49,8 +48,27 @@ Then in Xcode, for each of **Orbit**, **OrbitShareExtension**, and
 2. Xcode registers the new bundle ID + App Group automatically.
 3. The Apple Sign-In capability registers automatically too.
 
+### Re-applying after a `git pull`
+
+When upstream changes `project.yml` (for example, adding a new feature
+package), the canonical identifiers come back. Re-run the script with
+no arguments — it reads `Config/Identity.xcconfig` and re-patches:
+
+```bash
+# If git pull complained about local changes, discard them first:
+git checkout project.yml App/Resources/Orbit.entitlements \
+    Extensions/ShareExtension/Orbit.entitlements \
+    Extensions/OrbitWidgets/Orbit.entitlements \
+    Extensions/ShareExtension/ShareViewController.swift \
+    Extensions/OrbitWidgets/RecentMemoryWidget.swift \
+    Packages/OrbitKit/Sources/OrbitKit/AppConfig.swift
+git pull
+./Scripts/setup-identity.sh
+xcodegen generate
+```
+
 The simulator works with the default identifiers without provisioning.
-The errors only appear when archiving for a real device.
+The provisioning errors only appear when archiving for a real device.
 
 ## Module map
 

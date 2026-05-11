@@ -1,5 +1,10 @@
 # XcodeGen project definition. Run `xcodegen generate` to (re)create Orbit.xcodeproj.
 # Keeping the project file generated avoids merge conflicts and keeps source as the truth.
+#
+# Identifier handling: `Scripts/setup-identity.sh` patches the canonical
+# identifiers below to your personal IDs (recorded in Config/Identity.xcconfig).
+# After a `git pull` that touches this file, run the script again with no
+# arguments to re-apply.
 
 name: Orbit
 options:
@@ -69,15 +74,12 @@ targets:
         NSUserActivityTypes:
           - com.orbit.capture
         CFBundleURLTypes:
-          - CFBundleURLName: $(ORBIT_BUNDLE_ID)
+          - CFBundleURLName: com.orbit.app
             CFBundleURLSchemes:
               - orbit
-        # Substituted at build time from xcconfig (see Config/Identity.xcconfig).
-        # Read at runtime via Bundle.main.object(forInfoDictionaryKey:).
-        OrbitAppGroupIdentifier: $(ORBIT_APP_GROUP)
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: $(ORBIT_BUNDLE_ID)
+        PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app
         CODE_SIGN_ENTITLEMENTS: App/Resources/Orbit.entitlements
     dependencies:
       - package: OrbitWorkspace
@@ -125,7 +127,6 @@ targets:
       path: Extensions/ShareExtension/Info.plist
       properties:
         CFBundleDisplayName: Orbit
-        OrbitAppGroupIdentifier: $(ORBIT_APP_GROUP)
         NSExtension:
           NSExtensionPointIdentifier: com.apple.share-services
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
@@ -136,7 +137,7 @@ targets:
               NSExtensionActivationSupportsImageWithMaxCount: 1
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: $(ORBIT_BUNDLE_ID).share
+        PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app.share
         CODE_SIGN_ENTITLEMENTS: Extensions/ShareExtension/Orbit.entitlements
         SKIP_INSTALL: YES
     dependencies:
@@ -155,12 +156,11 @@ targets:
       path: Extensions/OrbitWidgets/Info.plist
       properties:
         CFBundleDisplayName: Orbit
-        OrbitAppGroupIdentifier: $(ORBIT_APP_GROUP)
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: $(ORBIT_BUNDLE_ID).widgets
+        PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app.widgets
         CODE_SIGN_ENTITLEMENTS: Extensions/OrbitWidgets/Orbit.entitlements
         SKIP_INSTALL: YES
     dependencies:
