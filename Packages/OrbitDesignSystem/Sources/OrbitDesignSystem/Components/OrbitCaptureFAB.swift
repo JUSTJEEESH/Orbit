@@ -21,12 +21,16 @@ public struct OrbitCaptureFAB: View {
                 .font(.system(size: 26, weight: .semibold))
                 .foregroundStyle(OrbitColor.textInverted)
                 .frame(width: 64, height: 64)
-                .background(OrbitColor.textPrimary, in: .circle)
-                // iOS 26 Liquid Glass — adds a living sheen that picks up
-                // the content beneath the FAB without breaking the solid-
-                // color rule (the surface is still a single token; glass
-                // is depth, not color).
-                .glassEffect(.regular.interactive(), in: .circle)
+                // iOS 26 Liquid Glass — the glass IS the surface. Tinted
+                // toward textPrimary so the FAB still reads as Orbit's
+                // dark control, but content underneath refracts through
+                // the orb (timeline cells, recap card, etc.). Without
+                // a tinted glass, an opaque background would block
+                // refraction and the effect would be invisible.
+                .glassEffect(
+                    .regular.tint(OrbitColor.textPrimary).interactive(),
+                    in: .circle
+                )
                 .orbitShadow(.lifted)
         }
         .buttonStyle(OrbitPressedButtonStyle())
