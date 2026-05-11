@@ -14,14 +14,17 @@ struct RootView: View {
     @Environment(AppEnvironment.self) private var env
 
     @State private var selectedTab: AppTab = .home
-    @State private var presentedModal: AppModal?
 
     var body: some View {
+        // `@Bindable` lets external entry points (deep links, AppIntents)
+        // share the same sheet binding the UI drives.
+        @Bindable var bindableEnv = env
+
         ZStack(alignment: .bottom) {
             tabContent
             captureFAB
         }
-        .sheet(item: $presentedModal) { modal in
+        .sheet(item: $bindableEnv.requestedModal) { modal in
             switch modal {
             case .capture:
                 CaptureView(
@@ -34,16 +37,16 @@ struct RootView: View {
                     onCompleted: { memoryID in
                         env.memoriesDidChange()
                         env.scheduleEnrichment(for: memoryID)
-                        presentedModal = nil
+                        env.requestedModal = nil
                     },
-                    onCancel: { presentedModal = nil }
+                    onCancel: { env.requestedModal = nil }
                 )
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
             case .settings:
                 SettingsView(
                     appConfig: env.appConfig,
-                    onDismiss: { presentedModal = nil }
+                    onDismiss: { env.requestedModal = nil }
                 )
                 .presentationDetents([.large])
             }
@@ -64,10 +67,9 @@ struct RootView: View {
 
             TimelineView(
                 listMemories: env.listMemories,
-                deleteMemory: env.deleteMemory,
+                removeMemory: { id in try await env.removeMemory(id: id) },
                 refreshToken: env.memoryListVersion,
-                makeDetailViewModel: makeDetailViewModel,
-                onDataChanged: { env.memoriesDidChange() }
+                makeDetailViewModel: makeDetailViewModel
             )
                 .tag(AppTab.timeline)
                 .tabItem { Label(AppTab.timeline.title, systemImage: AppTab.timeline.systemImage) }
@@ -85,7 +87,7 @@ struct RootView: View {
     private var profileToolbar: some ToolbarContent {
         ToolbarItem(placement: .topBarTrailing) {
             Button {
-                presentedModal = .settings
+                env.requestedModal = .settings
             } label: {
                 Image(systemName: "person.crop.circle")
                     .font(.system(size: 22, weight: .regular))
@@ -97,7 +99,7 @@ struct RootView: View {
 
     private var captureFAB: some View {
         OrbitCaptureFAB {
-            presentedModal = .capture
+            env.requestedModal = .capture
         }
         // Clears the system tab bar; sits in the safe area above it.
         .padding(.bottom, 72)
@@ -109,7 +111,17 @@ struct RootView: View {
         MemoryDetailViewModel(
             memoryID: memoryID,
             repository: env.memories,
-            deleteMemory: env.deleteMemory
+            removeMemory: { id in try await env.removeMemory(id: id) }
         )
+    }
+
+    /// Route an inbound deep link to the appropriate UI surface.
+    func handle(_ deepLink: DeepLink) {
+        switch deepLink {
+        case .capture:
+            env.requestedModal = .capture
+        case .search:
+            selectedTab = .search
+        }
     }
 }

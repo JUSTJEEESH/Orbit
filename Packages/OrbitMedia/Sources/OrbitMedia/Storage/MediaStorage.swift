@@ -33,6 +33,22 @@ public actor MediaStorage {
         try FileManager.default.createDirectory(at: self.root, withIntermediateDirectories: true)
     }
 
+    /// Convenience initializer that targets the App Group container so audio
+    /// files and images stay readable from the share extension and widgets.
+    /// Falls back to the per-app documents directory if the group isn't
+    /// accessible.
+    public static func sharedAcrossExtensions(
+        appGroupIdentifier: String
+    ) throws -> MediaStorage {
+        if let container = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: appGroupIdentifier
+        ) {
+            let root = container.appendingPathComponent("Orbit/media", isDirectory: true)
+            return try MediaStorage(root: root)
+        }
+        return try MediaStorage()
+    }
+
     public func write(_ data: Data, kind: Kind, id: UUID = UUID()) throws -> StoredFile {
         let filename = "\(id.uuidString).\(kind.fileExtension)"
         let url = root.appendingPathComponent(filename)

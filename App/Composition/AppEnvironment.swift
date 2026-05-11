@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import WidgetKit
 import OrbitKit
 import OrbitDomain
 import OrbitPersistence
@@ -27,6 +28,7 @@ final class AppEnvironment {
     let ai: any AIService
     let ocr: OCRService
     let search: any SearchService
+    let spotlight: SpotlightIndexer
 
     let captureMemory: CaptureMemoryUseCase
     let listMemories: ListMemoriesUseCase
@@ -42,19 +44,37 @@ final class AppEnvironment {
     /// repositories expose a live-query API in a later phase.
     var memoryListVersion: Int = 0
 
+    /// External entry points (deep links, AppIntents) write here; `RootView`
+    /// observes it and presents the corresponding sheet.
+    var requestedModal: AppModal?
+
     func memoriesDidChange() {
         memoryListVersion &+= 1
+        // Nudge the widget bundle so the Recent widget picks up new content
+        // without waiting for its next scheduled refresh.
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
-    /// Fire-and-forget enrichment of a freshly captured memory. The task
-    /// re-bumps the list version when done so the timeline picks up the
-    /// completed AI metadata.
+    /// Fire-and-forget enrichment + Spotlight indexing for a freshly captured
+    /// memory. Re-bumps the list version when done so the timeline picks up
+    /// the completed AI metadata.
     func scheduleEnrichment(for memoryID: UUID) {
         Task { @MainActor [weak self] in
             guard let self else { return }
             await self.enrichMemory(memoryID: memoryID)
+            if let memory = try? await self.memories.memory(with: memoryID) {
+                await self.spotlight.index(memory)
+            }
             self.memoriesDidChange()
         }
+    }
+
+    /// Deletes a memory and removes it from Spotlight. Use this from the UI
+    /// instead of `deleteMemory` directly.
+    func removeMemory(id: UUID) async throws {
+        try await deleteMemory(id: id)
+        await spotlight.deindex(memoryID: id)
+        memoriesDidChange()
     }
 
     init(
@@ -68,7 +88,8 @@ final class AppEnvironment {
         linkFetcher: LinkPreviewFetcher,
         ai: any AIService,
         ocr: OCRService,
-        search: any SearchService
+        search: any SearchService,
+        spotlight: SpotlightIndexer
     ) {
         self.appConfig = appConfig
         self.clock = clock
@@ -81,6 +102,7 @@ final class AppEnvironment {
         self.ai = ai
         self.ocr = ocr
         self.search = search
+        self.spotlight = spotlight
 
         self.captureMemory = CaptureMemoryUseCase(repository: memories, clock: clock)
         self.listMemories = ListMemoriesUseCase(repository: memories)
@@ -94,12 +116,16 @@ final class AppEnvironment {
 }
 
 extension AppEnvironment {
-    /// Production environment: SwiftData on local storage + Foundation Models
-    /// adapter as primary AI with a cloud stub fallback that currently throws
-    /// (real cloud proxy lands in a later phase).
+    /// Production environment. SwiftData lives in the App Group container so
+    /// the share extension and widgets see the same store. If the group
+    /// entitlement isn't active the factory degrades to per-app storage.
     static func makeProduction(appConfig: AppConfig) throws -> AppEnvironment {
-        let container = try ModelContainerFactory.makeContainer(mode: .onDisk)
-        let storage = try MediaStorage()
+        let container = try ModelContainerFactory.makeContainer(
+            mode: .appGroup(identifier: appConfig.appGroupIdentifier)
+        )
+        let storage = try MediaStorage.sharedAcrossExtensions(
+            appGroupIdentifier: appConfig.appGroupIdentifier
+        )
         let memoryRepo = SwiftDataMemoryRepository(modelContainer: container)
         let embeddings = EmbeddingService()
         let ai = AIServicePipeline([
@@ -117,7 +143,8 @@ extension AppEnvironment {
             linkFetcher: LinkPreviewFetcher(),
             ai: ai,
             ocr: OCRService(),
-            search: LocalSearchService(memories: memoryRepo, embeddings: embeddings)
+            search: LocalSearchService(memories: memoryRepo, embeddings: embeddings),
+            spotlight: SpotlightIndexer()
         )
     }
 
@@ -147,7 +174,8 @@ extension AppEnvironment {
             linkFetcher: LinkPreviewFetcher(),
             ai: MockAIService(),
             ocr: OCRService(),
-            search: LocalSearchService(memories: memoryRepo, embeddings: embeddings)
+            search: LocalSearchService(memories: memoryRepo, embeddings: embeddings),
+            spotlight: SpotlightIndexer()
         )
     }
 }

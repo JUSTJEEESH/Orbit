@@ -49,6 +49,10 @@ targets:
         NSCameraUsageDescription: Orbit lets you capture moments straight into your memory timeline.
         NSUserActivityTypes:
           - com.orbit.capture
+        CFBundleURLTypes:
+          - CFBundleURLName: com.orbit.app
+            CFBundleURLSchemes:
+              - orbit
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app
@@ -78,3 +82,61 @@ targets:
         product: OrbitSettingsFeature
       - package: OrbitWorkspace
         product: OrbitMemoryDetailFeature
+      - target: OrbitShareExtension
+        embed: true
+      - target: OrbitWidgets
+        embed: true
+
+  OrbitShareExtension:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: Extensions/ShareExtension
+    info:
+      path: Extensions/ShareExtension/Info.plist
+      properties:
+        CFBundleDisplayName: Orbit
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.share-services
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
+          NSExtensionAttributes:
+            NSExtensionActivationRule:
+              NSExtensionActivationSupportsText: true
+              NSExtensionActivationSupportsWebURLWithMaxCount: 1
+              NSExtensionActivationSupportsImageWithMaxCount: 1
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app.share
+        CODE_SIGN_ENTITLEMENTS: Extensions/ShareExtension/Orbit.entitlements
+        SKIP_INSTALL: YES
+    dependencies:
+      - package: OrbitWorkspace
+        product: OrbitDomain
+      - package: OrbitWorkspace
+        product: OrbitPersistence
+
+  OrbitWidgets:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: Extensions/OrbitWidgets
+    info:
+      path: Extensions/OrbitWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: Orbit
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app.widgets
+        CODE_SIGN_ENTITLEMENTS: Extensions/OrbitWidgets/Orbit.entitlements
+        SKIP_INSTALL: YES
+    dependencies:
+      - package: OrbitWorkspace
+        product: OrbitDesignSystem
+      - package: OrbitWorkspace
+        product: OrbitDomain
+      - package: OrbitWorkspace
+        product: OrbitPersistence

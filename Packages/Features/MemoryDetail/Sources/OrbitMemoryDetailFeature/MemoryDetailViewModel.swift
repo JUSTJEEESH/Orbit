@@ -17,16 +17,16 @@ public final class MemoryDetailViewModel {
 
     private let memoryID: UUID
     private let repository: any MemoryRepository
-    private let deleteMemory: DeleteMemoryUseCase
+    private let removeMemory: @MainActor @Sendable (UUID) async throws -> Void
 
     public init(
         memoryID: UUID,
         repository: any MemoryRepository,
-        deleteMemory: DeleteMemoryUseCase
+        removeMemory: @escaping @MainActor @Sendable (UUID) async throws -> Void
     ) {
         self.memoryID = memoryID
         self.repository = repository
-        self.deleteMemory = deleteMemory
+        self.removeMemory = removeMemory
     }
 
     public func load() async {
@@ -44,10 +44,11 @@ public final class MemoryDetailViewModel {
     }
 
     /// Returns `true` if the memory was actually deleted, so the view can
-    /// pop itself.
+    /// pop itself. The closure injected by the composition root handles
+    /// Spotlight de-indexing + list-version bumping centrally.
     public func delete() async -> Bool {
         do {
-            try await deleteMemory(id: memoryID)
+            try await removeMemory(memoryID)
             return true
         } catch {
             return false

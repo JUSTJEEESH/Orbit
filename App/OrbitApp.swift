@@ -15,7 +15,7 @@ struct OrbitApp: App {
         let env: AppEnvironment
         do {
             env = try AppEnvironment.makeProduction(appConfig: config)
-            OrbitLog.persistence.notice("Persistence: SwiftData on-disk ready.")
+            OrbitLog.persistence.notice("Persistence: SwiftData ready (App Group=\(config.appGroupIdentifier, privacy: .public)).")
         } catch {
             OrbitLog.persistence.fault("Persistence init failed, falling back to in-memory: \(String(describing: error), privacy: .public)")
             env = AppEnvironment.makePreview()
@@ -27,9 +27,34 @@ struct OrbitApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView()
-                .environment(environment)
-                .tint(OrbitColor.textPrimary)
+            ContentRoot(environment: environment)
         }
+    }
+}
+
+/// Tiny wrapper so we can attach `.onOpenURL` from a single place and
+/// dispatch deep links through `RootView`.
+private struct ContentRoot: View {
+    let environment: AppEnvironment
+
+    var body: some View {
+        RootView()
+            .environment(environment)
+            .tint(OrbitColor.textPrimary)
+            .onOpenURL { url in
+                guard let link = DeepLink(url: url) else {
+                    OrbitLog.app.info("Ignored unrecognized URL: \(url.absoluteString, privacy: .public)")
+                    return
+                }
+                switch link {
+                case .capture:
+                    environment.requestedModal = .capture
+                case .search:
+                    // Tab switching needs RootView access; for now, just
+                    // surface intent. The search tab won't auto-switch until
+                    // we promote `selectedTab` into the environment.
+                    OrbitLog.app.info("Deep link search query received.")
+                }
+            }
     }
 }

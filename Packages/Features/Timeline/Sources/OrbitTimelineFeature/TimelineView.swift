@@ -6,10 +6,9 @@ import OrbitMemoryDetailFeature
 
 public struct TimelineView: View {
     private let listMemories: ListMemoriesUseCase
-    private let deleteMemory: DeleteMemoryUseCase
+    private let removeMemory: @MainActor @Sendable (UUID) async throws -> Void
     private let refreshToken: Int
     private let makeDetailViewModel: @MainActor (UUID) -> MemoryDetailViewModel
-    private let onDataChanged: @MainActor () -> Void
 
     @State private var memories: [Memory] = []
     @State private var loadState: LoadState = .idle
@@ -20,16 +19,14 @@ public struct TimelineView: View {
 
     public init(
         listMemories: ListMemoriesUseCase,
-        deleteMemory: DeleteMemoryUseCase,
+        removeMemory: @escaping @MainActor @Sendable (UUID) async throws -> Void,
         refreshToken: Int = 0,
-        makeDetailViewModel: @escaping @MainActor (UUID) -> MemoryDetailViewModel,
-        onDataChanged: @escaping @MainActor () -> Void
+        makeDetailViewModel: @escaping @MainActor (UUID) -> MemoryDetailViewModel
     ) {
         self.listMemories = listMemories
-        self.deleteMemory = deleteMemory
+        self.removeMemory = removeMemory
         self.refreshToken = refreshToken
         self.makeDetailViewModel = makeDetailViewModel
-        self.onDataChanged = onDataChanged
     }
 
     public var body: some View {
@@ -40,7 +37,7 @@ public struct TimelineView: View {
                 .navigationDestination(for: MemoryDetailRoute.self) { route in
                     MemoryDetailView(
                         viewModel: makeDetailViewModel(route.memoryID),
-                        onDeleted: { onDataChanged() }
+                        onDeleted: { /* env handles refresh + deindex via removeMemory closure */ }
                     )
                     .navigationTransition(.zoom(sourceID: route.memoryID, in: heroNamespace))
                 }
@@ -177,9 +174,8 @@ public struct TimelineView: View {
         pendingDeletions.insert(memory.id)
         Task { @MainActor in
             do {
-                try await deleteMemory(id: memory.id)
+                try await removeMemory(memory.id)
                 memories.removeAll { $0.id == memory.id }
-                onDataChanged()
             } catch {
                 pendingDeletions.remove(memory.id)
             }
@@ -276,18 +272,18 @@ private struct MemoryRow: View {
                createdAt: Date().addingTimeInterval(-3600), updatedAt: Date()),
     ]
     let repo = InMemoryMemoryRepository(seed: memories)
+    let delete = DeleteMemoryUseCase(repository: repo)
     return TimelineView(
         listMemories: ListMemoriesUseCase(repository: repo),
-        deleteMemory: DeleteMemoryUseCase(repository: repo),
+        removeMemory: { id in try await delete(id: id) },
         refreshToken: 0,
         makeDetailViewModel: { id in
             MemoryDetailViewModel(
                 memoryID: id,
                 repository: repo,
-                deleteMemory: DeleteMemoryUseCase(repository: repo)
+                removeMemory: { try await delete(id: $0) }
             )
-        },
-        onDataChanged: {}
+        }
     )
     .preferredColorScheme(.dark)
 }
