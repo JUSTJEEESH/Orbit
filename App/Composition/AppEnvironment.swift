@@ -43,6 +43,7 @@ final class AppEnvironment {
     let toggleTask: ToggleTaskUseCase
     let enrichMemory: EnrichMemoryUseCase
     let searchMemories: SearchMemoriesUseCase
+    let generateDailyRecap: GenerateDailyRecapUseCase
 
     /// Bumped whenever the memory collection changes. Feature views observe
     /// it via `.task(id: env.memoryListVersion)` to refetch lazily — until
@@ -161,6 +162,7 @@ final class AppEnvironment {
         self.toggleTask = ToggleTaskUseCase(repository: tasks, clock: clock)
         self.enrichMemory = EnrichMemoryUseCase(ai: ai, memories: memories, clock: clock)
         self.searchMemories = SearchMemoriesUseCase(search: search, memories: memories)
+        self.generateDailyRecap = GenerateDailyRecapUseCase(memories: memories, ai: ai, clock: clock)
     }
 }
 

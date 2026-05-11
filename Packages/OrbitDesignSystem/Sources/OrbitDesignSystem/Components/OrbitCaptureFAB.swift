@@ -22,6 +22,11 @@ public struct OrbitCaptureFAB: View {
                 .foregroundStyle(OrbitColor.textInverted)
                 .frame(width: 64, height: 64)
                 .background(OrbitColor.textPrimary, in: .circle)
+                // iOS 26 Liquid Glass — adds a living sheen that picks up
+                // the content beneath the FAB without breaking the solid-
+                // color rule (the surface is still a single token; glass
+                // is depth, not color).
+                .glassEffect(.regular.interactive(), in: .circle)
                 .orbitShadow(.lifted)
         }
         .buttonStyle(OrbitPressedButtonStyle())

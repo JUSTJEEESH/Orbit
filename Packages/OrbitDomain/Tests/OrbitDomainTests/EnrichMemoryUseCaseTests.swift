@@ -77,4 +77,7 @@ private actor StubAIService: AIService {
     func summarize(_ memory: Memory) async throws -> String { "" }
     func extractTasks(from memory: Memory) async throws -> [MemoryTask] { [] }
     func embed(_ text: String) async throws -> [Float] { [] }
+    func dailyRecap(memories: [Memory], date: Date) async throws -> DailyRecapDraft {
+        DailyRecapDraft(narrative: "", mood: nil, highlightIDs: [])
+    }
 }

@@ -8,6 +8,22 @@ public protocol AIService: Sendable {
     func summarize(_ memory: Memory) async throws -> String
     func extractTasks(from memory: Memory) async throws -> [MemoryTask]
     func embed(_ text: String) async throws -> [Float]
+    func dailyRecap(memories: [Memory], date: Date) async throws -> DailyRecapDraft
+}
+
+/// AI-side payload for `DailyRecap`. The use case is responsible for
+/// stamping `generatedAt` and resolving highlight IDs into the final
+/// domain entity, so the AI surface stays free of clock dependencies.
+public struct DailyRecapDraft: Sendable, Equatable {
+    public let narrative: String
+    public let mood: String?
+    public let highlightIDs: [UUID]
+
+    public init(narrative: String, mood: String?, highlightIDs: [UUID]) {
+        self.narrative = narrative
+        self.mood = mood
+        self.highlightIDs = highlightIDs
+    }
 }
 
 public struct RawCapture: Sendable {

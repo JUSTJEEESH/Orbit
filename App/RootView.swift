@@ -10,6 +10,7 @@ import OrbitSearchFeature
 import OrbitCaptureFeature
 import OrbitSettingsFeature
 import OrbitMemoryDetailFeature
+import OrbitRecapFeature
 
 struct RootView: View {
     @Environment(AppEnvironment.self) private var env
@@ -61,6 +62,15 @@ struct RootView: View {
                     onDismiss: { env.requestedModal = nil }
                 )
                 .presentationDetents([.large])
+            case .dailyRecap:
+                DailyRecapView(
+                    viewModel: DailyRecapViewModel(
+                        generate: env.generateDailyRecap,
+                        memories: env.memories
+                    ),
+                    onDismiss: { env.requestedModal = nil }
+                )
+                .presentationDetents([.large])
             }
         }
         .onAppear { Haptics.prepare() }
@@ -76,7 +86,8 @@ struct RootView: View {
                     listMemories: env.listMemories,
                     refreshToken: env.memoryListVersion,
                     clock: env.clock,
-                    makeDetailViewModel: makeDetailViewModel
+                    makeDetailViewModel: makeDetailViewModel,
+                    onPresentRecap: { env.requestedModal = .dailyRecap }
                 )
                 .navigationTitle("")
                 .navigationBarTitleDisplayMode(.inline)

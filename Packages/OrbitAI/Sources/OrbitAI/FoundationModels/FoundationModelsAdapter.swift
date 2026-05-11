@@ -134,6 +134,41 @@ public actor FoundationModelsAdapter: AIService {
         return vector
     }
 
+    public func dailyRecap(memories: [Memory], date: Date) async throws -> DailyRecapDraft {
+        // Build a compact transcript so we don't blow the model's context.
+        // Order chronologically so the recap has a sense of arc.
+        let lines = memories
+            .sorted { $0.createdAt < $1.createdAt }
+            .prefix(60)
+            .map { Self.recapLine(for: $0) }
+        let bullets = lines.joined(separator: "\n")
+
+        // No model? Hand back something pleasant and serviceable.
+        if case .unavailable = SystemLanguageModel.default.availability {
+            return Self.heuristicRecap(memories: memories, bullets: bullets)
+        }
+
+        do {
+            let session = LanguageModelSession(instructions: Self.recapInstructions)
+            let response = try await session.respond(
+                to: Self.recapPrompt(for: date, bullets: bullets),
+                generating: GeneratedDailyRecap.self
+            )
+            let generated = response.content
+            let highlightIDs = Self.matchHighlights(
+                titles: generated.highlights,
+                memories: memories
+            )
+            return DailyRecapDraft(
+                narrative: generated.narrative.trimmingCharacters(in: .whitespacesAndNewlines),
+                mood: generated.mood.trimmedNonEmpty?.lowercased(),
+                highlightIDs: highlightIDs
+            )
+        } catch {
+            return Self.heuristicRecap(memories: memories, bullets: bullets)
+        }
+    }
+
     // MARK: - Prompting
 
     private static let systemInstructions = """
@@ -164,6 +199,116 @@ public actor FoundationModelsAdapter: AIService {
         guard !trimmed.isEmpty else { return nil }
         return trimmed.count > 120 ? String(trimmed.prefix(117)) + "…" : trimmed
     }
+
+    // MARK: - Daily recap
+
+    private static let recapInstructions = """
+    You are Orbit, a calm second brain. Reflect the user's day back to \
+    them in 2-3 sentences of warm, second-person prose — like a thoughtful \
+    journal entry. Do not invent facts. Pick a one-word lowercase mood \
+    that fits the day (e.g. focused, scattered, calm, productive, \
+    reflective, restless, grateful) and surface up to three short titles \
+    that summarize the most notable moments.
+    """
+
+    private static func recapPrompt(for date: Date, bullets: String) -> String {
+        let dayLabel = date.formatted(.dateTime.weekday(.wide).month(.wide).day())
+        return """
+        Day: \(dayLabel)
+        Captures (chronological):
+        \"\"\"
+        \(bullets)
+        \"\"\"
+
+        Write the recap.
+        """
+    }
+
+    private static func recapLine(for memory: Memory) -> String {
+        let timeLabel = memory.createdAt.formatted(date: .omitted, time: .shortened)
+        let body: String = {
+            switch memory.content {
+            case .text(let s):                                   return s
+            case .voiceNote(let transcript, _):                  return transcript ?? "[voice note]"
+            case .image(let caption):                            return caption ?? "[photo]"
+            case .link(let url, let title, let summary):
+                return [title, summary, url.absoluteString].compactMap { $0 }.first ?? url.absoluteString
+            case .screenshot(let ocr):                           return ocr ?? "[screenshot]"
+            case .location(let name, _, _):                      return name ?? "[place]"
+            }
+        }()
+        return "- \(timeLabel) — \(String(body.prefix(140)))"
+    }
+
+    /// Looks for memories whose headline contains any AI-suggested
+    /// highlight title. Falls back to the first three captures so the
+    /// view always has at least something to show.
+    private static func matchHighlights(titles: [String], memories: [Memory]) -> [UUID] {
+        guard !titles.isEmpty else { return [] }
+        var matched: [UUID] = []
+        for title in titles.prefix(5) {
+            let needle = title.lowercased()
+            guard let hit = memories.first(where: { Self.headline(for: $0).lowercased().contains(needle) }) else { continue }
+            if !matched.contains(hit.id) { matched.append(hit.id) }
+        }
+        return matched
+    }
+
+    private static func headline(for memory: Memory) -> String {
+        if let summary = memory.ai.summary, !summary.isEmpty { return summary }
+        switch memory.content {
+        case .text(let s):                                   return s
+        case .voiceNote(let transcript, _):                  return transcript ?? "Voice note"
+        case .image(let caption):                            return caption ?? "Photo"
+        case .link(_, let title, let summary):               return summary ?? title ?? "Link"
+        case .screenshot(let ocr):                           return ocr ?? "Screenshot"
+        case .location(let name, _, _):                      return name ?? "Location"
+        }
+    }
+
+    /// Composed recap when Apple Intelligence isn't available. Reads
+    /// naturally enough that the experience doesn't feel broken on
+    /// older devices — it just doesn't sing.
+    private static func heuristicRecap(memories: [Memory], bullets: String) -> DailyRecapDraft {
+        let count = memories.count
+        let kinds = Set(memories.map(\.content.kind))
+        let kindWords: [String] = kinds.compactMap { kind in
+            switch kind {
+            case .text:        return count > 0 ? "thoughts" : nil
+            case .voiceNote:   return "voice notes"
+            case .image:       return "photos"
+            case .link:        return "links"
+            case .screenshot:  return "screenshots"
+            case .location:    return "places"
+            }
+        }
+        let kindFragment: String = {
+            switch kindWords.count {
+            case 0: return "moments"
+            case 1: return kindWords[0]
+            case 2: return "\(kindWords[0]) and \(kindWords[1])"
+            default:
+                let head = kindWords.prefix(kindWords.count - 1).joined(separator: ", ")
+                return "\(head), and \(kindWords.last!)"
+            }
+        }()
+        let countWord = count == 1 ? "moment" : "moments"
+        let narrative = "You captured \(count) \(countWord) today — a mix of \(kindFragment). Worth a glance."
+        let highlights = Array(memories.prefix(3).map(\.id))
+        return DailyRecapDraft(narrative: narrative, mood: nil, highlightIDs: highlights)
+    }
+}
+
+@Generable
+struct GeneratedDailyRecap {
+    @Guide(description: "2-3 sentences of warm, second-person prose reflecting the user's day. No bullet points.")
+    let narrative: String
+
+    @Guide(description: "One lowercase word that captures the day's mood. Empty string if unclear.")
+    let mood: String
+
+    @Guide(description: "Up to three short headline-style strings that summarize the day's most notable captures.")
+    let highlights: [String]
 }
 
 @Generable

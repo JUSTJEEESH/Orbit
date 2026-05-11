@@ -9,6 +9,7 @@ public struct HomeView: View {
     private let refreshToken: Int
     private let clock: any OrbitClock
     private let makeDetailViewModel: @MainActor (UUID) -> MemoryDetailViewModel
+    private let onPresentRecap: @MainActor () -> Void
 
     @State private var memories: [Memory] = []
     @State private var loadState: LoadState = .idle
@@ -20,12 +21,14 @@ public struct HomeView: View {
         listMemories: ListMemoriesUseCase,
         refreshToken: Int = 0,
         clock: any OrbitClock = SystemClock(),
-        makeDetailViewModel: @escaping @MainActor (UUID) -> MemoryDetailViewModel
+        makeDetailViewModel: @escaping @MainActor (UUID) -> MemoryDetailViewModel,
+        onPresentRecap: @escaping @MainActor () -> Void
     ) {
         self.listMemories = listMemories
         self.refreshToken = refreshToken
         self.clock = clock
         self.makeDetailViewModel = makeDetailViewModel
+        self.onPresentRecap = onPresentRecap
     }
 
     public var body: some View {
@@ -101,8 +104,52 @@ public struct HomeView: View {
     private var loadedContent: some View {
         VStack(alignment: .leading, spacing: OrbitSpacing.xxl) {
             todaySection
+            if shouldShowRecapInvite {
+                recapCard
+            }
             recentSection
         }
+    }
+
+    /// We only invite the user into the recap experience once the day has
+    /// produced something worth reflecting on. Below the threshold a single
+    /// memory feels lonely as a 'day in review.'
+    private var shouldShowRecapInvite: Bool {
+        memoriesFromToday.count >= 2
+    }
+
+    private var recapCard: some View {
+        Button {
+            Haptics.play(.tap)
+            onPresentRecap()
+        } label: {
+            OrbitCard(elevation: .lifted) {
+                VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+                    OrbitEyebrow(
+                        label: "Daily Recap",
+                        suffix: "today",
+                        tint: OrbitColor.accent
+                    )
+                    Text("See your day reflected back")
+                        .font(.system(size: 22, weight: .semibold, design: .serif))
+                        .foregroundStyle(OrbitColor.textPrimary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("Orbit reads your captures and writes a calm, two-sentence summary of the day.")
+                        .font(OrbitTypography.footnote)
+                        .foregroundStyle(OrbitColor.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    HStack(spacing: 6) {
+                        Text("Open recap")
+                            .font(OrbitTypography.bodyEmphasized)
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 14, weight: .semibold))
+                    }
+                    .foregroundStyle(OrbitColor.textPrimary)
+                    .padding(.top, OrbitSpacing.xxs)
+                }
+            }
+        }
+        .buttonStyle(OrbitBloomButtonStyle(tint: OrbitColor.accent))
     }
 
     // MARK: - Today

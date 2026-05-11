@@ -27,6 +27,10 @@ public actor AIServicePipeline: AIService {
         try await firstSuccess { try await $0.embed(text) }
     }
 
+    public func dailyRecap(memories: [Memory], date: Date) async throws -> DailyRecapDraft {
+        try await firstSuccess { try await $0.dailyRecap(memories: memories, date: date) }
+    }
+
     private func firstSuccess<T>(
         _ run: (any AIService) async throws -> T
     ) async throws -> T {

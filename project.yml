@@ -105,6 +105,8 @@ targets:
         product: OrbitSettingsFeature
       - package: OrbitWorkspace
         product: OrbitMemoryDetailFeature
+      - package: OrbitWorkspace
+        product: OrbitRecapFeature
       - target: OrbitShareExtension
         embed: true
       - target: OrbitWidgets

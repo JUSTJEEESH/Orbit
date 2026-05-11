@@ -23,4 +23,8 @@ public actor CloudAIService: AIService {
     public func embed(_ text: String) async throws -> [Float] {
         throw OrbitError.aiUnavailable
     }
+
+    public func dailyRecap(memories: [Memory], date: Date) async throws -> DailyRecapDraft {
+        throw OrbitError.aiUnavailable
+    }
 }
