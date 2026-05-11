@@ -287,13 +287,7 @@ public struct HomeView: View {
     }
 }
 
-#Preview {
-    let memories = [
-        Memory(content: .text("Renew passport before July trip."), createdAt: Date(), updatedAt: Date()),
-        Memory(content: .text("Sourdough starter — feed Saturday."), createdAt: Date().addingTimeInterval(-3600), updatedAt: Date()),
-    ]
-    return HomeView(
-        listMemories: ListMemoriesUseCase(repository: InMemoryMemoryRepository(seed: memories))
-    )
-    .preferredColorScheme(.dark)
-}
+// Preview removed — HomeView now requires a MemoryDetailViewModel factory
+// which depends on MediaStorage, which would pull OrbitMedia into the
+// Home feature package just for the preview. Reinstate when we have a
+// TestSupport package that vends an ephemeral environment.
