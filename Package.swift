@@ -126,7 +126,7 @@ let package = Package(
         ),
         .target(
             name: "OrbitMemoryDetailFeature",
-            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain"],
+            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitMedia"],
             path: "Packages/Features/MemoryDetail/Sources/OrbitMemoryDetailFeature",
             swiftSettings: swiftSettings
         ),

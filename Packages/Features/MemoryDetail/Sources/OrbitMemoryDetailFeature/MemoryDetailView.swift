@@ -145,27 +145,9 @@ public struct MemoryDetailView: View {
                 }
             }
         case .image(let caption):
-            OrbitCard {
-                VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
-                    Image(systemName: "photo")
-                        .font(.system(size: 32))
-                        .foregroundStyle(OrbitColor.textTertiary)
-                    Text(caption ?? "Photo")
-                        .font(OrbitTypography.body)
-                        .foregroundStyle(OrbitColor.textPrimary)
-                }
-            }
+            imageCard(systemFallback: "photo", caption: caption ?? "Photo")
         case .screenshot(let ocr):
-            OrbitCard {
-                VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
-                    Image(systemName: "rectangle.on.rectangle")
-                        .font(.system(size: 32))
-                        .foregroundStyle(OrbitColor.textTertiary)
-                    Text(ocr ?? "Screenshot")
-                        .font(OrbitTypography.body)
-                        .foregroundStyle(OrbitColor.textPrimary)
-                }
-            }
+            imageCard(systemFallback: "rectangle.on.rectangle", caption: ocr ?? "Screenshot")
         case .link(let url, let title, let summary):
             OrbitCard {
                 VStack(alignment: .leading, spacing: OrbitSpacing.xs) {
@@ -197,6 +179,34 @@ public struct MemoryDetailView: View {
                     Text(String(format: "%.4f, %.4f", latitude, longitude))
                         .font(OrbitTypography.footnote)
                         .foregroundStyle(OrbitColor.textSecondary)
+                }
+            }
+        }
+    }
+
+    /// Shared rendering for `.image` and `.screenshot` content. Renders the
+    /// actual photo when the view model has loaded it, otherwise falls back
+    /// to the system icon so the card never appears empty.
+    private func imageCard(systemFallback: String, caption: String) -> some View {
+        OrbitCard {
+            VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+                if let image = model.image {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: .infinity)
+                        .clipShape(.rect(cornerRadius: OrbitRadius.md))
+                } else {
+                    Image(systemName: systemFallback)
+                        .font(.system(size: 32))
+                        .foregroundStyle(OrbitColor.textTertiary)
+                        .frame(maxWidth: .infinity, minHeight: 120)
+                }
+                if !caption.isEmpty, caption != "Photo", caption != "Screenshot" {
+                    Text(caption)
+                        .font(OrbitTypography.body)
+                        .foregroundStyle(OrbitColor.textPrimary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
         }

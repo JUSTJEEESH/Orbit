@@ -43,8 +43,10 @@ public struct CaptureTypeSwitcher: View {
                             .font(.system(size: 13, weight: .semibold))
                         Text(kind.title)
                             .font(OrbitTypography.callout.weight(.semibold))
+                            .lineLimit(1)
+                            .fixedSize(horizontal: true, vertical: false)
                     }
-                    .padding(.horizontal, OrbitSpacing.md)
+                    .padding(.horizontal, OrbitSpacing.xs)
                     .padding(.vertical, OrbitSpacing.xs)
                     .frame(maxWidth: .infinity)
                     .foregroundStyle(selection == kind ? OrbitColor.textInverted : OrbitColor.textSecondary)

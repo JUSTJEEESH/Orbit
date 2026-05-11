@@ -276,26 +276,7 @@ private struct MemoryRow: View {
     }
 }
 
-#Preview {
-    let memories = [
-        Memory(content: .text("Renew passport before July Guatemala trip."),
-               createdAt: Date(), updatedAt: Date()),
-        Memory(content: .text("Drone business idea — start with realtor demo."),
-               createdAt: Date().addingTimeInterval(-3600), updatedAt: Date()),
-    ]
-    let repo = InMemoryMemoryRepository(seed: memories)
-    let delete = DeleteMemoryUseCase(repository: repo)
-    return TimelineView(
-        listMemories: ListMemoriesUseCase(repository: repo),
-        removeMemory: { id in try await delete(id: id) },
-        refreshToken: 0,
-        makeDetailViewModel: { id in
-            MemoryDetailViewModel(
-                memoryID: id,
-                repository: repo,
-                removeMemory: { try await delete(id: $0) }
-            )
-        }
-    )
-    .preferredColorScheme(.dark)
-}
+// Preview removed — the MemoryDetailViewModel now requires a MediaStorage
+// instance which would pull OrbitMedia into the Timeline feature package
+// just for the preview. Reinstate when we have a TestSupport package that
+// vends an ephemeral environment.
