@@ -1,36 +1,49 @@
 import SwiftUI
 import OrbitDesignSystem
 import OrbitDomain
+import OrbitKit
+import OrbitMemoryDetailFeature
 
 public struct TimelineView: View {
     private let listMemories: ListMemoriesUseCase
+    private let deleteMemory: DeleteMemoryUseCase
     private let refreshToken: Int
+    private let makeDetailViewModel: @MainActor (UUID) -> MemoryDetailViewModel
+    private let onDataChanged: @MainActor () -> Void
 
     @State private var memories: [Memory] = []
     @State private var loadState: LoadState = .idle
+    @State private var pendingDeletions: Set<UUID> = []
+    @Namespace private var heroNamespace
 
     private enum LoadState: Equatable { case idle, loading, loaded, failed(String) }
 
-    public init(listMemories: ListMemoriesUseCase, refreshToken: Int = 0) {
+    public init(
+        listMemories: ListMemoriesUseCase,
+        deleteMemory: DeleteMemoryUseCase,
+        refreshToken: Int = 0,
+        makeDetailViewModel: @escaping @MainActor (UUID) -> MemoryDetailViewModel,
+        onDataChanged: @escaping @MainActor () -> Void
+    ) {
         self.listMemories = listMemories
+        self.deleteMemory = deleteMemory
         self.refreshToken = refreshToken
+        self.makeDetailViewModel = makeDetailViewModel
+        self.onDataChanged = onDataChanged
     }
 
     public var body: some View {
-        OrbitScreen {
-            ScrollView {
-                VStack(alignment: .leading, spacing: OrbitSpacing.xxl) {
-                    Text("Timeline")
-                        .font(OrbitTypography.largeTitle)
-                        .padding(.top, OrbitSpacing.lg)
-
-                    content
-
-                    Spacer(minLength: 96)
+        NavigationStack {
+            content
+                .navigationTitle("Timeline")
+                .navigationBarTitleDisplayMode(.large)
+                .navigationDestination(for: MemoryDetailRoute.self) { route in
+                    MemoryDetailView(
+                        viewModel: makeDetailViewModel(route.memoryID),
+                        onDeleted: { onDataChanged() }
+                    )
+                    .navigationTransition(.zoom(sourceID: route.memoryID, in: heroNamespace))
                 }
-            }
-            .scrollIndicators(.hidden)
-            .refreshable { await reload() }
         }
         .task(id: refreshToken) { await reload() }
     }
@@ -41,7 +54,8 @@ public struct TimelineView: View {
         case .idle:
             emptyState
         case .loading:
-            if memories.isEmpty { emptyState } else { memoryList }
+            if memories.isEmpty { ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity) }
+            else { memoryList }
         case .loaded:
             if memories.isEmpty { emptyState } else { memoryList }
         case .failed(let message):
@@ -50,52 +64,89 @@ public struct TimelineView: View {
     }
 
     private var memoryList: some View {
-        LazyVStack(spacing: OrbitSpacing.md) {
-            ForEach(sections, id: \.title) { section in
-                VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+        List {
+            ForEach(sections, id: \.id) { section in
+                Section {
+                    ForEach(section.memories) { memory in
+                        NavigationLink(value: MemoryDetailRoute(memoryID: memory.id)) {
+                            MemoryRow(memory: memory)
+                        }
+                        .matchedTransitionSource(id: memory.id, in: heroNamespace)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets(
+                            top: OrbitSpacing.xxs,
+                            leading: 0,
+                            bottom: OrbitSpacing.xxs,
+                            trailing: 0
+                        ))
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) {
+                                deleteRow(memory)
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
+                    }
+                } header: {
                     Text(section.title)
                         .font(OrbitTypography.title3)
                         .foregroundStyle(OrbitColor.textPrimary)
-                        .padding(.top, OrbitSpacing.sm)
-                    ForEach(section.memories) { memory in
-                        MemoryRow(memory: memory)
-                    }
+                        .textCase(nil)
+                        .padding(.vertical, OrbitSpacing.xs)
+                        .listRowInsets(EdgeInsets(top: OrbitSpacing.lg, leading: 0, bottom: 0, trailing: 0))
+                        .listRowBackground(Color.clear)
                 }
             }
+
+            // Breathing room above the floating capture FAB.
+            Color.clear
+                .frame(height: 96)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
         }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .background(OrbitColor.background)
+        .refreshable { await reload() }
     }
 
     private var emptyState: some View {
-        VStack(alignment: .leading, spacing: OrbitSpacing.md) {
-            Text("Nothing here yet")
+        VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+            Text("This is where your memory lives")
                 .font(OrbitTypography.title2)
                 .foregroundStyle(OrbitColor.textPrimary)
-            Text("Tap the round button to capture your first memory. Orbit organizes the rest.")
+            Text("Tap the round button to save your first thought. Orbit organizes the rest.")
                 .font(OrbitTypography.body)
                 .foregroundStyle(OrbitColor.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.vertical, OrbitSpacing.xxl)
+        .padding(.horizontal, OrbitSpacing.pageHorizontal)
+        .padding(.vertical, OrbitSpacing.xxxl)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func errorState(_ message: String) -> some View {
-        VStack(alignment: .leading, spacing: OrbitSpacing.md) {
+        VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
             Text("Couldn't load timeline")
                 .font(OrbitTypography.title3)
             Text(message)
                 .font(OrbitTypography.callout)
                 .foregroundStyle(OrbitColor.textSecondary)
         }
+        .padding(.horizontal, OrbitSpacing.pageHorizontal)
     }
 
     private var sections: [TimelineSection] {
-        let grouped = Dictionary(grouping: memories) { memory in
+        let visible = memories.filter { !pendingDeletions.contains($0.id) }
+        let grouped = Dictionary(grouping: visible) { memory in
             Calendar.current.startOfDay(for: memory.createdAt)
         }
         return grouped
             .sorted { $0.key > $1.key }
             .map { day, items in
                 TimelineSection(
+                    id: day,
                     title: Self.sectionTitle(for: day),
                     memories: items.sorted { $0.createdAt > $1.createdAt }
                 )
@@ -112,16 +163,32 @@ public struct TimelineView: View {
     private func reload() async {
         loadState = .loading
         do {
-            let result = try await listMemories()
-            memories = result
+            memories = try await listMemories()
             loadState = .loaded
         } catch {
             loadState = .failed(String(describing: error))
         }
     }
+
+    private func deleteRow(_ memory: Memory) {
+        Haptics.play(.warning)
+        // Optimistic remove so the row animates away immediately. If the
+        // delete fails we restore from the next reload.
+        pendingDeletions.insert(memory.id)
+        Task { @MainActor in
+            do {
+                try await deleteMemory(id: memory.id)
+                memories.removeAll { $0.id == memory.id }
+                onDataChanged()
+            } catch {
+                pendingDeletions.remove(memory.id)
+            }
+        }
+    }
 }
 
-private struct TimelineSection {
+private struct TimelineSection: Identifiable {
+    let id: Date
     let title: String
     let memories: [Memory]
 }
@@ -136,10 +203,12 @@ private struct MemoryRow: View {
                     .font(OrbitTypography.body)
                     .foregroundStyle(OrbitColor.textPrimary)
                     .lineLimit(4)
+                    .multilineTextAlignment(.leading)
 
                 metadataChips
             }
         }
+        .contentShape(.rect(cornerRadius: OrbitRadius.lg))
     }
 
     @ViewBuilder
@@ -161,8 +230,6 @@ private struct MemoryRow: View {
     }
 
     private var headline: String {
-        // Prefer the AI summary when available — it's calmer and more
-        // scan-friendly than raw text — falling back to original content.
         if let summary = memory.ai.summary, !summary.isEmpty { return summary }
         switch memory.content {
         case .text(let s):                                   return s
@@ -208,10 +275,19 @@ private struct MemoryRow: View {
         Memory(content: .text("Drone business idea — start with realtor demo."),
                createdAt: Date().addingTimeInterval(-3600), updatedAt: Date()),
     ]
+    let repo = InMemoryMemoryRepository(seed: memories)
     return TimelineView(
-        listMemories: ListMemoriesUseCase(
-            repository: InMemoryMemoryRepository(seed: memories)
-        )
+        listMemories: ListMemoriesUseCase(repository: repo),
+        deleteMemory: DeleteMemoryUseCase(repository: repo),
+        refreshToken: 0,
+        makeDetailViewModel: { id in
+            MemoryDetailViewModel(
+                memoryID: id,
+                repository: repo,
+                deleteMemory: DeleteMemoryUseCase(repository: repo)
+            )
+        },
+        onDataChanged: {}
     )
     .preferredColorScheme(.dark)
 }

@@ -76,3 +76,5 @@ targets:
         product: OrbitCaptureFeature
       - package: OrbitWorkspace
         product: OrbitSettingsFeature
+      - package: OrbitWorkspace
+        product: OrbitMemoryDetailFeature

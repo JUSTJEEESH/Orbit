@@ -1,61 +1,271 @@
 import SwiftUI
 import OrbitDesignSystem
 import OrbitDomain
+import OrbitKit
 
 public struct HomeView: View {
-    public init() {}
+    private let listMemories: ListMemoriesUseCase
+    private let refreshToken: Int
+    private let clock: any OrbitClock
+
+    @State private var memories: [Memory] = []
+    @State private var loadState: LoadState = .idle
+
+    private enum LoadState: Equatable { case idle, loading, loaded, failed(String) }
+
+    public init(
+        listMemories: ListMemoriesUseCase,
+        refreshToken: Int = 0,
+        clock: any OrbitClock = SystemClock()
+    ) {
+        self.listMemories = listMemories
+        self.refreshToken = refreshToken
+        self.clock = clock
+    }
 
     public var body: some View {
         OrbitScreen {
             ScrollView {
                 VStack(alignment: .leading, spacing: OrbitSpacing.xxl) {
                     greeting
-                    todaySection
-                    resurfacingSection
-                    Spacer(minLength: 96) // breathing room above the FAB
+                    content
+                    Spacer(minLength: 96)
                 }
                 .padding(.top, OrbitSpacing.lg)
             }
             .scrollIndicators(.hidden)
+            .refreshable { await reload() }
         }
+        .task(id: refreshToken) { await reload() }
     }
+
+    // MARK: - Greeting
 
     private var greeting: some View {
         VStack(alignment: .leading, spacing: OrbitSpacing.xxs) {
-            Text("Good morning")
+            Text(timeOfDayLabel)
                 .font(OrbitTypography.footnote)
                 .foregroundStyle(OrbitColor.textSecondary)
-            Text("Your second brain")
+            Text(headline)
                 .font(OrbitTypography.largeTitle)
                 .foregroundStyle(OrbitColor.textPrimary)
         }
     }
 
+    private var timeOfDayLabel: String {
+        let hour = Calendar.current.component(.hour, from: clock.now())
+        switch hour {
+        case 5..<12:  return "Good morning"
+        case 12..<17: return "Good afternoon"
+        case 17..<22: return "Good evening"
+        default:      return "Hello"
+        }
+    }
+
+    private var headline: String {
+        memories.isEmpty
+            ? "Your second brain"
+            : "\(memories.count) \(memories.count == 1 ? "memory" : "memories"), all in one place"
+    }
+
+    // MARK: - Content switch
+
+    @ViewBuilder
+    private var content: some View {
+        switch loadState {
+        case .idle:
+            emptyState
+        case .loading, .loaded:
+            if memories.isEmpty {
+                emptyState
+            } else {
+                loadedContent
+            }
+        case .failed(let message):
+            errorState(message)
+        }
+    }
+
+    private var loadedContent: some View {
+        VStack(alignment: .leading, spacing: OrbitSpacing.xxl) {
+            todaySection
+            recentSection
+        }
+    }
+
+    // MARK: - Today
+
     private var todaySection: some View {
-        VStack(alignment: .leading, spacing: OrbitSpacing.md) {
-            OrbitSectionHeader("Today", subtitle: "Nothing on your plate yet")
-            OrbitCard {
-                VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
-                    Text("Capture your first memory")
-                        .font(OrbitTypography.bodyEmphasized)
-                    Text("Tap the round button below to start. Orbit organizes the rest.")
-                        .font(OrbitTypography.callout)
-                        .foregroundStyle(OrbitColor.textSecondary)
+        let todays = memoriesFromToday
+        return VStack(alignment: .leading, spacing: OrbitSpacing.md) {
+            OrbitSectionHeader(
+                "Today",
+                subtitle: todays.isEmpty
+                    ? "Nothing captured yet today"
+                    : "\(todays.count) \(todays.count == 1 ? "capture" : "captures")"
+            )
+
+            if todays.isEmpty {
+                OrbitCard {
+                    VStack(alignment: .leading, spacing: OrbitSpacing.xs) {
+                        Text("A blank canvas")
+                            .font(OrbitTypography.bodyEmphasized)
+                            .foregroundStyle(OrbitColor.textPrimary)
+                        Text("Capture something the moment it crosses your mind. Orbit handles the rest.")
+                            .font(OrbitTypography.callout)
+                            .foregroundStyle(OrbitColor.textSecondary)
+                    }
+                }
+            } else {
+                OrbitCard {
+                    todaySummary(todays)
                 }
             }
         }
     }
 
-    private var resurfacingSection: some View {
+    private func todaySummary(_ todays: [Memory]) -> some View {
+        let kinds = Dictionary(grouping: todays) { $0.content.kind }
+        let categories = todays.compactMap(\.ai.category).filter { !$0.isEmpty }
+        return VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+            HStack(spacing: OrbitSpacing.xs) {
+                ForEach(MemoryContentKind.allCases, id: \.self) { kind in
+                    if let count = kinds[kind]?.count, count > 0 {
+                        OrbitChip("\(count) \(label(for: kind))", systemImage: icon(for: kind))
+                    }
+                }
+            }
+            if !categories.isEmpty {
+                Divider().background(OrbitColor.separator)
+                HStack(spacing: OrbitSpacing.xs) {
+                    ForEach(Array(Set(categories)).sorted(), id: \.self) { category in
+                        OrbitChip(category, style: .accent)
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Recent
+
+    private var recentSection: some View {
         VStack(alignment: .leading, spacing: OrbitSpacing.md) {
-            OrbitSectionHeader("Resurfaced")
-            Text("Orbit will surface forgotten ideas here as your memory grows.")
-                .font(OrbitTypography.callout)
+            OrbitSectionHeader("Recent")
+            ForEach(memories.prefix(3)) { memory in
+                OrbitCard(elevation: .resting) {
+                    VStack(alignment: .leading, spacing: OrbitSpacing.xs) {
+                        Text(headlineText(for: memory))
+                            .font(OrbitTypography.body)
+                            .foregroundStyle(OrbitColor.textPrimary)
+                            .lineLimit(3)
+                        HStack(spacing: OrbitSpacing.xs) {
+                            OrbitChip(label(for: memory.content.kind), systemImage: icon(for: memory.content.kind))
+                            if let category = memory.ai.category, !category.isEmpty {
+                                OrbitChip(category, style: .accent)
+                            }
+                            Spacer(minLength: 0)
+                            Text(memory.createdAt.formatted(.relative(presentation: .named)))
+                                .font(OrbitTypography.footnote)
+                                .foregroundStyle(OrbitColor.textSecondary)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Empty / error
+
+    private var emptyState: some View {
+        VStack(alignment: .leading, spacing: OrbitSpacing.md) {
+            Text("A calm place to land")
+                .font(OrbitTypography.title2)
+                .foregroundStyle(OrbitColor.textPrimary)
+            Text("Tap the circle below to add your first thought. Orbit organizes the rest — quietly.")
+                .font(OrbitTypography.body)
                 .foregroundStyle(OrbitColor.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: OrbitSpacing.xs) {
+                Image(systemName: "arrow.down")
+                    .font(.system(size: 14, weight: .semibold))
+                Text("Capture")
+                    .font(OrbitTypography.caption)
+            }
+            .foregroundStyle(OrbitColor.textTertiary)
+            .padding(.top, OrbitSpacing.sm)
+        }
+    }
+
+    private func errorState(_ message: String) -> some View {
+        VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+            Text("Couldn't load home")
+                .font(OrbitTypography.title3)
+            Text(message)
+                .font(OrbitTypography.footnote)
+                .foregroundStyle(OrbitColor.textSecondary)
+        }
+    }
+
+    // MARK: - Helpers
+
+    private var memoriesFromToday: [Memory] {
+        let calendar = Calendar.current
+        let today = clock.now()
+        return memories.filter { calendar.isDate($0.createdAt, inSameDayAs: today) }
+    }
+
+    private func headlineText(for memory: Memory) -> String {
+        if let summary = memory.ai.summary, !summary.isEmpty { return summary }
+        switch memory.content {
+        case .text(let s):                                   return s
+        case .voiceNote(let transcript, _):                  return transcript ?? "Voice note"
+        case .image(let caption):                            return caption ?? "Photo"
+        case .link(_, let title, let summary):               return summary ?? title ?? "Link"
+        case .screenshot(let ocr):                           return ocr ?? "Screenshot"
+        case .location(let name, _, _):                      return name ?? "Location"
+        }
+    }
+
+    private func label(for kind: MemoryContentKind) -> String {
+        switch kind {
+        case .text:        return "note"
+        case .voiceNote:   return "voice"
+        case .image:       return "photo"
+        case .link:        return "link"
+        case .screenshot:  return "screenshot"
+        case .location:    return "place"
+        }
+    }
+
+    private func icon(for kind: MemoryContentKind) -> String {
+        switch kind {
+        case .text:        return "text.alignleft"
+        case .voiceNote:   return "waveform"
+        case .image:       return "photo"
+        case .link:        return "link"
+        case .screenshot:  return "rectangle.on.rectangle"
+        case .location:    return "mappin"
+        }
+    }
+
+    private func reload() async {
+        loadState = .loading
+        do {
+            memories = try await listMemories()
+            loadState = .loaded
+        } catch {
+            loadState = .failed(String(describing: error))
         }
     }
 }
 
 #Preview {
-    HomeView().preferredColorScheme(.dark)
+    let memories = [
+        Memory(content: .text("Renew passport before July trip."), createdAt: Date(), updatedAt: Date()),
+        Memory(content: .text("Sourdough starter — feed Saturday."), createdAt: Date().addingTimeInterval(-3600), updatedAt: Date()),
+    ]
+    return HomeView(
+        listMemories: ListMemoriesUseCase(repository: InMemoryMemoryRepository(seed: memories))
+    )
+    .preferredColorScheme(.dark)
 }

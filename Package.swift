@@ -27,6 +27,7 @@ let package = Package(
         .library(name: "OrbitSearchFeature", targets: ["OrbitSearchFeature"]),
         .library(name: "OrbitCaptureFeature", targets: ["OrbitCaptureFeature"]),
         .library(name: "OrbitSettingsFeature", targets: ["OrbitSettingsFeature"]),
+        .library(name: "OrbitMemoryDetailFeature", targets: ["OrbitMemoryDetailFeature"]),
     ],
     targets: [
         // MARK: - Cross-cutting
@@ -84,7 +85,7 @@ let package = Package(
         ),
         .target(
             name: "OrbitTimelineFeature",
-            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain"],
+            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitMemoryDetailFeature"],
             path: "Packages/Features/Timeline/Sources/OrbitTimelineFeature",
             swiftSettings: swiftSettings
         ),
@@ -104,6 +105,12 @@ let package = Package(
             name: "OrbitSettingsFeature",
             dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitAI"],
             path: "Packages/Features/Settings/Sources/OrbitSettingsFeature",
+            swiftSettings: swiftSettings
+        ),
+        .target(
+            name: "OrbitMemoryDetailFeature",
+            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain"],
+            path: "Packages/Features/MemoryDetail/Sources/OrbitMemoryDetailFeature",
             swiftSettings: swiftSettings
         ),
 
