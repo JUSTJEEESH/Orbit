@@ -19,19 +19,22 @@ public struct DraftStore: Sendable {
     }
 
     public static let userDefaults: DraftStore = {
+        // We deliberately reference `UserDefaults.standard` inside each
+        // closure rather than capturing it: `UserDefaults` isn't Sendable
+        // and these closures must be, but the `.standard` accessor is
+        // documented thread-safe.
         let key = "orbit.capture.textDraft"
-        let defaults = UserDefaults.standard
         return DraftStore(
-            loadTextDraft: { defaults.string(forKey: key) },
+            loadTextDraft: { UserDefaults.standard.string(forKey: key) },
             saveTextDraft: { value in
                 let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
                 if trimmed.isEmpty {
-                    defaults.removeObject(forKey: key)
+                    UserDefaults.standard.removeObject(forKey: key)
                 } else {
-                    defaults.set(value, forKey: key)
+                    UserDefaults.standard.set(value, forKey: key)
                 }
             },
-            clearTextDraft: { defaults.removeObject(forKey: key) }
+            clearTextDraft: { UserDefaults.standard.removeObject(forKey: key) }
         )
     }()
 
