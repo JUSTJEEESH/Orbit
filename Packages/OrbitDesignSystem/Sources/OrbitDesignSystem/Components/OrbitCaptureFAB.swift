@@ -19,18 +19,18 @@ public struct OrbitCaptureFAB: View {
         } label: {
             Image(systemName: "plus")
                 .font(.system(size: 26, weight: .semibold))
-                .foregroundStyle(OrbitColor.textInverted)
+                // Plus uses textPrimary so it inverts with light/dark
+                // mode and stays high-contrast against whatever is
+                // refracting through the glass.
+                .foregroundStyle(OrbitColor.textPrimary)
                 .frame(width: 64, height: 64)
-                // iOS 26 Liquid Glass — the glass IS the surface. Tinted
-                // toward textPrimary so the FAB still reads as Orbit's
-                // dark control, but content underneath refracts through
-                // the orb (timeline cells, recap card, etc.). Without
-                // a tinted glass, an opaque background would block
-                // refraction and the effect would be invisible.
-                .glassEffect(
-                    .regular.tint(OrbitColor.textPrimary).interactive(),
-                    in: .circle
-                )
+                // iOS 26 Liquid Glass — pure translucent material, no
+                // tint. The orb picks up whatever the user scrolls
+                // behind it: timeline rows, the recap card's serif
+                // text, the home greeting. Tinting white (as we did
+                // before) makes the orb look solid because the bright
+                // tint masks any refraction.
+                .glassEffect(.regular.interactive(), in: .circle)
                 .orbitShadow(.lifted)
         }
         .buttonStyle(OrbitPressedButtonStyle())
