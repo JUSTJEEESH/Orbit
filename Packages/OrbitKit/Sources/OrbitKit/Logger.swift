@@ -19,6 +19,6 @@ public enum OrbitLog {
     public static let sync = Logger(subsystem: subsystem, category: "sync")
     public static let ui = Logger(subsystem: subsystem, category: "ui")
 
-    /// Signpost-friendly logger for Instruments-driven performance measurement.
-    public static let signpost = Logger(subsystem: subsystem, category: .pointsOfInterest)
+    /// Use with `OSSignposter` for Instruments-driven performance measurement.
+    public static let signposter = OSSignposter(subsystem: subsystem, category: "signpost")
 }
