@@ -52,7 +52,14 @@ struct RootView: View {
                     account: env.account,
                     entitlements: env.entitlements,
                     currentTheme: env.themeService.theme,
-                    onSelectTheme: { env.themeService.select($0) },
+                    onSelectTheme: { theme in
+                        env.themeService.select(theme)
+                        // Mirror the in-app accent to the home-screen
+                        // icon. No-op if the variant PNG isn't bundled.
+                        if let variant = IconService.Variant(themeID: theme.id) {
+                            await env.iconService.select(variant)
+                        }
+                    },
                     onPresentPaywall: { env.requestedModal = .paywall },
                     onDeleteAccount: { try await env.wipeAccountAndData() },
                     onReindexAll: { await env.reenrichAllMemories() },

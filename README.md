@@ -105,6 +105,36 @@ available.
 - `orbit://capture` — opens the capture sheet
 - `orbit://search` — switches to the search tab
 
+## Theme + alternate icons
+
+Settings → Appearance offers four themes (Aurora / Sunset / Cosmic /
+Forest). Each theme tile sets the in-app primary accent **and** tries
+to switch the home-screen icon to the matching variant.
+
+The primary AppIcon (Aurora) lives in
+`App/Resources/Assets.xcassets/AppIcon.appiconset`. The three alternate
+variants are bare PNG files at the bundle root, referenced from
+`project.yml`'s `CFBundleAlternateIcons` block.
+
+To activate the alternates, drop these PNGs into `App/Resources/`:
+
+```
+App/Resources/
+  Orbit-Sunset.png       (120 × 120)
+  Orbit-Sunset@2x.png    (180 × 180)
+  Orbit-Cosmic.png       (120 × 120)
+  Orbit-Cosmic@2x.png    (180 × 180)
+  Orbit-Forest.png       (120 × 120)
+  Orbit-Forest@2x.png    (180 × 180)
+```
+
+iOS picks the right size per device. Each PNG should be the
+themed-recolor of the Aurora icon — same artwork, palette swapped.
+
+Until you add the PNGs, the theme picker works for the in-app accent
+but the home-screen icon stays put — `IconService.select(_:)`
+silently no-ops when the variant isn't bundled.
+
 ## Sign in with Apple
 
 The Apple Sign-In entitlement is declared on the Orbit target. SIWA works

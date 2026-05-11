@@ -10,7 +10,7 @@ public struct SettingsView: View {
     @Bindable private var account: AccountService
     @Bindable private var entitlements: EntitlementService
     private let currentTheme: OrbitTheme
-    private let onSelectTheme: @MainActor (OrbitTheme) -> Void
+    private let onSelectTheme: @MainActor @Sendable (OrbitTheme) async -> Void
     private let onPresentPaywall: @MainActor () -> Void
     private let onDeleteAccount: @MainActor @Sendable () async throws -> Void
     private let onReindexAll: @MainActor @Sendable () async -> Void
@@ -25,7 +25,7 @@ public struct SettingsView: View {
         account: AccountService,
         entitlements: EntitlementService,
         currentTheme: OrbitTheme,
-        onSelectTheme: @escaping @MainActor (OrbitTheme) -> Void,
+        onSelectTheme: @escaping @MainActor @Sendable (OrbitTheme) async -> Void,
         onPresentPaywall: @escaping @MainActor () -> Void,
         onDeleteAccount: @escaping @MainActor @Sendable () async throws -> Void,
         onReindexAll: @escaping @MainActor @Sendable () async -> Void,
@@ -167,7 +167,7 @@ public struct SettingsView: View {
         let isSelected = theme == currentTheme
         return Button {
             Haptics.play(.selection)
-            onSelectTheme(theme)
+            Task { @MainActor in await onSelectTheme(theme) }
         } label: {
             VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
                 ZStack(alignment: .topTrailing) {
