@@ -89,16 +89,19 @@ public final class CaptureViewModel {
         }
     }
 
-    /// Returns `true` on a successful save so the caller can dismiss.
-    public func save() async -> Bool {
-        guard canSave else { return false }
+    /// Returns the saved memory's ID on success so the caller can schedule
+    /// AI enrichment, or `nil` if the save failed or there was nothing to
+    /// save.
+    public func save() async -> UUID? {
+        guard canSave else { return nil }
         isSaving = true
         errorMessage = nil
         do {
+            let memory: Memory
             switch mode {
             case .text:
                 let text = textDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-                _ = try await captureMemory(content: .text(text))
+                memory = try await captureMemory(content: .text(text))
                 drafts.clearTextDraft()
                 textDraft = ""
 
@@ -112,7 +115,7 @@ public final class CaptureViewModel {
                     byteSize: file.byteSize,
                     createdAt: Date()
                 )
-                _ = try await captureMemory(
+                memory = try await captureMemory(
                     content: .voiceNote(transcript: transcript, duration: duration),
                     media: [asset]
                 )
@@ -128,7 +131,7 @@ public final class CaptureViewModel {
                     createdAt: Date()
                 )
                 let caption = photoCaption.trimmingCharacters(in: .whitespacesAndNewlines)
-                _ = try await captureMemory(
+                memory = try await captureMemory(
                     content: .image(caption: caption.isEmpty ? nil : caption),
                     media: [asset]
                 )
@@ -140,7 +143,7 @@ public final class CaptureViewModel {
                 guard let url = URL(string: raw), url.scheme != nil else {
                     throw CaptureError.invalidState
                 }
-                _ = try await captureMemory(
+                memory = try await captureMemory(
                     content: .link(url: url, title: linkPreview?.title, summary: linkPreview?.summary)
                 )
                 linkText = ""
@@ -148,12 +151,12 @@ public final class CaptureViewModel {
             }
             isSaving = false
             Haptics.play(.success)
-            return true
+            return memory.id
         } catch {
             isSaving = false
             errorMessage = "Couldn't save. Try again."
             Haptics.play(.failure)
-            return false
+            return nil
         }
     }
 

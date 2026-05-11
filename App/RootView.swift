@@ -29,8 +29,9 @@ struct RootView: View {
                         speechTranscriber: env.speechTranscriber,
                         linkFetcher: env.linkFetcher
                     ),
-                    onCompleted: {
+                    onCompleted: { memoryID in
                         env.memoriesDidChange()
+                        env.scheduleEnrichment(for: memoryID)
                         presentedModal = nil
                     },
                     onCancel: { presentedModal = nil }

@@ -31,6 +31,7 @@ public struct RawCapture: Sendable {
 
 public struct ClassificationResult: Sendable {
     public let kind: MemoryContentKind
+    public let category: String?
     public let suggestedTags: [String]
     public let priority: MemoryAIMetadata.Priority
     public let summary: String?
@@ -40,6 +41,7 @@ public struct ClassificationResult: Sendable {
 
     public init(
         kind: MemoryContentKind,
+        category: String?,
         suggestedTags: [String],
         priority: MemoryAIMetadata.Priority,
         summary: String?,
@@ -48,6 +50,7 @@ public struct ClassificationResult: Sendable {
         extractedLocations: [String]
     ) {
         self.kind = kind
+        self.category = category
         self.suggestedTags = suggestedTags
         self.priority = priority
         self.summary = summary

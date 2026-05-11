@@ -65,6 +65,8 @@ targets:
       - package: OrbitWorkspace
         product: OrbitMedia
       - package: OrbitWorkspace
+        product: OrbitAI
+      - package: OrbitWorkspace
         product: OrbitHomeFeature
       - package: OrbitWorkspace
         product: OrbitTimelineFeature

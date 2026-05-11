@@ -1,5 +1,6 @@
 import SwiftUI
 import PhotosUI
+import Foundation
 import OrbitDesignSystem
 import OrbitDomain
 import OrbitMedia
@@ -7,7 +8,7 @@ import OrbitKit
 
 public struct CaptureView: View {
     @State private var model: CaptureViewModel
-    private let onCompleted: @MainActor () -> Void
+    private let onCompleted: @MainActor (UUID) -> Void
     private let onCancel: @MainActor () -> Void
 
     @FocusState private var textFocus: Bool
@@ -15,7 +16,7 @@ public struct CaptureView: View {
 
     public init(
         viewModel: CaptureViewModel,
-        onCompleted: @escaping @MainActor () -> Void,
+        onCompleted: @escaping @MainActor (UUID) -> Void,
         onCancel: @escaping @MainActor () -> Void
     ) {
         self._model = State(initialValue: viewModel)
@@ -284,8 +285,9 @@ public struct CaptureView: View {
 
     private func save() {
         Task { @MainActor in
-            let success = await model.save()
-            if success { onCompleted() }
+            if let memoryID = await model.save() {
+                onCompleted(memoryID)
+            }
         }
     }
 

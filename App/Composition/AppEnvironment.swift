@@ -4,9 +4,10 @@ import OrbitKit
 import OrbitDomain
 import OrbitPersistence
 import OrbitMedia
+import OrbitAI
 
 /// The composition root. Holds long-lived services (repositories, clocks,
-/// media services) and pre-constructed use cases ready to be invoked by
+/// media services, AI) and pre-constructed use cases ready to be invoked by
 /// features. Always read via `@Environment(AppEnvironment.self)` — feature
 /// code must never construct one for itself.
 @MainActor
@@ -23,12 +24,16 @@ final class AppEnvironment {
     let speechTranscriber: SpeechTranscriber
     let linkFetcher: LinkPreviewFetcher
 
+    let ai: any AIService
+    let ocr: OCRService
+
     let captureMemory: CaptureMemoryUseCase
     let listMemories: ListMemoriesUseCase
     let updateMemory: UpdateMemoryUseCase
     let deleteMemory: DeleteMemoryUseCase
     let linkTask: LinkTaskToMemoryUseCase
     let toggleTask: ToggleTaskUseCase
+    let enrichMemory: EnrichMemoryUseCase
 
     /// Bumped whenever the memory collection changes. Feature views observe
     /// it via `.task(id: env.memoryListVersion)` to refetch lazily — until
@@ -39,6 +44,17 @@ final class AppEnvironment {
         memoryListVersion &+= 1
     }
 
+    /// Fire-and-forget enrichment of a freshly captured memory. The task
+    /// re-bumps the list version when done so the timeline picks up the
+    /// completed AI metadata.
+    func scheduleEnrichment(for memoryID: UUID) {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            await self.enrichMemory(memoryID: memoryID)
+            self.memoriesDidChange()
+        }
+    }
+
     init(
         appConfig: AppConfig,
         clock: any OrbitClock,
@@ -47,7 +63,9 @@ final class AppEnvironment {
         insights: any InsightRepository,
         mediaStorage: MediaStorage,
         speechTranscriber: SpeechTranscriber,
-        linkFetcher: LinkPreviewFetcher
+        linkFetcher: LinkPreviewFetcher,
+        ai: any AIService,
+        ocr: OCRService
     ) {
         self.appConfig = appConfig
         self.clock = clock
@@ -57,6 +75,8 @@ final class AppEnvironment {
         self.mediaStorage = mediaStorage
         self.speechTranscriber = speechTranscriber
         self.linkFetcher = linkFetcher
+        self.ai = ai
+        self.ocr = ocr
 
         self.captureMemory = CaptureMemoryUseCase(repository: memories, clock: clock)
         self.listMemories = ListMemoriesUseCase(repository: memories)
@@ -64,17 +84,21 @@ final class AppEnvironment {
         self.deleteMemory = DeleteMemoryUseCase(repository: memories)
         self.linkTask = LinkTaskToMemoryUseCase(memories: memories, tasks: tasks, clock: clock)
         self.toggleTask = ToggleTaskUseCase(repository: tasks, clock: clock)
+        self.enrichMemory = EnrichMemoryUseCase(ai: ai, memories: memories, clock: clock)
     }
 }
 
 extension AppEnvironment {
-    /// Production environment backed by SwiftData on local storage. CloudKit
-    /// mirroring is wired up but disabled until the iCloud container is
-    /// provisioned in App Store Connect — flip `.onDisk` to
-    /// `.cloudKit(containerIdentifier:)` when ready.
+    /// Production environment: SwiftData on local storage + Foundation Models
+    /// adapter as primary AI with a cloud stub fallback that currently throws
+    /// (real cloud proxy lands in a later phase).
     static func makeProduction(appConfig: AppConfig) throws -> AppEnvironment {
         let container = try ModelContainerFactory.makeContainer(mode: .onDisk)
         let storage = try MediaStorage()
+        let ai = AIServicePipeline([
+            FoundationModelsAdapter(),
+            CloudAIService(),
+        ])
         return AppEnvironment(
             appConfig: appConfig,
             clock: SystemClock(),
@@ -83,15 +107,13 @@ extension AppEnvironment {
             insights: SwiftDataInsightRepository(modelContainer: container),
             mediaStorage: storage,
             speechTranscriber: SpeechTranscriber(),
-            linkFetcher: LinkPreviewFetcher()
+            linkFetcher: LinkPreviewFetcher(),
+            ai: ai,
+            ocr: OCRService()
         )
     }
 
-    /// Environment backed by in-memory fakes for SwiftUI previews and crash
-    /// recovery. Media services use a fresh ephemeral storage root.
     static func makePreview(seed: [Memory] = []) -> AppEnvironment {
-        // Force-try is acceptable here: previews fail loudly and obviously if
-        // the system temporary directory itself is unwritable.
         let storage = try! MediaStorage(
             root: FileManager.default.temporaryDirectory
                 .appendingPathComponent("orbit-preview-\(UUID().uuidString)", isDirectory: true)
@@ -112,7 +134,9 @@ extension AppEnvironment {
             insights: InMemoryInsightRepository(),
             mediaStorage: storage,
             speechTranscriber: SpeechTranscriber(),
-            linkFetcher: LinkPreviewFetcher()
+            linkFetcher: LinkPreviewFetcher(),
+            ai: MockAIService(),
+            ocr: OCRService()
         )
     }
 }

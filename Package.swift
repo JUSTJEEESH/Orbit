@@ -21,6 +21,7 @@ let package = Package(
         .library(name: "OrbitDomain", targets: ["OrbitDomain"]),
         .library(name: "OrbitPersistence", targets: ["OrbitPersistence"]),
         .library(name: "OrbitMedia", targets: ["OrbitMedia"]),
+        .library(name: "OrbitAI", targets: ["OrbitAI"]),
         .library(name: "OrbitHomeFeature", targets: ["OrbitHomeFeature"]),
         .library(name: "OrbitTimelineFeature", targets: ["OrbitTimelineFeature"]),
         .library(name: "OrbitSearchFeature", targets: ["OrbitSearchFeature"]),
@@ -63,6 +64,14 @@ let package = Package(
             name: "OrbitMedia",
             dependencies: ["OrbitDomain"],
             path: "Packages/OrbitMedia/Sources/OrbitMedia",
+            swiftSettings: swiftSettings
+        ),
+
+        // MARK: - AI (Foundation Models, entity extraction, OCR)
+        .target(
+            name: "OrbitAI",
+            dependencies: ["OrbitDomain"],
+            path: "Packages/OrbitAI/Sources/OrbitAI",
             swiftSettings: swiftSettings
         ),
 
@@ -121,6 +130,12 @@ let package = Package(
             name: "OrbitMediaTests",
             dependencies: ["OrbitMedia"],
             path: "Packages/OrbitMedia/Tests/OrbitMediaTests",
+            swiftSettings: swiftSettings
+        ),
+        .testTarget(
+            name: "OrbitAITests",
+            dependencies: ["OrbitAI", "OrbitDomain"],
+            path: "Packages/OrbitAI/Tests/OrbitAITests",
             swiftSettings: swiftSettings
         ),
     ]

@@ -131,22 +131,39 @@ private struct MemoryRow: View {
 
     var body: some View {
         OrbitCard(elevation: .resting) {
-            VStack(alignment: .leading, spacing: OrbitSpacing.xs) {
+            VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
                 Text(headline)
                     .font(OrbitTypography.body)
                     .foregroundStyle(OrbitColor.textPrimary)
                     .lineLimit(4)
-                HStack(spacing: OrbitSpacing.xs) {
-                    OrbitChip(kindLabel, systemImage: kindIcon)
-                    Text(timestamp)
-                        .font(OrbitTypography.footnote)
-                        .foregroundStyle(OrbitColor.textSecondary)
-                }
+
+                metadataChips
             }
         }
     }
 
+    @ViewBuilder
+    private var metadataChips: some View {
+        HStack(spacing: OrbitSpacing.xs) {
+            OrbitChip(kindLabel, systemImage: kindIcon)
+            if let category = memory.ai.category, !category.isEmpty {
+                OrbitChip(category, style: .accent)
+            }
+            if memory.ai.status == .processing {
+                OrbitChip("Organizing…", style: .neutral)
+                    .opacity(0.7)
+            }
+            Spacer(minLength: 0)
+            Text(timestamp)
+                .font(OrbitTypography.footnote)
+                .foregroundStyle(OrbitColor.textSecondary)
+        }
+    }
+
     private var headline: String {
+        // Prefer the AI summary when available — it's calmer and more
+        // scan-friendly than raw text — falling back to original content.
+        if let summary = memory.ai.summary, !summary.isEmpty { return summary }
         switch memory.content {
         case .text(let s):                                   return s
         case .voiceNote(let transcript, _):                  return transcript ?? "Voice note"
