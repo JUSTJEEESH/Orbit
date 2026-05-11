@@ -29,14 +29,16 @@ struct RecentMemoryProvider: TimelineProvider {
     }
 
     func getSnapshot(in context: Context, completion: @escaping (RecentMemoryEntry) -> Void) {
-        Task {
+        // MainActor isolation lets us capture the non-Sendable completion
+        // handler that WidgetKit hands us without tripping Swift 6.
+        Task { @MainActor in
             let memory = await fetchLatest()
             completion(RecentMemoryEntry(date: Date(), memory: memory))
         }
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<RecentMemoryEntry>) -> Void) {
-        Task {
+        Task { @MainActor in
             let memory = await fetchLatest()
             let entry = RecentMemoryEntry(date: Date(), memory: memory)
             // The app calls WidgetCenter.reloadAllTimelines() when data
