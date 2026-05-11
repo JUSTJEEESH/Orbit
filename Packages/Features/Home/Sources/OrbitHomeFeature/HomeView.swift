@@ -153,25 +153,35 @@ public struct HomeView: View {
             OrbitSectionHeader("Recent")
             ForEach(memories.prefix(3)) { memory in
                 OrbitCard(elevation: .resting) {
-                    VStack(alignment: .leading, spacing: OrbitSpacing.xs) {
-                        Text(headlineText(for: memory))
-                            .font(OrbitTypography.body)
-                            .foregroundStyle(OrbitColor.textPrimary)
-                            .lineLimit(3)
-                        HStack(spacing: OrbitSpacing.xs) {
-                            OrbitChip(label(for: memory.content.kind), systemImage: icon(for: memory.content.kind))
-                            if let category = memory.ai.category, !category.isEmpty {
-                                OrbitChip(category, style: .accent)
-                            }
-                            Spacer(minLength: 0)
-                            Text(memory.createdAt.formatted(.relative(presentation: .named)))
-                                .font(OrbitTypography.footnote)
-                                .foregroundStyle(OrbitColor.textSecondary)
+                    VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+                        OrbitEyebrow(
+                            label: eyebrowLabel(for: memory),
+                            suffix: memory.createdAt.formatted(.relative(presentation: .named)),
+                            tint: OrbitCategoryPalette.tint(for: memory.ai.category)
+                        )
+                        HStack(alignment: .top, spacing: OrbitSpacing.sm) {
+                            Image(systemName: icon(for: memory.content.kind))
+                                .font(.system(size: 14, weight: .regular))
+                                .foregroundStyle(OrbitColor.textTertiary)
+                                .padding(.top, 3)
+                            Text(headlineText(for: memory))
+                                .font(OrbitTypography.body)
+                                .foregroundStyle(OrbitColor.textPrimary)
+                                .lineLimit(3)
+                                .frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }
                 }
             }
         }
+    }
+
+    private func eyebrowLabel(for memory: Memory) -> String {
+        if let category = memory.ai.category?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !category.isEmpty {
+            return category
+        }
+        return label(for: memory.content.kind)
     }
 
     // MARK: - Empty / error

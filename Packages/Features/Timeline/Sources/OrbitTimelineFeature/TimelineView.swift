@@ -68,6 +68,9 @@ public struct TimelineView: View {
                         NavigationLink(value: MemoryDetailRoute(memoryID: memory.id)) {
                             MemoryRow(memory: memory)
                         }
+                        .buttonStyle(OrbitBloomButtonStyle(
+                            tint: OrbitCategoryPalette.tint(for: memory.ai.category)
+                        ))
                         .matchedTransitionSource(id: memory.id, in: heroNamespace)
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
@@ -195,13 +198,36 @@ private struct MemoryRow: View {
     var body: some View {
         OrbitCard(elevation: .resting) {
             VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
-                Text(headline)
-                    .font(OrbitTypography.body)
-                    .foregroundStyle(OrbitColor.textPrimary)
-                    .lineLimit(4)
-                    .multilineTextAlignment(.leading)
+                OrbitEyebrow(
+                    label: eyebrowLabel,
+                    suffix: timestamp,
+                    tint: OrbitCategoryPalette.tint(for: memory.ai.category)
+                )
 
-                metadataChips
+                HStack(alignment: .top, spacing: OrbitSpacing.sm) {
+                    Image(systemName: kindIcon)
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundStyle(OrbitColor.textTertiary)
+                        .padding(.top, 3)
+                    Text(headline)
+                        .font(OrbitTypography.body)
+                        .foregroundStyle(OrbitColor.textPrimary)
+                        .lineLimit(4)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                if memory.ai.status == .processing {
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(OrbitColor.textTertiary)
+                            .frame(width: 5, height: 5)
+                        Text("Organizing")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(OrbitColor.textTertiary)
+                            .tracking(0.8)
+                    }
+                }
             }
         }
         .contentShape(.rect(cornerRadius: OrbitRadius.lg))
@@ -211,30 +237,22 @@ private struct MemoryRow: View {
     }
 
     private var accessibilityLabel: String {
-        var parts: [String] = [kindLabel, headline]
-        if let category = memory.ai.category, !category.isEmpty {
-            parts.append(category)
+        var parts: [String] = [eyebrowLabel, headline]
+        if eyebrowLabel.lowercased() != kindLabel.lowercased() {
+            parts.append(kindLabel)
         }
         parts.append(timestamp)
         return parts.joined(separator: ", ")
     }
 
-    @ViewBuilder
-    private var metadataChips: some View {
-        HStack(spacing: OrbitSpacing.xs) {
-            OrbitChip(kindLabel, systemImage: kindIcon)
-            if let category = memory.ai.category, !category.isEmpty {
-                OrbitChip(category, style: .accent)
-            }
-            if memory.ai.status == .processing {
-                OrbitChip("Organizing…", style: .neutral)
-                    .opacity(0.7)
-            }
-            Spacer(minLength: 0)
-            Text(timestamp)
-                .font(OrbitTypography.footnote)
-                .foregroundStyle(OrbitColor.textSecondary)
+    /// The category if the AI labeled it, otherwise the kind. The eyebrow
+    /// always says *something* meaningful, even before classification runs.
+    private var eyebrowLabel: String {
+        if let category = memory.ai.category?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !category.isEmpty {
+            return category
         }
+        return kindLabel
     }
 
     private var headline: String {

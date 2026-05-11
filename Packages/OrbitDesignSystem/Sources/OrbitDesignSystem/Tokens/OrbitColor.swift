@@ -90,6 +90,18 @@ public enum OrbitColor {
         dark:  Hex(0xFF5E58)
     )
 
+    /// Deep cool blue. Used for work / finance category memories.
+    public static let accentCobalt = dynamic(
+        light: Hex(0x1F3F8C),
+        dark:  Hex(0x6E92E8)
+    )
+
+    /// Muted purple. Used for journal / reminder category memories.
+    public static let accentPlum = dynamic(
+        light: Hex(0x6A3D7A),
+        dark:  Hex(0xB48ED1)
+    )
+
     // MARK: - Semantic
 
     public static let success = accentGreen

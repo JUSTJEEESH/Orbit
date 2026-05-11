@@ -108,15 +108,25 @@ public struct MemoryDetailView: View {
     // MARK: - Sections
 
     private func header(_ memory: Memory) -> some View {
-        VStack(alignment: .leading, spacing: OrbitSpacing.xxs) {
-            Text(kindLabel(memory))
-                .font(OrbitTypography.caption)
-                .textCase(.uppercase)
-                .foregroundStyle(OrbitColor.textTertiary)
+        VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+            OrbitEyebrow(
+                label: eyebrowLabel(memory),
+                suffix: kindLabel(memory),
+                tint: OrbitCategoryPalette.tint(for: memory.ai.category),
+                size: .prominent
+            )
             Text(memory.createdAt.formatted(date: .complete, time: .shortened))
                 .font(OrbitTypography.title2)
                 .foregroundStyle(OrbitColor.textPrimary)
         }
+    }
+
+    private func eyebrowLabel(_ memory: Memory) -> String {
+        if let category = memory.ai.category?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !category.isEmpty {
+            return category
+        }
+        return kindLabel(memory)
     }
 
     @ViewBuilder
@@ -224,10 +234,9 @@ public struct MemoryDetailView: View {
                 }
             }
 
+            // Category lives in the editorial eyebrow at the top of the
+            // screen; here we surface just the actionable signals.
             HStack(spacing: OrbitSpacing.xs) {
-                if let category = memory.ai.category, !category.isEmpty {
-                    OrbitChip(category, style: .accent)
-                }
                 priorityChip(memory.ai.priority)
                 statusChip(memory.ai.status)
             }

@@ -177,30 +177,41 @@ private struct SearchResultRow: View {
     var body: some View {
         OrbitCard(elevation: .resting) {
             VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
-                Text(headline)
-                    .font(OrbitTypography.body)
-                    .foregroundStyle(OrbitColor.textPrimary)
-                    .lineLimit(3)
+                OrbitEyebrow(
+                    label: eyebrowLabel,
+                    suffix: timestamp,
+                    tint: OrbitCategoryPalette.tint(for: result.memory.ai.category)
+                )
 
-                if let snippet = result.highlight, snippet != headline {
-                    Text(snippet)
-                        .font(OrbitTypography.footnote)
-                        .foregroundStyle(OrbitColor.textSecondary)
-                        .lineLimit(2)
-                }
-
-                HStack(spacing: OrbitSpacing.xs) {
-                    OrbitChip(kindLabel, systemImage: kindIcon)
-                    if let category = result.memory.ai.category, !category.isEmpty {
-                        OrbitChip(category, style: .accent)
-                    }
-                    Spacer(minLength: 0)
-                    Text(timestamp)
-                        .font(OrbitTypography.footnote)
+                HStack(alignment: .top, spacing: OrbitSpacing.sm) {
+                    Image(systemName: kindIcon)
+                        .font(.system(size: 14, weight: .regular))
                         .foregroundStyle(OrbitColor.textTertiary)
+                        .padding(.top, 3)
+                    VStack(alignment: .leading, spacing: OrbitSpacing.xxs) {
+                        Text(headline)
+                            .font(OrbitTypography.body)
+                            .foregroundStyle(OrbitColor.textPrimary)
+                            .lineLimit(3)
+                        if let snippet = result.highlight, snippet != headline {
+                            Text(snippet)
+                                .font(OrbitTypography.footnote)
+                                .foregroundStyle(OrbitColor.textSecondary)
+                                .lineLimit(2)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
         }
+    }
+
+    private var eyebrowLabel: String {
+        if let category = result.memory.ai.category?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !category.isEmpty {
+            return category
+        }
+        return kindLabel
     }
 
     private var headline: String {
