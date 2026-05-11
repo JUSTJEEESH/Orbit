@@ -21,12 +21,22 @@ struct RootView: View {
         .sheet(item: $presentedModal) { modal in
             switch modal {
             case .capture:
-                CaptureView { presentedModal = nil }
-                    .presentationDetents([.large])
-                    .presentationDragIndicator(.visible)
+                CaptureView(
+                    captureMemory: env.captureMemory,
+                    onCompleted: {
+                        env.memoriesDidChange()
+                        presentedModal = nil
+                    },
+                    onCancel: { presentedModal = nil }
+                )
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
             case .settings:
-                SettingsView(appConfig: env.appConfig) { presentedModal = nil }
-                    .presentationDetents([.large])
+                SettingsView(
+                    appConfig: env.appConfig,
+                    onDismiss: { presentedModal = nil }
+                )
+                .presentationDetents([.large])
             }
         }
         .onAppear { Haptics.prepare() }
@@ -39,7 +49,10 @@ struct RootView: View {
                 .tabItem { Label(AppTab.home.title, systemImage: AppTab.home.systemImage) }
                 .toolbar { profileToolbar }
 
-            TimelineView()
+            TimelineView(
+                listMemories: env.listMemories,
+                refreshToken: env.memoryListVersion
+            )
                 .tag(AppTab.timeline)
                 .tabItem { Label(AppTab.timeline.title, systemImage: AppTab.timeline.systemImage) }
                 .toolbar { profileToolbar }

@@ -19,6 +19,7 @@ let package = Package(
         .library(name: "OrbitKit", targets: ["OrbitKit"]),
         .library(name: "OrbitDesignSystem", targets: ["OrbitDesignSystem"]),
         .library(name: "OrbitDomain", targets: ["OrbitDomain"]),
+        .library(name: "OrbitPersistence", targets: ["OrbitPersistence"]),
         .library(name: "OrbitHomeFeature", targets: ["OrbitHomeFeature"]),
         .library(name: "OrbitTimelineFeature", targets: ["OrbitTimelineFeature"]),
         .library(name: "OrbitSearchFeature", targets: ["OrbitSearchFeature"]),
@@ -45,6 +46,14 @@ let package = Package(
         .target(
             name: "OrbitDomain",
             path: "Packages/OrbitDomain/Sources/OrbitDomain",
+            swiftSettings: swiftSettings
+        ),
+
+        // MARK: - Persistence
+        .target(
+            name: "OrbitPersistence",
+            dependencies: ["OrbitDomain"],
+            path: "Packages/OrbitPersistence/Sources/OrbitPersistence",
             swiftSettings: swiftSettings
         ),
 
@@ -91,6 +100,12 @@ let package = Package(
             name: "OrbitDesignSystemTests",
             dependencies: ["OrbitDesignSystem"],
             path: "Packages/OrbitDesignSystem/Tests/OrbitDesignSystemTests",
+            swiftSettings: swiftSettings
+        ),
+        .testTarget(
+            name: "OrbitPersistenceTests",
+            dependencies: ["OrbitPersistence", "OrbitDomain"],
+            path: "Packages/OrbitPersistence/Tests/OrbitPersistenceTests",
             swiftSettings: swiftSettings
         ),
     ]

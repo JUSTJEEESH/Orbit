@@ -9,7 +9,7 @@ public protocol MemoryRepository: Sendable {
     func delete(id: UUID) async throws
     func memory(with id: UUID) async throws -> Memory?
     func list(filter: MemoryFilter) async throws -> [Memory]
-    func stream(filter: MemoryFilter) -> AsyncStream<[Memory]>
+    func count(filter: MemoryFilter) async throws -> Int
 }
 
 public struct MemoryFilter: Sendable, Equatable {

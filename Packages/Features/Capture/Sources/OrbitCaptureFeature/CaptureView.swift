@@ -4,12 +4,23 @@ import OrbitDomain
 import OrbitKit
 
 public struct CaptureView: View {
-    private let onDismiss: @MainActor () -> Void
+    private let captureMemory: CaptureMemoryUseCase
+    private let onCompleted: @MainActor () -> Void
+    private let onCancel: @MainActor () -> Void
+
     @State private var draft: String = ""
+    @State private var isSaving = false
+    @State private var errorMessage: String?
     @FocusState private var isFocused: Bool
 
-    public init(onDismiss: @escaping @MainActor () -> Void) {
-        self.onDismiss = onDismiss
+    public init(
+        captureMemory: CaptureMemoryUseCase,
+        onCompleted: @escaping @MainActor () -> Void,
+        onCancel: @escaping @MainActor () -> Void
+    ) {
+        self.captureMemory = captureMemory
+        self.onCompleted = onCompleted
+        self.onCancel = onCancel
     }
 
     public var body: some View {
@@ -30,14 +41,22 @@ public struct CaptureView: View {
                         attachmentChip("mic.fill", label: "Voice")
                     }
 
+                    if let errorMessage {
+                        Text(errorMessage)
+                            .font(OrbitTypography.footnote)
+                            .foregroundStyle(OrbitColor.danger)
+                    }
+
                     Spacer()
 
-                    OrbitButton("Save memory", systemImage: "checkmark", style: .primary, size: .large) {
-                        Haptics.play(.success)
-                        // Phase 2 will wire this to the CaptureMemory use case.
-                        onDismiss()
-                    }
-                    .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    OrbitButton(
+                        isSaving ? "Saving…" : "Save memory",
+                        systemImage: "checkmark",
+                        style: .primary,
+                        size: .large,
+                        action: save
+                    )
+                    .disabled(!canSave)
                 }
                 .padding(.top, OrbitSpacing.lg)
             }
@@ -45,12 +64,34 @@ public struct CaptureView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Close") { onDismiss() }
+                    Button("Close", action: onCancel)
                         .font(OrbitTypography.bodyEmphasized)
                         .foregroundStyle(OrbitColor.textSecondary)
                 }
             }
             .onAppear { isFocused = true }
+        }
+    }
+
+    private var canSave: Bool {
+        !isSaving && !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private func save() {
+        let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        isSaving = true
+        errorMessage = nil
+        Task {
+            do {
+                _ = try await captureMemory(content: .text(text))
+                Haptics.play(.success)
+                onCompleted()
+            } catch {
+                isSaving = false
+                errorMessage = "Couldn't save. Try again."
+                Haptics.play(.failure)
+            }
         }
     }
 
@@ -70,9 +111,7 @@ public struct CaptureView: View {
             .background(OrbitColor.surfaceMuted, in: .rect(cornerRadius: OrbitRadius.pill))
         }
         .buttonStyle(.plain)
+        .disabled(true) // attachments arrive in Phase 2
+        .opacity(0.5)
     }
-}
-
-#Preview {
-    CaptureView(onDismiss: {}).preferredColorScheme(.dark)
 }
