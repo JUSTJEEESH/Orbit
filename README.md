@@ -26,6 +26,25 @@ The Xcode project is generated from `project.yml`. Edit `project.yml` and the
 SwiftPM packages in `Packages/` — do not edit `Orbit.xcodeproj` directly (it is
 git-ignored).
 
+### First-time provisioning (real device)
+
+The default identifiers (`com.orbit.app`, `group.com.orbit.app`) live in a
+globally-unique namespace you don't own. Before installing on a device:
+
+```bash
+./Scripts/rename-identifiers.sh com.<yourname>.orbit group.com.<yourname>.orbit
+xcodegen generate
+```
+
+Then in Xcode, for each of **Orbit**, **OrbitShareExtension**, and **OrbitWidgets**:
+
+1. **Signing & Capabilities** → set **Team** to your personal team.
+2. Xcode registers the new bundle ID + App Group automatically.
+3. The Apple Sign-In capability registers automatically too.
+
+The simulator works with the default identifiers without provisioning. The
+errors only appear when archiving for a real device.
+
 ## Module map
 
 | Package | Purpose |
