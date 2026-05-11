@@ -63,13 +63,20 @@ struct RecentMemoryProvider: TimelineProvider {
     private func fetchLatest() async -> Memory? {
         do {
             let container = try ModelContainerFactory.makeContainer(
-                mode: .appGroup(identifier: "group.com.orbit.app")
+                mode: .appGroup(identifier: Self.appGroupIdentifier)
             )
             let repo = SwiftDataMemoryRepository(modelContainer: container)
             return try await repo.list(filter: MemoryFilter(limit: 1, sort: .newestFirst)).first
         } catch {
             return nil
         }
+    }
+
+    /// Read at runtime from the widget bundle's Info.plist, which is
+    /// substituted at build time from `Config/Identity.xcconfig`.
+    private static var appGroupIdentifier: String {
+        Bundle.main.object(forInfoDictionaryKey: "OrbitAppGroupIdentifier") as? String
+            ?? "group.com.orbit.app"
     }
 }
 

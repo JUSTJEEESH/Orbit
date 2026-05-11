@@ -35,6 +35,9 @@ Secrets.xcconfig
 *.mobileprovision
 GoogleService-Info.plist
 
+# Per-developer identity (bundle IDs + App Group ID). See Config/Identity.xcconfig.template.
+Config/Identity.xcconfig
+
 # Misc
 *.log
 *.tmp

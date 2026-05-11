@@ -29,21 +29,28 @@ git-ignored).
 ### First-time provisioning (real device)
 
 The default identifiers (`com.orbit.app`, `group.com.orbit.app`) live in a
-globally-unique namespace you don't own. Before installing on a device:
+globally-unique namespace you don't own. Before installing on a device,
+write your personal identifiers to a gitignored config file:
 
 ```bash
-./Scripts/rename-identifiers.sh com.<yourname>.orbit group.com.<yourname>.orbit
+./Scripts/setup-identity.sh com.<yourname>.orbit group.com.<yourname>.orbit
 xcodegen generate
 ```
 
-Then in Xcode, for each of **Orbit**, **OrbitShareExtension**, and **OrbitWidgets**:
+That writes `Config/Identity.xcconfig` (gitignored) and the build picks it
+up automatically. `project.yml` and the entitlements files reference
+`$(ORBIT_BUNDLE_ID)` / `$(ORBIT_APP_GROUP)` rather than literal strings,
+so future `git pull` operations never conflict with your IDs.
+
+Then in Xcode, for each of **Orbit**, **OrbitShareExtension**, and
+**OrbitWidgets**:
 
 1. **Signing & Capabilities** → set **Team** to your personal team.
 2. Xcode registers the new bundle ID + App Group automatically.
 3. The Apple Sign-In capability registers automatically too.
 
-The simulator works with the default identifiers without provisioning. The
-errors only appear when archiving for a real device.
+The simulator works with the default identifiers without provisioning.
+The errors only appear when archiving for a real device.
 
 ## Module map
 

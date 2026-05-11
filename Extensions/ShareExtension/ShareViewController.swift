@@ -9,7 +9,14 @@ import OrbitPersistence
 /// compose field is combined with the shared item before saving.
 final class ShareViewController: SLComposeServiceViewController {
 
-    private static let appGroupIdentifier = "group.com.orbit.app"
+    /// Read at runtime from the extension's own Info.plist, which is
+    /// populated at build time from `Config/Identity.xcconfig` via the
+    /// `$(ORBIT_APP_GROUP)` substitution. Avoids hardcoding the group
+    /// identifier so personal forks don't have to patch source.
+    private static var appGroupIdentifier: String {
+        Bundle.main.object(forInfoDictionaryKey: "OrbitAppGroupIdentifier") as? String
+            ?? "group.com.orbit.app"
+    }
 
     override func isContentValid() -> Bool {
         // Allow posting with either user-typed text or at least one

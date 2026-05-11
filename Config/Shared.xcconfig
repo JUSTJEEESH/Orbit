@@ -1,5 +1,12 @@
 // Shared build settings — all configurations inherit these.
 
+// Identity defaults. Identity.xcconfig (gitignored) overrides these with
+// your personal bundle ID + App Group ID for real-device builds. See
+// Config/Identity.xcconfig.template and Scripts/setup-identity.sh.
+ORBIT_BUNDLE_ID = com.orbit.app
+ORBIT_APP_GROUP = group.com.orbit.app
+#include? "Identity.xcconfig"
+
 IPHONEOS_DEPLOYMENT_TARGET = 26.0
 TARGETED_DEVICE_FAMILY = 1,2
 SWIFT_VERSION = 6.0

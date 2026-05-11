@@ -1,0 +1,17 @@
+// Identity.xcconfig.template
+//
+// Copy this file to `Config/Identity.xcconfig` and replace the placeholder
+// values with identifiers under your own Apple Developer account. The real
+// `Identity.xcconfig` is gitignored so future `git pull`s never conflict
+// with your personal IDs.
+//
+// One-shot setup:
+//
+//   ./Scripts/setup-identity.sh com.<yourname>.orbit group.com.<yourname>.orbit
+//
+// Or copy + edit by hand:
+//
+//   cp Config/Identity.xcconfig.template Config/Identity.xcconfig
+
+ORBIT_BUNDLE_ID = com.orbit.app
+ORBIT_APP_GROUP = group.com.orbit.app

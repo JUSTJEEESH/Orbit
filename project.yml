@@ -69,12 +69,15 @@ targets:
         NSUserActivityTypes:
           - com.orbit.capture
         CFBundleURLTypes:
-          - CFBundleURLName: com.orbit.app
+          - CFBundleURLName: $(ORBIT_BUNDLE_ID)
             CFBundleURLSchemes:
               - orbit
+        # Substituted at build time from xcconfig (see Config/Identity.xcconfig).
+        # Read at runtime via Bundle.main.object(forInfoDictionaryKey:).
+        OrbitAppGroupIdentifier: $(ORBIT_APP_GROUP)
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app
+        PRODUCT_BUNDLE_IDENTIFIER: $(ORBIT_BUNDLE_ID)
         CODE_SIGN_ENTITLEMENTS: App/Resources/Orbit.entitlements
     dependencies:
       - package: OrbitWorkspace
@@ -122,6 +125,7 @@ targets:
       path: Extensions/ShareExtension/Info.plist
       properties:
         CFBundleDisplayName: Orbit
+        OrbitAppGroupIdentifier: $(ORBIT_APP_GROUP)
         NSExtension:
           NSExtensionPointIdentifier: com.apple.share-services
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
@@ -132,7 +136,7 @@ targets:
               NSExtensionActivationSupportsImageWithMaxCount: 1
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app.share
+        PRODUCT_BUNDLE_IDENTIFIER: $(ORBIT_BUNDLE_ID).share
         CODE_SIGN_ENTITLEMENTS: Extensions/ShareExtension/Orbit.entitlements
         SKIP_INSTALL: YES
     dependencies:
@@ -151,11 +155,12 @@ targets:
       path: Extensions/OrbitWidgets/Info.plist
       properties:
         CFBundleDisplayName: Orbit
+        OrbitAppGroupIdentifier: $(ORBIT_APP_GROUP)
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app.widgets
+        PRODUCT_BUNDLE_IDENTIFIER: $(ORBIT_BUNDLE_ID).widgets
         CODE_SIGN_ENTITLEMENTS: Extensions/OrbitWidgets/Orbit.entitlements
         SKIP_INSTALL: YES
     dependencies:
