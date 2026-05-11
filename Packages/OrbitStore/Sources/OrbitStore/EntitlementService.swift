@@ -55,9 +55,11 @@ public final class EntitlementService {
         }
     }
 
-    deinit {
-        updatesTask?.cancel()
-    }
+    // Intentionally no `deinit`. EntitlementService is a singleton on
+    // AppEnvironment for the whole app lifetime, so the Transaction.updates
+    // observation task naturally tears down with the process. Touching the
+    // MainActor-isolated `updatesTask` from a nonisolated `deinit` is
+    // illegal under Swift 6 strict concurrency.
 
     // MARK: - Public API
 
