@@ -43,27 +43,18 @@ public actor FoundationModelsAdapter: AIService {
             break
         case .unavailable:
             // Apple Intelligence not yet ready on this device — degrade
-            // gracefully and let entity extraction carry us.
-            return ClassificationResult(
+            // gracefully. Heuristic category + entity extraction still
+            // give the timeline meaningful color.
+            return Self.fallbackResult(
                 kind: kind,
-                category: nil,
-                suggestedTags: [],
-                priority: .normal,
-                summary: Self.heuristicSummary(text),
-                extractedDates: extracted.dates,
-                extractedPeople: extracted.people,
-                extractedLocations: extracted.locations
+                text: text,
+                extracted: extracted
             )
         @unknown default:
-            return ClassificationResult(
+            return Self.fallbackResult(
                 kind: kind,
-                category: nil,
-                suggestedTags: [],
-                priority: .normal,
-                summary: Self.heuristicSummary(text),
-                extractedDates: extracted.dates,
-                extractedPeople: extracted.people,
-                extractedLocations: extracted.locations
+                text: text,
+                extracted: extracted
             )
         }
 
@@ -79,9 +70,14 @@ public actor FoundationModelsAdapter: AIService {
             )
             let generated = response.content
 
+            // Backstop: if the LLM returned nothing useful, infer a
+            // category heuristically so the eyebrow still has color.
+            let category = generated.category.trimmedNonEmpty
+                ?? HeuristicCategoryInferrer.infer(text: text, entities: extracted)
+
             return ClassificationResult(
                 kind: kind,
-                category: generated.category.trimmedLowercased,
+                category: category,
                 suggestedTags: Array(
                     generated.tags
                         .map(\.trimmedLowercased)
@@ -95,17 +91,29 @@ public actor FoundationModelsAdapter: AIService {
                 extractedLocations: extracted.locations
             )
         } catch {
-            return ClassificationResult(
+            return Self.fallbackResult(
                 kind: kind,
-                category: nil,
-                suggestedTags: [],
-                priority: .normal,
-                summary: Self.heuristicSummary(text),
-                extractedDates: extracted.dates,
-                extractedPeople: extracted.people,
-                extractedLocations: extracted.locations
+                text: text,
+                extracted: extracted
             )
         }
+    }
+
+    private static func fallbackResult(
+        kind: MemoryContentKind,
+        text: String,
+        extracted: ExtractedEntities
+    ) -> ClassificationResult {
+        ClassificationResult(
+            kind: kind,
+            category: HeuristicCategoryInferrer.infer(text: text, entities: extracted),
+            suggestedTags: [],
+            priority: .normal,
+            summary: heuristicSummary(text),
+            extractedDates: extracted.dates,
+            extractedPeople: extracted.people,
+            extractedLocations: extracted.locations
+        )
     }
 
     public func summarize(_ memory: Memory) async throws -> String {

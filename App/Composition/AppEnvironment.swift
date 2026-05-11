@@ -94,6 +94,21 @@ final class AppEnvironment {
         memoriesDidChange()
     }
 
+    /// Re-runs enrichment for every memory currently in the repository.
+    /// Useful after changing the classification logic (e.g. shipping a
+    /// new heuristic category inferrer) so existing rows pick up the new
+    /// labels without the user having to delete + recapture.
+    func reenrichAllMemories() async {
+        let all = (try? await memories.list(filter: .all)) ?? []
+        for memory in all {
+            await enrichMemory(memoryID: memory.id)
+            if let updated = try? await memories.memory(with: memory.id) {
+                await spotlight.index(updated)
+            }
+        }
+        memoriesDidChange()
+    }
+
     /// Wipes every memory, clears Spotlight, signs the user out, and resets
     /// onboarding so the next render starts from a clean slate. Used by the
     /// in-app account-deletion flow (Apple 5.1.1(v) requirement).

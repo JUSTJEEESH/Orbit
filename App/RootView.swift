@@ -51,6 +51,7 @@ struct RootView: View {
                     entitlements: env.entitlements,
                     onPresentPaywall: { env.requestedModal = .paywall },
                     onDeleteAccount: { try await env.wipeAccountAndData() },
+                    onReindexAll: { await env.reenrichAllMemories() },
                     onDismiss: { env.requestedModal = nil }
                 )
                 .presentationDetents([.large])

@@ -11,10 +11,12 @@ public struct SettingsView: View {
     @Bindable private var entitlements: EntitlementService
     private let onPresentPaywall: @MainActor () -> Void
     private let onDeleteAccount: @MainActor @Sendable () async throws -> Void
+    private let onReindexAll: @MainActor @Sendable () async -> Void
     private let onDismiss: @MainActor () -> Void
 
     @State private var showDeleteConfirmation = false
     @State private var deletionError: String?
+    @State private var isReindexing = false
 
     public init(
         appConfig: AppConfig,
@@ -22,6 +24,7 @@ public struct SettingsView: View {
         entitlements: EntitlementService,
         onPresentPaywall: @escaping @MainActor () -> Void,
         onDeleteAccount: @escaping @MainActor @Sendable () async throws -> Void,
+        onReindexAll: @escaping @MainActor @Sendable () async -> Void,
         onDismiss: @escaping @MainActor () -> Void
     ) {
         self.appConfig = appConfig
@@ -29,6 +32,7 @@ public struct SettingsView: View {
         self.entitlements = entitlements
         self.onPresentPaywall = onPresentPaywall
         self.onDeleteAccount = onDeleteAccount
+        self.onReindexAll = onReindexAll
         self.onDismiss = onDismiss
     }
 
@@ -229,6 +233,31 @@ public struct SettingsView: View {
             OrbitSectionHeader("Developer")
 
             aiStatusCard
+
+            OrbitCard {
+                VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+                    Text("Re-categorize all memories")
+                        .font(OrbitTypography.bodyEmphasized)
+                        .foregroundStyle(OrbitColor.textPrimary)
+                    Text("Re-runs the AI pipeline against every existing memory so older rows pick up the latest categorization rules.")
+                        .font(OrbitTypography.footnote)
+                        .foregroundStyle(OrbitColor.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    OrbitButton(
+                        isReindexing ? "Reindexing…" : "Run now",
+                        systemImage: "arrow.triangle.2.circlepath",
+                        style: .secondary
+                    ) {
+                        isReindexing = true
+                        Task { @MainActor in
+                            await onReindexAll()
+                            isReindexing = false
+                            Haptics.play(.success)
+                        }
+                    }
+                    .disabled(isReindexing)
+                }
+            }
 
             NavigationLink {
                 DesignSystemGallery()
