@@ -53,25 +53,16 @@ public actor SpeechTranscriber {
     }
 
     private func runRecognition(url: URL, requireOnDevice: Bool) async throws -> String {
-        guard let recognizer = SFSpeechRecognizer(locale: locale), recognizer.isAvailable else {
-            throw Failure.recognizerUnavailable
-        }
-        if requireOnDevice && !recognizer.supportsOnDeviceRecognition {
-            throw Failure.recognizerUnavailable
-        }
-
-        let request = SFSpeechURLRecognitionRequest(url: url)
-        request.shouldReportPartialResults = false
-        request.requiresOnDeviceRecognition = requireOnDevice
-
+        let locale = self.locale
         // Race the recognition against a hard timeout — Apple's framework
         // sometimes never invokes the callback when the audio export
         // stage fails internally, and we'd hang the capture flow forever.
         return try await withThrowingTaskGroup(of: String.self) { group in
             group.addTask {
                 try await Self.runRecognitionInternal(
-                    recognizer: recognizer,
-                    request: request
+                    url: url,
+                    locale: locale,
+                    requireOnDevice: requireOnDevice
                 )
             }
             group.addTask {
@@ -86,10 +77,25 @@ public actor SpeechTranscriber {
         }
     }
 
+    /// Static so it captures only Sendable parameters (URL, Locale, Bool).
+    /// The non-Sendable `SFSpeechRecognizer` + request are built inside
+    /// the task — they never cross an isolation boundary.
     private static func runRecognitionInternal(
-        recognizer: SFSpeechRecognizer,
-        request: SFSpeechURLRecognitionRequest
+        url: URL,
+        locale: Locale,
+        requireOnDevice: Bool
     ) async throws -> String {
+        guard let recognizer = SFSpeechRecognizer(locale: locale), recognizer.isAvailable else {
+            throw Failure.recognizerUnavailable
+        }
+        if requireOnDevice && !recognizer.supportsOnDeviceRecognition {
+            throw Failure.recognizerUnavailable
+        }
+
+        let request = SFSpeechURLRecognitionRequest(url: url)
+        request.shouldReportPartialResults = false
+        request.requiresOnDeviceRecognition = requireOnDevice
+
         // `SFSpeechRecognizer` can call its callback multiple times for
         // a single request (partial errors, retries). `withChecked*` traps
         // on double-resume — we serialize through a tiny guard so only
