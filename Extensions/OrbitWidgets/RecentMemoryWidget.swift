@@ -4,6 +4,15 @@ import OrbitDesignSystem
 import OrbitDomain
 import OrbitPersistence
 
+/// `@unchecked Sendable` wrapper around WidgetKit's non-Sendable completion
+/// handlers. The handler is documented to be invoked exactly once after the
+/// timeline call finishes, so racing concurrent uses cannot occur.
+private struct SendableCompletion<T>: @unchecked Sendable {
+    private let body: (T) -> Void
+    init(_ body: @escaping (T) -> Void) { self.body = body }
+    func invoke(_ value: T) { body(value) }
+}
+
 struct RecentMemoryWidget: Widget {
     let kind: String = "com.orbit.app.widgets.recent"
 
@@ -29,22 +38,25 @@ struct RecentMemoryProvider: TimelineProvider {
     }
 
     func getSnapshot(in context: Context, completion: @escaping (RecentMemoryEntry) -> Void) {
-        // MainActor isolation lets us capture the non-Sendable completion
-        // handler that WidgetKit hands us without tripping Swift 6.
-        Task { @MainActor in
+        // WidgetKit's completion handler isn't @Sendable. Boxing it as an
+        // explicitly unchecked Sendable value is sound here because the
+        // handler is documented to be called exactly once.
+        let callback = SendableCompletion(completion)
+        Task {
             let memory = await fetchLatest()
-            completion(RecentMemoryEntry(date: Date(), memory: memory))
+            callback.invoke(RecentMemoryEntry(date: Date(), memory: memory))
         }
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<RecentMemoryEntry>) -> Void) {
-        Task { @MainActor in
+        let callback = SendableCompletion(completion)
+        Task {
             let memory = await fetchLatest()
             let entry = RecentMemoryEntry(date: Date(), memory: memory)
             // The app calls WidgetCenter.reloadAllTimelines() when data
             // changes, so a long fallback refresh is fine.
             let next = Date().addingTimeInterval(60 * 60)
-            completion(Timeline(entries: [entry], policy: .after(next)))
+            callback.invoke(Timeline(entries: [entry], policy: .after(next)))
         }
     }
 
