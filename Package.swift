@@ -102,7 +102,7 @@ let package = Package(
         ),
         .target(
             name: "OrbitSettingsFeature",
-            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain"],
+            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitAI"],
             path: "Packages/Features/Settings/Sources/OrbitSettingsFeature",
             swiftSettings: swiftSettings
         ),

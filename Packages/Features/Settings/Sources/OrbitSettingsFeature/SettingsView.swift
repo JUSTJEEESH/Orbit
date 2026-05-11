@@ -1,6 +1,7 @@
 import SwiftUI
 import OrbitDesignSystem
 import OrbitKit
+import OrbitAI
 
 public struct SettingsView: View {
     private let appConfig: AppConfig
@@ -67,6 +68,9 @@ public struct SettingsView: View {
     private var developerSection: some View {
         VStack(alignment: .leading, spacing: OrbitSpacing.md) {
             OrbitSectionHeader("Developer")
+
+            aiStatusCard
+
             NavigationLink {
                 DesignSystemGallery()
             } label: {
@@ -82,6 +86,34 @@ public struct SettingsView: View {
                 }
             }
             .buttonStyle(.plain)
+        }
+    }
+
+    private var aiStatusCard: some View {
+        let status = SystemModelStatus.current()
+        return OrbitCard {
+            VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+                HStack(spacing: OrbitSpacing.xs) {
+                    Image(systemName: status.isAvailable
+                          ? "checkmark.circle.fill"
+                          : "exclamationmark.triangle.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(status.isAvailable
+                                         ? OrbitColor.success
+                                         : OrbitColor.warning)
+                    Text("Apple Intelligence")
+                        .font(OrbitTypography.bodyEmphasized)
+                        .foregroundStyle(OrbitColor.textPrimary)
+                    Spacer()
+                    Text(status.summary)
+                        .font(OrbitTypography.footnote)
+                        .foregroundStyle(OrbitColor.textSecondary)
+                }
+                Text(status.detail)
+                    .font(OrbitTypography.footnote)
+                    .foregroundStyle(OrbitColor.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
     #endif
