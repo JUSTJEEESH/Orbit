@@ -26,6 +26,7 @@ struct RootView: View {
             tabContent
             captureFAB
         }
+        .orbitTheme(env.themeService.theme)
         .sheet(item: $bindableEnv.requestedModal) { modal in
             switch modal {
             case .capture:
@@ -50,6 +51,8 @@ struct RootView: View {
                     appConfig: env.appConfig,
                     account: env.account,
                     entitlements: env.entitlements,
+                    currentTheme: env.themeService.theme,
+                    onSelectTheme: { env.themeService.select($0) },
                     onPresentPaywall: { env.requestedModal = .paywall },
                     onDeleteAccount: { try await env.wipeAccountAndData() },
                     onReindexAll: { await env.reenrichAllMemories() },

@@ -14,6 +14,9 @@ public struct HomeView: View {
     @State private var memories: [Memory] = []
     @State private var loadState: LoadState = .idle
     @Namespace private var heroNamespace
+    @Environment(\.orbitTheme) private var orbitTheme
+
+    private var themeAccent: Color { orbitTheme.primary }
 
     private enum LoadState: Equatable { case idle, loading, loaded, failed(String) }
 
@@ -119,7 +122,10 @@ public struct HomeView: View {
     }
 
     private var recapCard: some View {
-        Button {
+        // Reading the theme inside the computed property keeps the
+        // recap eyebrow + bloom in sync with the user's chosen accent.
+        let themeColor = themeAccent
+        return Button {
             Haptics.play(.tap)
             onPresentRecap()
         } label: {
@@ -128,7 +134,7 @@ public struct HomeView: View {
                     OrbitEyebrow(
                         label: "Daily Recap",
                         suffix: "today",
-                        tint: OrbitColor.accent
+                        tint: themeColor
                     )
                     Text("See your day reflected back")
                         .font(.system(size: 22, weight: .semibold, design: .serif))
@@ -149,7 +155,7 @@ public struct HomeView: View {
                 }
             }
         }
-        .buttonStyle(OrbitBloomButtonStyle(tint: OrbitColor.accent))
+        .buttonStyle(OrbitBloomButtonStyle(tint: themeAccent))
     }
 
     // MARK: - Today

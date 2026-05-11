@@ -8,6 +8,7 @@ import OrbitKit
 /// stats, then a list of highlight memories. No charts, no dashboards.
 public struct DailyRecapView: View {
     @State private var model: DailyRecapViewModel
+    @Environment(\.orbitTheme) private var orbitTheme
     private let onDismiss: @MainActor () -> Void
 
     public init(
@@ -96,7 +97,7 @@ public struct DailyRecapView: View {
             OrbitEyebrow(
                 label: "Daily Recap",
                 suffix: relativeDayLabel(recap.date),
-                tint: OrbitColor.accent,
+                tint: orbitTheme.primary,
                 size: .prominent
             )
             Text(recap.date.formatted(.dateTime.weekday(.wide).month(.wide).day()))

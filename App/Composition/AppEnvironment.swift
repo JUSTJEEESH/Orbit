@@ -34,6 +34,7 @@ final class AppEnvironment {
 
     let account: AccountService
     let entitlements: EntitlementService
+    let themeService: ThemeService
 
     let captureMemory: CaptureMemoryUseCase
     let listMemories: ListMemoriesUseCase
@@ -135,7 +136,8 @@ final class AppEnvironment {
         search: any SearchService,
         spotlight: SpotlightIndexer,
         account: AccountService,
-        entitlements: EntitlementService
+        entitlements: EntitlementService,
+        themeService: ThemeService = ThemeService()
     ) {
         self.appConfig = appConfig
         self.clock = clock
@@ -151,6 +153,7 @@ final class AppEnvironment {
         self.spotlight = spotlight
         self.account = account
         self.entitlements = entitlements
+        self.themeService = themeService
 
         self.onboardingComplete = UserDefaults.standard.bool(forKey: Self.onboardingKey)
 

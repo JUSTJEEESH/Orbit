@@ -9,6 +9,8 @@ public struct SettingsView: View {
     private let appConfig: AppConfig
     @Bindable private var account: AccountService
     @Bindable private var entitlements: EntitlementService
+    private let currentTheme: OrbitTheme
+    private let onSelectTheme: @MainActor (OrbitTheme) -> Void
     private let onPresentPaywall: @MainActor () -> Void
     private let onDeleteAccount: @MainActor @Sendable () async throws -> Void
     private let onReindexAll: @MainActor @Sendable () async -> Void
@@ -22,6 +24,8 @@ public struct SettingsView: View {
         appConfig: AppConfig,
         account: AccountService,
         entitlements: EntitlementService,
+        currentTheme: OrbitTheme,
+        onSelectTheme: @escaping @MainActor (OrbitTheme) -> Void,
         onPresentPaywall: @escaping @MainActor () -> Void,
         onDeleteAccount: @escaping @MainActor @Sendable () async throws -> Void,
         onReindexAll: @escaping @MainActor @Sendable () async -> Void,
@@ -30,6 +34,8 @@ public struct SettingsView: View {
         self.appConfig = appConfig
         self.account = account
         self.entitlements = entitlements
+        self.currentTheme = currentTheme
+        self.onSelectTheme = onSelectTheme
         self.onPresentPaywall = onPresentPaywall
         self.onDeleteAccount = onDeleteAccount
         self.onReindexAll = onReindexAll
@@ -42,6 +48,7 @@ public struct SettingsView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: OrbitSpacing.xl) {
                         accountSection
+                        appearanceSection
                         subscriptionSection
                         aboutSection
                         dangerSection
@@ -135,6 +142,68 @@ public struct SettingsView: View {
                     .foregroundStyle(OrbitColor.textSecondary)
             }
         }
+    }
+
+    // MARK: - Appearance
+
+    private var appearanceSection: some View {
+        VStack(alignment: .leading, spacing: OrbitSpacing.md) {
+            OrbitSectionHeader("Appearance", subtitle: "Choose the accent that runs through Orbit.")
+            LazyVGrid(
+                columns: [
+                    GridItem(.flexible(), spacing: OrbitSpacing.sm),
+                    GridItem(.flexible(), spacing: OrbitSpacing.sm),
+                ],
+                spacing: OrbitSpacing.sm
+            ) {
+                ForEach(OrbitTheme.all) { theme in
+                    themeTile(theme)
+                }
+            }
+        }
+    }
+
+    private func themeTile(_ theme: OrbitTheme) -> some View {
+        let isSelected = theme == currentTheme
+        return Button {
+            Haptics.play(.selection)
+            onSelectTheme(theme)
+        } label: {
+            VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+                ZStack(alignment: .topTrailing) {
+                    Circle()
+                        .fill(theme.primary)
+                        .frame(width: 44, height: 44)
+                    if isSelected {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(OrbitColor.textInverted, theme.primary)
+                            .offset(x: 6, y: -6)
+                    }
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(theme.name)
+                        .font(OrbitTypography.bodyEmphasized)
+                        .foregroundStyle(OrbitColor.textPrimary)
+                    Text(theme.promotionalCopy)
+                        .font(OrbitTypography.footnote)
+                        .foregroundStyle(OrbitColor.textSecondary)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(OrbitSpacing.md)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(OrbitColor.surface, in: .rect(cornerRadius: OrbitRadius.lg))
+            .overlay(
+                RoundedRectangle(cornerRadius: OrbitRadius.lg)
+                    .stroke(
+                        isSelected ? theme.primary : OrbitColor.separator,
+                        lineWidth: isSelected ? 2 : 0.5
+                    )
+            )
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Subscription
