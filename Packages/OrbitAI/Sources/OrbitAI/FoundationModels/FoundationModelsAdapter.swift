@@ -8,9 +8,14 @@ import OrbitDomain
 /// is unavailable on this device or in this region.
 public actor FoundationModelsAdapter: AIService {
     private let entities: EntityExtractor
+    private let embeddings: EmbeddingService
 
-    public init(entities: EntityExtractor = EntityExtractor()) {
+    public init(
+        entities: EntityExtractor = EntityExtractor(),
+        embeddings: EmbeddingService = EmbeddingService()
+    ) {
         self.entities = entities
+        self.embeddings = embeddings
     }
 
     public func classify(_ raw: RawCapture) async throws -> ClassificationResult {
@@ -116,8 +121,9 @@ public actor FoundationModelsAdapter: AIService {
     }
 
     public func embed(_ text: String) async throws -> [Float] {
-        // Phase 4 (search) wires real embeddings via NLContextualEmbedding.
-        throw OrbitError.aiUnavailable
+        let vector = await embeddings.embed(text)
+        if vector.isEmpty { throw OrbitError.aiUnavailable }
+        return vector
     }
 
     // MARK: - Prompting

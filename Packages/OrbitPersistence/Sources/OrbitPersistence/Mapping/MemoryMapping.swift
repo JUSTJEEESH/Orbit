@@ -28,6 +28,7 @@ extension MemoryEntity {
         self.createdAt = memory.createdAt
         self.updatedAt = memory.updatedAt
         self.linkedTaskIDs = memory.linkedTaskIDs
+        self.embedding = memory.embedding
         self.applyContent(memory.content)
         self.applyAI(memory.ai)
         self.tags = resolvedTags
@@ -51,7 +52,8 @@ extension MemoryEntity {
                 )
             },
             ai: decodeAI(),
-            linkedTaskIDs: linkedTaskIDs
+            linkedTaskIDs: linkedTaskIDs,
+            embedding: embedding
         )
     }
 

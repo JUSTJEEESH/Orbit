@@ -26,6 +26,7 @@ final class AppEnvironment {
 
     let ai: any AIService
     let ocr: OCRService
+    let search: any SearchService
 
     let captureMemory: CaptureMemoryUseCase
     let listMemories: ListMemoriesUseCase
@@ -34,6 +35,7 @@ final class AppEnvironment {
     let linkTask: LinkTaskToMemoryUseCase
     let toggleTask: ToggleTaskUseCase
     let enrichMemory: EnrichMemoryUseCase
+    let searchMemories: SearchMemoriesUseCase
 
     /// Bumped whenever the memory collection changes. Feature views observe
     /// it via `.task(id: env.memoryListVersion)` to refetch lazily — until
@@ -65,7 +67,8 @@ final class AppEnvironment {
         speechTranscriber: SpeechTranscriber,
         linkFetcher: LinkPreviewFetcher,
         ai: any AIService,
-        ocr: OCRService
+        ocr: OCRService,
+        search: any SearchService
     ) {
         self.appConfig = appConfig
         self.clock = clock
@@ -77,6 +80,7 @@ final class AppEnvironment {
         self.linkFetcher = linkFetcher
         self.ai = ai
         self.ocr = ocr
+        self.search = search
 
         self.captureMemory = CaptureMemoryUseCase(repository: memories, clock: clock)
         self.listMemories = ListMemoriesUseCase(repository: memories)
@@ -85,6 +89,7 @@ final class AppEnvironment {
         self.linkTask = LinkTaskToMemoryUseCase(memories: memories, tasks: tasks, clock: clock)
         self.toggleTask = ToggleTaskUseCase(repository: tasks, clock: clock)
         self.enrichMemory = EnrichMemoryUseCase(ai: ai, memories: memories, clock: clock)
+        self.searchMemories = SearchMemoriesUseCase(search: search, memories: memories)
     }
 }
 
@@ -95,21 +100,24 @@ extension AppEnvironment {
     static func makeProduction(appConfig: AppConfig) throws -> AppEnvironment {
         let container = try ModelContainerFactory.makeContainer(mode: .onDisk)
         let storage = try MediaStorage()
+        let memoryRepo = SwiftDataMemoryRepository(modelContainer: container)
+        let embeddings = EmbeddingService()
         let ai = AIServicePipeline([
-            FoundationModelsAdapter(),
+            FoundationModelsAdapter(embeddings: embeddings),
             CloudAIService(),
         ])
         return AppEnvironment(
             appConfig: appConfig,
             clock: SystemClock(),
-            memories: SwiftDataMemoryRepository(modelContainer: container),
+            memories: memoryRepo,
             tasks: SwiftDataTaskRepository(modelContainer: container),
             insights: SwiftDataInsightRepository(modelContainer: container),
             mediaStorage: storage,
             speechTranscriber: SpeechTranscriber(),
             linkFetcher: LinkPreviewFetcher(),
             ai: ai,
-            ocr: OCRService()
+            ocr: OCRService(),
+            search: LocalSearchService(memories: memoryRepo, embeddings: embeddings)
         )
     }
 
@@ -118,6 +126,8 @@ extension AppEnvironment {
             root: FileManager.default.temporaryDirectory
                 .appendingPathComponent("orbit-preview-\(UUID().uuidString)", isDirectory: true)
         )
+        let memoryRepo = InMemoryMemoryRepository(seed: seed)
+        let embeddings = EmbeddingService()
         return AppEnvironment(
             appConfig: AppConfig(
                 bundleIdentifier: "com.orbit.app",
@@ -129,14 +139,15 @@ extension AppEnvironment {
                 cloudKitContainerIdentifier: "iCloud.com.orbit.app"
             ),
             clock: SystemClock(),
-            memories: InMemoryMemoryRepository(seed: seed),
+            memories: memoryRepo,
             tasks: InMemoryTaskRepository(),
             insights: InMemoryInsightRepository(),
             mediaStorage: storage,
             speechTranscriber: SpeechTranscriber(),
             linkFetcher: LinkPreviewFetcher(),
             ai: MockAIService(),
-            ocr: OCRService()
+            ocr: OCRService(),
+            search: LocalSearchService(memories: memoryRepo, embeddings: embeddings)
         )
     }
 }

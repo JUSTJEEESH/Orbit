@@ -64,7 +64,7 @@ struct RootView: View {
                 .tabItem { Label(AppTab.timeline.title, systemImage: AppTab.timeline.systemImage) }
                 .toolbar { profileToolbar }
 
-            SearchView()
+            SearchView(viewModel: SearchViewModel(searchMemories: env.searchMemories))
                 .tag(AppTab.search)
                 .tabItem { Label(AppTab.search.title, systemImage: AppTab.search.systemImage) }
                 .toolbar { profileToolbar }

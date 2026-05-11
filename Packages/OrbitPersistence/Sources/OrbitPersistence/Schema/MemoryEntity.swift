@@ -29,6 +29,10 @@ public final class MemoryEntity {
     public var updatedAt: Date = Date()
     public var linkedTaskIDs: [UUID] = []
 
+    /// Sentence-level semantic embedding. Empty until enrichment indexes the
+    /// memory. Defaulted so the v1 schema stays migration-safe.
+    public var embedding: [Float] = []
+
     // MARK: - AI metadata
     public var aiStatus: String = "pending"
     public var aiSummary: String?

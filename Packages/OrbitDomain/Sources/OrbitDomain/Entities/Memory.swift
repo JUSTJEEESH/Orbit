@@ -12,6 +12,9 @@ public struct Memory: Identifiable, Sendable, Hashable {
     public var media: [MediaAsset]
     public var ai: MemoryAIMetadata
     public var linkedTaskIDs: [UUID]
+    /// Sentence-level embedding (typically 512-dim) used for semantic search.
+    /// Empty until the AI pipeline has indexed this memory.
+    public var embedding: [Float]
 
     public init(
         id: UUID = UUID(),
@@ -21,7 +24,8 @@ public struct Memory: Identifiable, Sendable, Hashable {
         tags: [Tag] = [],
         media: [MediaAsset] = [],
         ai: MemoryAIMetadata = .pending,
-        linkedTaskIDs: [UUID] = []
+        linkedTaskIDs: [UUID] = [],
+        embedding: [Float] = []
     ) {
         self.id = id
         self.content = content
@@ -31,6 +35,7 @@ public struct Memory: Identifiable, Sendable, Hashable {
         self.media = media
         self.ai = ai
         self.linkedTaskIDs = linkedTaskIDs
+        self.embedding = embedding
     }
 }
 
