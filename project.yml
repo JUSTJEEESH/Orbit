@@ -28,6 +28,25 @@ packages:
   OrbitWorkspace:
     path: .
 
+schemes:
+  Orbit:
+    build:
+      targets:
+        Orbit: all
+        OrbitShareExtension: [run, test, profile, analyze, archive]
+        OrbitWidgets: [run, test, profile, analyze, archive]
+    run:
+      config: Debug
+      storeKitConfiguration: Configuration.storekit
+    test:
+      config: Debug
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
+
 targets:
   Orbit:
     type: application
@@ -70,6 +89,10 @@ targets:
         product: OrbitMedia
       - package: OrbitWorkspace
         product: OrbitAI
+      - package: OrbitWorkspace
+        product: OrbitAccount
+      - package: OrbitWorkspace
+        product: OrbitStore
       - package: OrbitWorkspace
         product: OrbitHomeFeature
       - package: OrbitWorkspace

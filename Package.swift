@@ -22,6 +22,8 @@ let package = Package(
         .library(name: "OrbitPersistence", targets: ["OrbitPersistence"]),
         .library(name: "OrbitMedia", targets: ["OrbitMedia"]),
         .library(name: "OrbitAI", targets: ["OrbitAI"]),
+        .library(name: "OrbitAccount", targets: ["OrbitAccount"]),
+        .library(name: "OrbitStore", targets: ["OrbitStore"]),
         .library(name: "OrbitHomeFeature", targets: ["OrbitHomeFeature"]),
         .library(name: "OrbitTimelineFeature", targets: ["OrbitTimelineFeature"]),
         .library(name: "OrbitSearchFeature", targets: ["OrbitSearchFeature"]),
@@ -76,6 +78,21 @@ let package = Package(
             swiftSettings: swiftSettings
         ),
 
+        // MARK: - Account (Sign in with Apple + keychain)
+        .target(
+            name: "OrbitAccount",
+            path: "Packages/OrbitAccount/Sources/OrbitAccount",
+            swiftSettings: swiftSettings
+        ),
+
+        // MARK: - Store (StoreKit 2 entitlements + paywall view)
+        .target(
+            name: "OrbitStore",
+            dependencies: ["OrbitDesignSystem", "OrbitKit"],
+            path: "Packages/OrbitStore/Sources/OrbitStore",
+            swiftSettings: swiftSettings
+        ),
+
         // MARK: - Features
         .target(
             name: "OrbitHomeFeature",
@@ -103,7 +120,7 @@ let package = Package(
         ),
         .target(
             name: "OrbitSettingsFeature",
-            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitAI"],
+            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitAI", "OrbitAccount", "OrbitStore"],
             path: "Packages/Features/Settings/Sources/OrbitSettingsFeature",
             swiftSettings: swiftSettings
         ),

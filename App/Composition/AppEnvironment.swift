@@ -6,6 +6,8 @@ import OrbitDomain
 import OrbitPersistence
 import OrbitMedia
 import OrbitAI
+import OrbitAccount
+import OrbitStore
 
 /// The composition root. Holds long-lived services (repositories, clocks,
 /// media services, AI) and pre-constructed use cases ready to be invoked by
@@ -29,6 +31,9 @@ final class AppEnvironment {
     let ocr: OCRService
     let search: any SearchService
     let spotlight: SpotlightIndexer
+
+    let account: AccountService
+    let entitlements: EntitlementService
 
     let captureMemory: CaptureMemoryUseCase
     let listMemories: ListMemoriesUseCase
@@ -89,7 +94,9 @@ final class AppEnvironment {
         ai: any AIService,
         ocr: OCRService,
         search: any SearchService,
-        spotlight: SpotlightIndexer
+        spotlight: SpotlightIndexer,
+        account: AccountService,
+        entitlements: EntitlementService
     ) {
         self.appConfig = appConfig
         self.clock = clock
@@ -103,6 +110,8 @@ final class AppEnvironment {
         self.ocr = ocr
         self.search = search
         self.spotlight = spotlight
+        self.account = account
+        self.entitlements = entitlements
 
         self.captureMemory = CaptureMemoryUseCase(repository: memories, clock: clock)
         self.listMemories = ListMemoriesUseCase(repository: memories)
@@ -144,7 +153,9 @@ extension AppEnvironment {
             ai: ai,
             ocr: OCRService(),
             search: LocalSearchService(memories: memoryRepo, embeddings: embeddings),
-            spotlight: SpotlightIndexer()
+            spotlight: SpotlightIndexer(),
+            account: AccountService(),
+            entitlements: EntitlementService()
         )
     }
 
@@ -175,7 +186,9 @@ extension AppEnvironment {
             ai: MockAIService(),
             ocr: OCRService(),
             search: LocalSearchService(memories: memoryRepo, embeddings: embeddings),
-            spotlight: SpotlightIndexer()
+            spotlight: SpotlightIndexer(),
+            account: AccountService(),
+            entitlements: EntitlementService()
         )
     }
 }

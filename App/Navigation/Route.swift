@@ -30,6 +30,7 @@ enum AppTab: Hashable, CaseIterable {
 enum AppModal: Hashable, Identifiable {
     case capture
     case settings
+    case paywall
 
     var id: Self { self }
 }

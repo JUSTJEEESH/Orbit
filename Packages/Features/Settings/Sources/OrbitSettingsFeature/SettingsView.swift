@@ -2,13 +2,27 @@ import SwiftUI
 import OrbitDesignSystem
 import OrbitKit
 import OrbitAI
+import OrbitAccount
+import OrbitStore
 
 public struct SettingsView: View {
     private let appConfig: AppConfig
+    @Bindable private var account: AccountService
+    @Bindable private var entitlements: EntitlementService
+    private let onPresentPaywall: @MainActor () -> Void
     private let onDismiss: @MainActor () -> Void
 
-    public init(appConfig: AppConfig, onDismiss: @escaping @MainActor () -> Void) {
+    public init(
+        appConfig: AppConfig,
+        account: AccountService,
+        entitlements: EntitlementService,
+        onPresentPaywall: @escaping @MainActor () -> Void,
+        onDismiss: @escaping @MainActor () -> Void
+    ) {
         self.appConfig = appConfig
+        self.account = account
+        self.entitlements = entitlements
+        self.onPresentPaywall = onPresentPaywall
         self.onDismiss = onDismiss
     }
 
@@ -18,6 +32,7 @@ public struct SettingsView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: OrbitSpacing.xl) {
                         accountSection
+                        subscriptionSection
                         aboutSection
                         #if DEBUG
                         developerSection
@@ -36,20 +51,108 @@ public struct SettingsView: View {
         }
     }
 
+    // MARK: - Account
+
     private var accountSection: some View {
         VStack(alignment: .leading, spacing: OrbitSpacing.md) {
             OrbitSectionHeader("Account")
             OrbitCard {
-                VStack(alignment: .leading, spacing: OrbitSpacing.xxs) {
-                    Text("Guest")
+                accountCardContent
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var accountCardContent: some View {
+        switch account.state {
+        case .guest:
+            VStack(alignment: .leading, spacing: OrbitSpacing.xs) {
+                Text("Guest")
+                    .font(OrbitTypography.bodyEmphasized)
+                    .foregroundStyle(OrbitColor.textPrimary)
+                Text("Sign in with Apple to sync across your devices.")
+                    .font(OrbitTypography.footnote)
+                    .foregroundStyle(OrbitColor.textSecondary)
+            }
+
+        case .signedIn(let identity):
+            VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(identity.fullName ?? "Signed in")
                         .font(OrbitTypography.bodyEmphasized)
-                    Text("Sign in to sync across your devices.")
+                        .foregroundStyle(OrbitColor.textPrimary)
+                    if let email = identity.email {
+                        Text(email)
+                            .font(OrbitTypography.footnote)
+                            .foregroundStyle(OrbitColor.textSecondary)
+                    }
+                }
+                OrbitButton("Sign out", style: .secondary) {
+                    account.signOut()
+                    Haptics.play(.warning)
+                }
+            }
+
+        case .revoked:
+            VStack(alignment: .leading, spacing: OrbitSpacing.xs) {
+                Text("Apple ID changed")
+                    .font(OrbitTypography.bodyEmphasized)
+                    .foregroundStyle(OrbitColor.textPrimary)
+                Text("Your previous sign-in is no longer valid. Please sign in again from the welcome flow.")
+                    .font(OrbitTypography.footnote)
+                    .foregroundStyle(OrbitColor.textSecondary)
+            }
+        }
+    }
+
+    // MARK: - Subscription
+
+    private var subscriptionSection: some View {
+        VStack(alignment: .leading, spacing: OrbitSpacing.md) {
+            OrbitSectionHeader("Subscription")
+            OrbitCard {
+                VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+                    HStack(spacing: OrbitSpacing.xs) {
+                        Image(systemName: entitlements.state.isPro ? "sparkles" : "lock")
+                            .foregroundStyle(entitlements.state.isPro ? OrbitColor.accent : OrbitColor.textSecondary)
+                        Text(entitlements.state.isPro ? "Orbit Pro" : "Free")
+                            .font(OrbitTypography.bodyEmphasized)
+                            .foregroundStyle(OrbitColor.textPrimary)
+                        Spacer()
+                    }
+                    Text(subscriptionDetail)
                         .font(OrbitTypography.footnote)
                         .foregroundStyle(OrbitColor.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if !entitlements.state.isPro {
+                        OrbitButton("Upgrade to Pro", systemImage: "sparkles", style: .primary) {
+                            onPresentPaywall()
+                        }
+                    } else {
+                        OrbitButton("Restore purchases", style: .secondary) {
+                            Task { await entitlements.restore() }
+                        }
+                    }
                 }
             }
         }
     }
+
+    private var subscriptionDetail: String {
+        switch entitlements.state {
+        case .unknown:
+            return "Checking your subscription…"
+        case .free:
+            return "You're on the free plan. Upgrade for unlimited captures, AI organization, and sync."
+        case .pro(let expiresAt):
+            if let expiresAt {
+                return "Renews \(expiresAt.formatted(date: .abbreviated, time: .omitted))."
+            }
+            return "Lifetime plan. Yours forever."
+        }
+    }
+
+    // MARK: - About
 
     private var aboutSection: some View {
         VStack(alignment: .leading, spacing: OrbitSpacing.md) {

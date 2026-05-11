@@ -5,6 +5,7 @@ import OrbitDesignSystem
 @main
 struct OrbitApp: App {
     @State private var environment: AppEnvironment
+    @State private var onboardingComplete: Bool = OnboardingView.hasCompleted
 
     init() {
         let config = AppConfig.resolveFromBundle()
@@ -27,34 +28,48 @@ struct OrbitApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentRoot(environment: environment)
+            ContentRoot(
+                environment: environment,
+                onboardingComplete: $onboardingComplete
+            )
         }
     }
 }
 
-/// Tiny wrapper so we can attach `.onOpenURL` from a single place and
-/// dispatch deep links through `RootView`.
+/// Decides between onboarding and the main shell, and attaches whole-app
+/// modifiers (deep links, credential-state refresh) at a single place.
 private struct ContentRoot: View {
     let environment: AppEnvironment
+    @Binding var onboardingComplete: Bool
 
     var body: some View {
-        RootView()
-            .environment(environment)
-            .tint(OrbitColor.textPrimary)
-            .onOpenURL { url in
-                guard let link = DeepLink(url: url) else {
-                    OrbitLog.app.info("Ignored unrecognized URL: \(url.absoluteString, privacy: .public)")
-                    return
-                }
-                switch link {
-                case .capture:
-                    environment.requestedModal = .capture
-                case .search:
-                    // Tab switching needs RootView access; for now, just
-                    // surface intent. The search tab won't auto-switch until
-                    // we promote `selectedTab` into the environment.
-                    OrbitLog.app.info("Deep link search query received.")
-                }
+        Group {
+            if onboardingComplete {
+                RootView()
+            } else {
+                OnboardingView(
+                    account: environment.account,
+                    onComplete: { onboardingComplete = true }
+                )
             }
+        }
+        .environment(environment)
+        .tint(OrbitColor.textPrimary)
+        .task { await environment.account.refreshCredentialState() }
+        .onOpenURL { url in
+            guard let link = DeepLink(url: url) else {
+                OrbitLog.app.info("Ignored unrecognized URL: \(url.absoluteString, privacy: .public)")
+                return
+            }
+            switch link {
+            case .capture:
+                environment.requestedModal = .capture
+            case .search:
+                // Tab switching needs RootView access; for now, just
+                // surface intent. The search tab won't auto-switch until
+                // we promote `selectedTab` into the environment.
+                OrbitLog.app.info("Deep link search query received.")
+            }
+        }
     }
 }

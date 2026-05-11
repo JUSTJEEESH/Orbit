@@ -3,6 +3,7 @@ import OrbitDesignSystem
 import OrbitKit
 import OrbitDomain
 import OrbitMedia
+import OrbitStore
 import OrbitHomeFeature
 import OrbitTimelineFeature
 import OrbitSearchFeature
@@ -46,6 +47,15 @@ struct RootView: View {
             case .settings:
                 SettingsView(
                     appConfig: env.appConfig,
+                    account: env.account,
+                    entitlements: env.entitlements,
+                    onPresentPaywall: { env.requestedModal = .paywall },
+                    onDismiss: { env.requestedModal = nil }
+                )
+                .presentationDetents([.large])
+            case .paywall:
+                PaywallView(
+                    entitlements: env.entitlements,
                     onDismiss: { env.requestedModal = nil }
                 )
                 .presentationDetents([.large])

@@ -61,6 +61,24 @@ available.
 - `orbit://capture` — opens the capture sheet
 - `orbit://search` — switches to the search tab
 
+## Sign in with Apple
+
+The Apple Sign-In entitlement is declared on the Orbit target. SIWA works
+in the simulator using the simulator's Apple ID. Tokens persist in the
+Keychain under the service `com.orbit.app.account`; only the stable
+`user` identifier is stored — name and email are persisted only on the
+first sign-in (Apple returns them only once) and only if granted.
+
+## StoreKit testing
+
+`Configuration.storekit` declares three local products
+(`com.orbit.app.pro.monthly`, `.yearly`, `.lifetime`) for in-Xcode
+testing without an App Store Connect setup. The Orbit scheme references
+it via `storeKitConfiguration` so purchases route to the local
+configuration. To swap to real products later, point the
+`EntitlementService` `productIdentifiers` set at your App Store Connect
+IDs (or leave the defaults and create them in App Store Connect).
+
 ## Documentation
 
 - `PRODUCT_REQUIREMENTS.md` — product vision and feature scope
