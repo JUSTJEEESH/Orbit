@@ -38,10 +38,10 @@ public struct TimelineView: View {
     @ViewBuilder
     private var content: some View {
         switch loadState {
-        case .idle, .loading where memories.isEmpty:
+        case .idle:
             emptyState
         case .loading:
-            memoryList
+            if memories.isEmpty { emptyState } else { memoryList }
         case .loaded:
             if memories.isEmpty { emptyState } else { memoryList }
         case .failed(let message):
