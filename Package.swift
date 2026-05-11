@@ -20,6 +20,7 @@ let package = Package(
         .library(name: "OrbitDesignSystem", targets: ["OrbitDesignSystem"]),
         .library(name: "OrbitDomain", targets: ["OrbitDomain"]),
         .library(name: "OrbitPersistence", targets: ["OrbitPersistence"]),
+        .library(name: "OrbitMedia", targets: ["OrbitMedia"]),
         .library(name: "OrbitHomeFeature", targets: ["OrbitHomeFeature"]),
         .library(name: "OrbitTimelineFeature", targets: ["OrbitTimelineFeature"]),
         .library(name: "OrbitSearchFeature", targets: ["OrbitSearchFeature"]),
@@ -57,6 +58,14 @@ let package = Package(
             swiftSettings: swiftSettings
         ),
 
+        // MARK: - Media (audio, speech, link metadata)
+        .target(
+            name: "OrbitMedia",
+            dependencies: ["OrbitDomain"],
+            path: "Packages/OrbitMedia/Sources/OrbitMedia",
+            swiftSettings: swiftSettings
+        ),
+
         // MARK: - Features
         .target(
             name: "OrbitHomeFeature",
@@ -78,7 +87,7 @@ let package = Package(
         ),
         .target(
             name: "OrbitCaptureFeature",
-            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain"],
+            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitMedia"],
             path: "Packages/Features/Capture/Sources/OrbitCaptureFeature",
             swiftSettings: swiftSettings
         ),
@@ -106,6 +115,12 @@ let package = Package(
             name: "OrbitPersistenceTests",
             dependencies: ["OrbitPersistence", "OrbitDomain"],
             path: "Packages/OrbitPersistence/Tests/OrbitPersistenceTests",
+            swiftSettings: swiftSettings
+        ),
+        .testTarget(
+            name: "OrbitMediaTests",
+            dependencies: ["OrbitMedia"],
+            path: "Packages/OrbitMedia/Tests/OrbitMediaTests",
             swiftSettings: swiftSettings
         ),
     ]

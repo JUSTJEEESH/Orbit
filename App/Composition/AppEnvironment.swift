@@ -3,11 +3,12 @@ import SwiftData
 import OrbitKit
 import OrbitDomain
 import OrbitPersistence
+import OrbitMedia
 
-/// The composition root. Holds long-lived services (repositories, clocks) and
-/// pre-constructed use cases ready to be invoked by features. Always read via
-/// `@Environment(AppEnvironment.self)` — feature code must never construct
-/// one for itself.
+/// The composition root. Holds long-lived services (repositories, clocks,
+/// media services) and pre-constructed use cases ready to be invoked by
+/// features. Always read via `@Environment(AppEnvironment.self)` — feature
+/// code must never construct one for itself.
 @MainActor
 @Observable
 final class AppEnvironment {
@@ -17,6 +18,10 @@ final class AppEnvironment {
     let memories: any MemoryRepository
     let tasks: any TaskRepository
     let insights: any InsightRepository
+
+    let mediaStorage: MediaStorage
+    let speechTranscriber: SpeechTranscriber
+    let linkFetcher: LinkPreviewFetcher
 
     let captureMemory: CaptureMemoryUseCase
     let listMemories: ListMemoriesUseCase
@@ -39,13 +44,19 @@ final class AppEnvironment {
         clock: any OrbitClock,
         memories: any MemoryRepository,
         tasks: any TaskRepository,
-        insights: any InsightRepository
+        insights: any InsightRepository,
+        mediaStorage: MediaStorage,
+        speechTranscriber: SpeechTranscriber,
+        linkFetcher: LinkPreviewFetcher
     ) {
         self.appConfig = appConfig
         self.clock = clock
         self.memories = memories
         self.tasks = tasks
         self.insights = insights
+        self.mediaStorage = mediaStorage
+        self.speechTranscriber = speechTranscriber
+        self.linkFetcher = linkFetcher
 
         self.captureMemory = CaptureMemoryUseCase(repository: memories, clock: clock)
         self.listMemories = ListMemoriesUseCase(repository: memories)
@@ -63,19 +74,29 @@ extension AppEnvironment {
     /// `.cloudKit(containerIdentifier:)` when ready.
     static func makeProduction(appConfig: AppConfig) throws -> AppEnvironment {
         let container = try ModelContainerFactory.makeContainer(mode: .onDisk)
+        let storage = try MediaStorage()
         return AppEnvironment(
             appConfig: appConfig,
             clock: SystemClock(),
             memories: SwiftDataMemoryRepository(modelContainer: container),
             tasks: SwiftDataTaskRepository(modelContainer: container),
-            insights: SwiftDataInsightRepository(modelContainer: container)
+            insights: SwiftDataInsightRepository(modelContainer: container),
+            mediaStorage: storage,
+            speechTranscriber: SpeechTranscriber(),
+            linkFetcher: LinkPreviewFetcher()
         )
     }
 
-    /// Environment backed by in-memory fakes. Use for SwiftUI previews and
-    /// crash recovery scenarios where persistence init fails.
+    /// Environment backed by in-memory fakes for SwiftUI previews and crash
+    /// recovery. Media services use a fresh ephemeral storage root.
     static func makePreview(seed: [Memory] = []) -> AppEnvironment {
-        AppEnvironment(
+        // Force-try is acceptable here: previews fail loudly and obviously if
+        // the system temporary directory itself is unwritable.
+        let storage = try! MediaStorage(
+            root: FileManager.default.temporaryDirectory
+                .appendingPathComponent("orbit-preview-\(UUID().uuidString)", isDirectory: true)
+        )
+        return AppEnvironment(
             appConfig: AppConfig(
                 bundleIdentifier: "com.orbit.app",
                 displayName: "Orbit",
@@ -88,7 +109,10 @@ extension AppEnvironment {
             clock: SystemClock(),
             memories: InMemoryMemoryRepository(seed: seed),
             tasks: InMemoryTaskRepository(),
-            insights: InMemoryInsightRepository()
+            insights: InMemoryInsightRepository(),
+            mediaStorage: storage,
+            speechTranscriber: SpeechTranscriber(),
+            linkFetcher: LinkPreviewFetcher()
         )
     }
 }

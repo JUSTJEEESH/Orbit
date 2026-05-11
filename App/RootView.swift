@@ -1,6 +1,7 @@
 import SwiftUI
 import OrbitDesignSystem
 import OrbitKit
+import OrbitMedia
 import OrbitHomeFeature
 import OrbitTimelineFeature
 import OrbitSearchFeature
@@ -22,7 +23,12 @@ struct RootView: View {
             switch modal {
             case .capture:
                 CaptureView(
-                    captureMemory: env.captureMemory,
+                    viewModel: CaptureViewModel(
+                        captureMemory: env.captureMemory,
+                        mediaStorage: env.mediaStorage,
+                        speechTranscriber: env.speechTranscriber,
+                        linkFetcher: env.linkFetcher
+                    ),
                     onCompleted: {
                         env.memoriesDidChange()
                         presentedModal = nil

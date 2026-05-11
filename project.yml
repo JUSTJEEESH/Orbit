@@ -63,6 +63,8 @@ targets:
       - package: OrbitWorkspace
         product: OrbitPersistence
       - package: OrbitWorkspace
+        product: OrbitMedia
+      - package: OrbitWorkspace
         product: OrbitHomeFeature
       - package: OrbitWorkspace
         product: OrbitTimelineFeature
