@@ -23,6 +23,20 @@ public actor VoiceRecorder {
         public let file: StoredFile
         public let duration: TimeInterval
         public let peakLevels: [Float]
+
+        /// True when the recorder never observed any real signal —
+        /// suggests the mic input was effectively silent (simulator
+        /// without a working audio bridge, muted mic, denied
+        /// permission that was already granted by the system but lost
+        /// at the device level, etc.).
+        public var wasSilent: Bool {
+            // Normalized peak levels live in [0, 1]. Anything below
+            // this threshold is at or near the recorder's noise floor.
+            let threshold: Float = 0.02
+            guard !peakLevels.isEmpty else { return true }
+            let maxLevel = peakLevels.max() ?? 0
+            return maxLevel < threshold
+        }
     }
 
     private let storage: MediaStorage

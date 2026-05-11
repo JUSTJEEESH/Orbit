@@ -193,6 +193,19 @@ public final class CaptureViewModel {
         do {
             let result = try await recorder.stop()
             self.recorder = nil
+
+            // If the recorder never registered any signal (Mac / sim
+            // mic broken, mic muted, app denied at the device level
+            // after grant), tell the user clearly instead of saving
+            // an empty voice memo with "No transcript".
+            if result.wasSilent {
+                try? await mediaStorage.delete(filename: result.file.filename)
+                voiceState = .idle
+                errorMessage = "We didn't hear anything. Check your microphone, then try again."
+                Haptics.play(.failure)
+                return
+            }
+
             voiceState = .transcribing(file: result.file, duration: result.duration, levels: result.peakLevels)
             do {
                 let transcript = try await speechTranscriber.transcribe(fileAt: result.file.url)
