@@ -3,7 +3,7 @@
   "nonRenewingSubscriptions" : [],
   "products" : [
     {
-      "displayPrice" : "149.99",
+      "displayPrice" : "79.99",
       "familyShareable" : false,
       "internalID" : "com.orbit.app.pro.lifetime.id",
       "localizations" : [
@@ -42,7 +42,7 @@
         {
           "adHocOffers" : [],
           "codeOffers" : [],
-          "displayPrice" : "7.99",
+          "displayPrice" : "2.99",
           "familyShareable" : false,
           "groupNumber" : 1,
           "internalID" : "com.orbit.app.pro.monthly.id",
@@ -64,7 +64,7 @@
         {
           "adHocOffers" : [],
           "codeOffers" : [],
-          "displayPrice" : "59.99",
+          "displayPrice" : "24.99",
           "familyShareable" : false,
           "groupNumber" : 1,
           "internalID" : "com.orbit.app.pro.yearly.id",
