@@ -66,14 +66,21 @@ struct RootView: View {
 
     private var tabContent: some View {
         TabView(selection: $selectedTab) {
-            HomeView(
-                listMemories: env.listMemories,
-                refreshToken: env.memoryListVersion,
-                clock: env.clock
-            )
-                .tag(AppTab.home)
-                .tabItem { Label(AppTab.home.title, systemImage: AppTab.home.systemImage) }
+            // Each tab wraps in a NavigationStack so the profile toolbar
+            // has a navigation bar to live in. Timeline already manages
+            // its own stack for memory-detail navigation.
+            NavigationStack {
+                HomeView(
+                    listMemories: env.listMemories,
+                    refreshToken: env.memoryListVersion,
+                    clock: env.clock
+                )
+                .navigationTitle("")
+                .navigationBarTitleDisplayMode(.inline)
                 .toolbar { profileToolbar }
+            }
+            .tag(AppTab.home)
+            .tabItem { Label(AppTab.home.title, systemImage: AppTab.home.systemImage) }
 
             TimelineView(
                 listMemories: env.listMemories,
@@ -85,10 +92,14 @@ struct RootView: View {
                 .tabItem { Label(AppTab.timeline.title, systemImage: AppTab.timeline.systemImage) }
                 .toolbar { profileToolbar }
 
-            SearchView(viewModel: SearchViewModel(searchMemories: env.searchMemories))
-                .tag(AppTab.search)
-                .tabItem { Label(AppTab.search.title, systemImage: AppTab.search.systemImage) }
-                .toolbar { profileToolbar }
+            NavigationStack {
+                SearchView(viewModel: SearchViewModel(searchMemories: env.searchMemories))
+                    .navigationTitle("")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar { profileToolbar }
+            }
+            .tag(AppTab.search)
+            .tabItem { Label(AppTab.search.title, systemImage: AppTab.search.systemImage) }
         }
         .tint(OrbitColor.textPrimary)
     }
