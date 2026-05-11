@@ -4,28 +4,45 @@ AI-powered second brain for iOS.
 
 ## Stack
 
-- SwiftUI
-- SwiftData
-- Firebase
-- OpenAI
-- iOS latest SDK
+- SwiftUI (iOS 26+)
+- SwiftData + CloudKit private database
+- Apple Foundation Models (on-device) with cloud fallback via edge-function proxy
+- Swift 6 with strict concurrency
 
 ## Requirements
 
-- Xcode latest stable
-- iOS latest stable
+- Xcode 16+
+- iOS 26 SDK
+- [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`)
 
 ## Setup
 
-1. Clone repo
-2. Add Firebase config
-3. Add OpenAI API key
-4. Build & run
+```bash
+xcodegen generate
+open Orbit.xcodeproj
+```
 
-## Architecture
+The Xcode project is generated from `project.yml`. Edit `project.yml` and the
+SwiftPM packages in `Packages/` — do not edit `Orbit.xcodeproj` directly (it is
+git-ignored).
 
-See:
-- PRODUCT_REQUIREMENTS.md
-- DESIGN_SYSTEM.md
-- ARCHITECTURE.md
-- CLAUDE.md
+## Module map
+
+| Package | Purpose |
+| --- | --- |
+| `OrbitKit` | Cross-cutting: Logger, Haptics, AppConfig, Clock |
+| `OrbitDesignSystem` | Tokens, typography, primitives, motion |
+| `OrbitDomain` | Entities, repository protocols, use cases (no framework deps) |
+| `OrbitPersistence` | SwiftData models + CloudKit mirror (Phase 1) |
+| `OrbitAI` | Foundation Models + cloud fallbacks (Phase 3) |
+| `OrbitSearch` | Embeddings + hybrid search (Phase 4) |
+| `OrbitMedia` | Audio, OCR, image pipeline (Phase 2) |
+| `OrbitHomeFeature` / `OrbitTimelineFeature` / `OrbitSearchFeature` / `OrbitCaptureFeature` / `OrbitSettingsFeature` | Feature modules |
+
+## Documentation
+
+- `PRODUCT_REQUIREMENTS.md` — product vision and feature scope
+- `DESIGN_SYSTEM.md` — visual + motion language
+- `ARCHITECTURE.md` — layered architecture rules
+- `CLAUDE.md` — authoritative engineering rules
+- `ROADMAP.md` — phased delivery plan

@@ -1,0 +1,72 @@
+# XcodeGen project definition. Run `xcodegen generate` to (re)create Orbit.xcodeproj.
+# Keeping the project file generated avoids merge conflicts and keeps source as the truth.
+
+name: Orbit
+options:
+  bundleIdPrefix: com.orbit
+  deploymentTarget:
+    iOS: "26.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+  groupSortPosition: top
+  xcodeVersion: "16.0"
+
+configs:
+  Debug: debug
+  Release: release
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+  configs:
+    Debug:
+      baseConfig: Config/Debug.xcconfig
+    Release:
+      baseConfig: Config/Release.xcconfig
+
+packages:
+  OrbitWorkspace:
+    path: .
+
+targets:
+  Orbit:
+    type: application
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: App
+    resources:
+      - path: App/Resources
+    info:
+      path: App/Resources/Info.plist
+      properties:
+        CFBundleDisplayName: Orbit
+        UILaunchScreen:
+          UIColorName: launch.background
+        NSMicrophoneUsageDescription: Orbit uses the microphone to capture voice notes you record.
+        NSSpeechRecognitionUsageDescription: Orbit transcribes your voice notes on-device so they become searchable.
+        NSPhotoLibraryUsageDescription: Orbit lets you save screenshots and photos as memories.
+        NSCameraUsageDescription: Orbit lets you capture moments straight into your memory timeline.
+        NSUserActivityTypes:
+          - com.orbit.capture
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app
+        CODE_SIGN_ENTITLEMENTS: App/Resources/Orbit.entitlements
+    dependencies:
+      - package: OrbitWorkspace
+        product: OrbitKit
+      - package: OrbitWorkspace
+        product: OrbitDesignSystem
+      - package: OrbitWorkspace
+        product: OrbitDomain
+      - package: OrbitWorkspace
+        product: OrbitHomeFeature
+      - package: OrbitWorkspace
+        product: OrbitTimelineFeature
+      - package: OrbitWorkspace
+        product: OrbitSearchFeature
+      - package: OrbitWorkspace
+        product: OrbitCaptureFeature
+      - package: OrbitWorkspace
+        product: OrbitSettingsFeature
