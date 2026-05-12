@@ -56,6 +56,7 @@ final class AppEnvironment {
     let updateTask: UpdateTaskUseCase
     let deleteTask: DeleteTaskUseCase
     let askOrbit: AskOrbitUseCase
+    let listOnThisDay: ListOnThisDayUseCase
 
     /// Bumped whenever the memory collection changes. Feature views observe
     /// it via `.task(id: env.memoryListVersion)` to refetch lazily — until
@@ -216,6 +217,7 @@ final class AppEnvironment {
             ai: ai,
             clock: clock
         )
+        self.listOnThisDay = ListOnThisDayUseCase(memories: memories, clock: clock)
 
         // Notifications can't reach the modal binding directly (it lives on
         // env). Hand the service a closure that flips the binding when the

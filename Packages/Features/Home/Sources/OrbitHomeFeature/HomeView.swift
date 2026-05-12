@@ -7,6 +7,7 @@ import OrbitMemoryDetailFeature
 public struct HomeView: View {
     private let listMemories: ListMemoriesUseCase
     private let generateInsights: GenerateInsightsUseCase
+    private let listOnThisDay: ListOnThisDayUseCase
     private let refreshToken: Int
     private let clock: any OrbitClock
     private let makeDetailViewModel: @MainActor (UUID) -> MemoryDetailViewModel
@@ -17,6 +18,8 @@ public struct HomeView: View {
     @State private var memories: [Memory] = []
     @State private var loadState: LoadState = .idle
     @State private var primaryInsight: SmartInsight?
+    @State private var onThisDay: OnThisDayContent?
+    @State private var showOnThisDay: Bool = false
     @Namespace private var heroNamespace
     @Environment(\.orbitTheme) private var orbitTheme
 
@@ -27,6 +30,7 @@ public struct HomeView: View {
     public init(
         listMemories: ListMemoriesUseCase,
         generateInsights: GenerateInsightsUseCase,
+        listOnThisDay: ListOnThisDayUseCase,
         refreshToken: Int = 0,
         clock: any OrbitClock = SystemClock(),
         makeDetailViewModel: @escaping @MainActor (UUID) -> MemoryDetailViewModel,
@@ -36,6 +40,7 @@ public struct HomeView: View {
     ) {
         self.listMemories = listMemories
         self.generateInsights = generateInsights
+        self.listOnThisDay = listOnThisDay
         self.refreshToken = refreshToken
         self.clock = clock
         self.makeDetailViewModel = makeDetailViewModel
@@ -64,6 +69,16 @@ public struct HomeView: View {
                 onDeleted: {}
             )
             .navigationTransition(.zoom(sourceID: route.memoryID, in: heroNamespace))
+        }
+        .sheet(isPresented: $showOnThisDay) {
+            if let onThisDay {
+                OnThisDayView(
+                    content: onThisDay,
+                    makeDetailViewModel: makeDetailViewModel,
+                    onDismiss: { showOnThisDay = false }
+                )
+                .presentationDetents([.large])
+            }
         }
         .task(id: refreshToken) { await reload() }
     }
@@ -153,6 +168,9 @@ public struct HomeView: View {
     private var loadedContent: some View {
         VStack(alignment: .leading, spacing: OrbitSpacing.xxl) {
             todaySection
+            if let onThisDay, !onThisDay.isEmpty {
+                onThisDayCard(onThisDay)
+            }
             if shouldShowRecapInvite {
                 recapCard
             }
@@ -161,6 +179,64 @@ public struct HomeView: View {
             }
             recentSection
         }
+    }
+
+    // MARK: - On This Day
+
+    /// Editorial nostalgia card. Shows the years-ago count in serif as the
+    /// hero, with a snippet from the oldest matching memory. Tap opens the
+    /// chronological sheet across every past year that has a memory.
+    private func onThisDayCard(_ content: OnThisDayContent) -> some View {
+        let themeColor = themeAccent
+        let yearsAgo = content.yearsAgoForFeatured() ?? 0
+        let featured = content.featured
+        return Button {
+            Haptics.play(.tap)
+            showOnThisDay = true
+        } label: {
+            OrbitCard(elevation: .resting) {
+                VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+                    OrbitEyebrow(
+                        label: "On This Day",
+                        suffix: content.today.formatted(.dateTime.month(.abbreviated).day()),
+                        tint: themeColor
+                    )
+                    Text(yearsAgo == 1 ? "1 year ago today" : "\(yearsAgo) years ago today")
+                        .font(.system(size: 22, weight: .semibold, design: .serif))
+                        .foregroundStyle(OrbitColor.textPrimary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let featured {
+                        Text(headlineText(for: featured))
+                            .font(OrbitTypography.callout)
+                            .foregroundStyle(OrbitColor.textSecondary)
+                            .lineLimit(3)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    HStack(spacing: 6) {
+                        Text(subtitle(for: content))
+                            .font(OrbitTypography.footnote)
+                            .foregroundStyle(OrbitColor.textTertiary)
+                        Spacer()
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(OrbitColor.textTertiary)
+                    }
+                    .padding(.top, OrbitSpacing.xxs)
+                }
+            }
+        }
+        .buttonStyle(OrbitBloomButtonStyle(tint: themeAccent))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("On This Day. \(yearsAgo) years ago today. \(featured.map { headlineText(for: $0) } ?? "").")
+        .accessibilityHint("Double-tap to revisit past years on this date.")
+    }
+
+    private func subtitle(for content: OnThisDayContent) -> String {
+        let count = content.totalCount
+        let years = content.memoriesByYear.count
+        let memoryWord = count == 1 ? "memory" : "memories"
+        let yearWord = years == 1 ? "year" : "years"
+        return "\(count) \(memoryWord) across \(years) \(yearWord)"
     }
 
     /// Single rotating insight surface on Home. We deliberately show one at a
@@ -434,9 +510,14 @@ public struct HomeView: View {
         } catch {
             loadState = .failed(String(describing: error))
         }
-        // Insights run in parallel with the list; failure is silent because
-        // an empty insight surface is the natural fallback.
+        // Insights + On This Day run in parallel with the list; failures
+        // are silent because their absence is the natural fallback.
         await reloadInsights()
+        await reloadOnThisDay()
+    }
+
+    private func reloadOnThisDay() async {
+        onThisDay = try? await listOnThisDay()
     }
 
     private func reloadInsights() async {

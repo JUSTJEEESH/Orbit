@@ -130,6 +130,7 @@ struct RootView: View {
                 HomeView(
                     listMemories: env.listMemories,
                     generateInsights: env.generateInsights,
+                    listOnThisDay: env.listOnThisDay,
                     refreshToken: env.memoryListVersion,
                     clock: env.clock,
                     makeDetailViewModel: makeDetailViewModel,
