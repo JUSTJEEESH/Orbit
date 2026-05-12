@@ -1,17 +1,16 @@
 # Sample data + screenshot capture playbook
 
 The simulator (or test device) needs to feel **lived-in** before
-screenshots. Empty screens read as a hollow product; over-populated
-screens read as theatrical. Below is a tight set of seed memories and
-tasks designed to make every shot in
-[`screenshots.md`](./screenshots.md) look natural — about 30 minutes
-of setup, max.
+screenshots. Empty screens read as a hollow product; one-line stubs
+read as fake. The seed below uses paragraph-length captures with
+specific, believable detail so when you take screenshots, every
+memory looks like something a real person would write down.
 
-A consistent voice helps: I've written everything below as if it
-were captured by one person — calm, curious, mid-30s — over the
-last few weeks. You can tweak any line, but keep the *register*: no
-exclamation marks, no LinkedIn-style #motivation, no embarrassingly
-personal content.
+A consistent voice helps: I've written everything as if captured by
+one person — calm, curious, mid-30s, lives near a coastal city —
+over the last two weeks. Tweak any line, but keep the *register*:
+no exclamation marks, no LinkedIn-style #motivation, no
+embarrassingly personal content.
 
 ---
 
@@ -24,259 +23,446 @@ personal content.
 - iOS 26 latest.
 - Run in **Light mode** unless a screenshot specifies dark.
 - Set the simulator status bar to the canonical 9:41, full bars,
-  full battery: in Xcode, **Features → Toggle Software Keyboard**
-  to dismiss, then `xcrun simctl status_bar booted override --time "9:41" --batteryLevel 100 --cellularBars 4 --wifiBars 3`
-  from terminal.
+  full battery: in terminal:
+  ```
+  xcrun simctl status_bar booted override --time "9:41" --batteryLevel 100 --cellularBars 4 --wifiBars 3
+  ```
+  Run this each time the simulator boots.
 
 ### Onboarding
 
-Run through onboarding once with **Allow** on all four permissions
+Run through onboarding with **Allow** on all four permissions
 (Notifications, Mic, Speech, Photos — the only ones we ask for now).
-Sign in with Apple if you want the Account row to show a name in
-the Settings screenshot; skip it for a guest-mode shot.
+Sign in with Apple if you want the Account row to show your name in
+the Settings screenshot. Skip it for a guest-mode shot.
 
 ### Theme
 
-Default theme is **Aurora** (cool blue). For Year in Review, **Daily
-Recap**, and **Ask Orbit** screenshots, leave it on Aurora — the
-accent reads as our brand color in every shot.
+Default theme is **Aurora** (cool blue). Leave it on Aurora for
+every screenshot — the accent reads as our brand color throughout.
+
+### Recording voice memos efficiently
+
+The voice captures below are 30–45 seconds each. You can:
+
+1. **Read them aloud into the Mac's mic** — natural speech, lets
+   Apple's transcriber demonstrate real-world quality.
+2. **Use macOS's `say` command** to play the text through speakers
+   while the simulator records:
+   ```
+   say -v Ava -r 175 "$(cat memory-1.txt)"
+   ```
+   Higher fidelity, no audible "uhms," consistent take-after-take.
+
+Either works. Reading them yourself is faster for v1.
 
 ---
 
-## Seed memories (capture these in order)
+## Seed memories (capture in order)
 
-12 captures, ordered roughly the way someone would build them up over
-a real week. The order also makes them appear in a believable
-timeline grouping.
+12 captures, ordered roughly the way a real person would build them
+up over a week. The order also makes the timeline group believably.
 
 ### 1 ▸ Voice note · this morning (Today)
 
-**Type**: Voice
-**Capture flow**: Capture sheet → Voice → record 18 seconds → save
-**Transcript** (read this into the mic):
+**Type:** Voice
+**Capture flow:** Capture → Voice → record while reading the script
+below → save
 
-> "Note to self — that bookshop in Roatan, the one with the iron
-> spiral staircase. I want to remember the owner's name. He
-> recommended that novel by the Argentinian writer. The one with the
-> coffee."
+**Transcript script** (~40 seconds spoken naturally):
 
-This anchors the **Ask Orbit demo** later — the question we use is
-"What did the bookshop owner recommend?"
+> Note to self about that bookshop in Roatan — the one with the
+> iron spiral staircase up to the second floor. The owner's name
+> escapes me. I want to say Mateo, or maybe Mateusz, something
+> starting with M. He pulled three novels off the shelf for me and
+> made me coffee in this little Bialetti while we talked. The one
+> he kept coming back to was an Argentinian writer, I think César
+> Aira — a thin paperback with a yellow cover, almost like a
+> pamphlet. I promised him I'd order it when I got home and I have
+> not. The shop is two blocks off the main square, painted a deep
+> teal, and there's a tabby cat that sleeps on the philosophy
+> table.
+
+This anchors **Ask Orbit screenshot #5** — the demo question we use
+is *"What did the bookshop owner recommend?"* Make sure this memory
+exists before that screenshot.
 
 ---
 
-### 2 ▸ Text note · earlier today
+### 2 ▸ Text note · today (afternoon)
 
-**Type**: Text
-**Capture flow**: Capture → Text → type, save
+**Type:** Text
 
-> Idea for the talk: open with the Kandinsky quote about the soul
-> being a piano with many strings. Then the Brian Eno bit about
-> "scenius" — credit goes to a community, not an individual.
+```
+Idea for opening the talk next month — start with the Kandinsky line
+about the soul being a piano with many strings, and the artist as the
+hand that plays it. Bridge to Brian Eno's idea of "scenius" — the
+credit for good work doesn't belong to one person, it belongs to a
+community, an ecology. The whole point of the talk is that the work
+happens at the intersection, not the peak.
 
-Why: shows the timeline rendering a thoughtful "creative work" note.
-This becomes one of the **Daily Recap highlights**.
+Maybe close with the Anne Lamott line about radio towers — that
+we're all just transmitting and receiving, and the worst thing we
+can do is mistake our station for the signal itself.
+
+I should ask Maria if she'll do the intro. She owes me one.
+```
+
+Why: contains the "I should…" pattern that triggers the **Tasks
+suggestion engine** (Ask Maria for intro), and reads as a real
+working note. Becomes a **Daily Recap highlight**.
 
 ---
 
 ### 3 ▸ Photo capture · today
 
-**Type**: Photo
-**Capture flow**: Capture → Photo → pick any clean image from the
-simulator's photo library (the simulator ships with a few stock
-images — the dog or the lake works well)
-**Caption**: leave blank
+**Type:** Photo
+**Capture flow:** Capture → Photo → pick a clean image from the
+simulator's photo library. The simulator ships with a few stock
+photos — the dog or the cat works well.
 
-The AI will write a caption automatically. Use the **dog image** if
-you have it — it categorizes as `pets` and that becomes a nice
-category tint later.
+**Caption (paste into the caption field):**
+
+```
+Chispita on the kitchen floor where the late-afternoon light hits at
+exactly 4 PM, which means we have about eight minutes before she
+rolls over and the show's over. The vet said the new food is helping
+with her hip — she's been moving more easily this week, jumping back
+up onto the bed without the running start.
+```
+
+Why: a real photo caption with personality and continuity (the dog
+shows up later in habits/recap). Will tag as `pets` or similar.
 
 ---
 
 ### 4 ▸ Link capture · today
 
-**Type**: Link
-**Capture flow**: Capture → Link → paste the URL below → save
+**Type:** Link
+**URL:**
 
 ```
 https://www.newyorker.com/magazine/2024/02/12/the-new-economics-of-the-arts
 ```
 
-(or any real New Yorker / Atlantic article URL — Orbit fetches the
-title and image preview automatically)
+(any real long-form URL works — Orbit fetches title + preview
+automatically.)
 
-Why: shows the timeline mixing kinds (voice, text, photo, link).
-This becomes the "Reading List" entry implicitly because it's a
-link.
+**Body / comment to add** (paste into the body field):
+
+```
+Read this twice this week, both times angry then thoughtful. The
+argument I keep returning to is that subsidy isn't generosity, it's
+infrastructure — the same way roads are, the same way libraries
+are. Save for the talk. Maybe use the closing paragraph as a
+reading.
+```
+
+Why: shows the timeline mixing kinds, demonstrates link previews
+with attached commentary.
 
 ---
 
-### 5 ▸ Voice note · yesterday (00:01 yesterday)
+### 5 ▸ Voice note · yesterday
 
-To get a memory dated yesterday in the simulator, either:
-- Change the simulator system clock back one day before capturing, or
-- Capture today and just accept the timeline will show today; the
-  visual quality is the same.
+To get a memory dated yesterday in the simulator: change the system
+clock back one day before capturing, or just accept the timeline
+will show today (visual quality is identical).
 
-**Type**: Voice
-**Transcript** (15s):
+**Type:** Voice
+**Transcript script** (~45 seconds spoken naturally):
 
-> "Pamela said the new restaurant in the Castro was incredible — she
-> had the lamb tasting menu with her sister. We should try to go
-> next weekend."
+> OK so Pamela called this morning — she finally tried that new
+> restaurant in the Castro everyone's been talking about. I think
+> it's called Florín, with the umlaut maybe, I'm not sure. She went
+> with her sister last Thursday and had the lamb tasting menu, said
+> the second course was the single best thing she's eaten this year.
+> Three different cuts of lamb, all from the same farm in Sonoma, with
+> this charred fennel thing on the side that she said she still
+> thinks about. We should try to get a reservation for next weekend
+> if Daniel and I can find a sitter. She said book three weeks out,
+> they don't take walk-ins, and Tuesdays through Thursdays are
+> easier than weekends.
 
-This anchors **Ask Orbit screenshot #5** — question is "What did
-Pamela say about the restaurant?"
+This anchors **Ask Orbit screenshot #5** — the question for that
+screenshot is *"What did Pamela say about the restaurant?"*
 
 ---
 
 ### 6 ▸ Text note · 2 days ago
 
-**Type**: Text
+**Type:** Text
 
-> Reminder to myself: I should write to Dr. Tanaka about the follow-up
-> in March. The lab results were better than expected.
+```
+Reminder to myself: I should write to Dr. Tanaka about the follow-up
+in March. The lab results from October were better than expected —
+cholesterol came down 28 points, A1C is back in normal range for the
+first time in two years. He asked me to send him a quick paragraph
+on how the new routine is going before we book the next physical.
+Just a few sentences, no need to be fancy.
 
-Why: contains the "I should…" pattern that triggers the **Tasks
-suggestion engine**, which we want to see populated in the Tasks
-screenshot.
+Things to mention: the running is consistent now (four days a week
+since November), I'm sleeping seven hours instead of five, the
+afternoon brain fog is gone. Don't mention the coffee.
+```
+
+Why: contains the "I should…" pattern that triggers another **Task
+suggestion**. Adds a real medical-life thread to the timeline that
+makes the user feel like a fully-rounded person.
 
 ---
 
-### 7 ▸ Text note · 3 days ago
+### 7 ▸ Text note · 3 days ago (Gratitude)
 
-**Type**: Text
+**Type:** Text
+**Capture flow:** Home → tap the **Gratitude pill** → fill in three
+fields with the content below.
 
-> Three things I'm grateful for today —
->   1. The afternoon light on the kitchen counter at 4pm.
->   2. That my sister called just to say hi.
->   3. Coffee that wasn't even particularly good but felt earned.
+If the Gratitude flow has three numbered inputs, paste each section
+into the corresponding field. If it falls back to a single text
+field, paste the whole thing.
 
-Why: shows the **Gratitude** flow rendering with the numbered list
-formatting. Will be tagged automatically as `gratitude`.
+```
+1. The afternoon light on the kitchen counter at exactly 4 PM, when
+it hits the marble at the right angle and the whole room goes amber
+for about twenty minutes. I forgot how much I missed it during the
+renovation last year.
+
+2. That my sister called just to say hi — no agenda, no logistics,
+no asking for anything. She just wanted to know how I was doing. We
+talked for an hour about nothing important and I felt like a whole
+person again afterward.
+
+3. Coffee that wasn't even particularly good — the gas station kind,
+in a styrofoam cup — but felt earned because it was the first thing
+after the morning run and I drank it sitting on the trunk of the car
+while the sun came up over the hills.
+```
+
+Why: shows the Gratitude flow rendering with a numbered list,
+auto-tags as `gratitude`, and adds a beautiful editorial-feeling
+memory to the timeline.
 
 ---
 
 ### 8 ▸ Voice note · 4 days ago
 
-**Type**: Voice
-**Transcript** (12s):
+**Type:** Voice
+**Transcript script** (~35 seconds):
 
-> "Ran the river loop again. Six and a half kilometers, sub-thirty
-> for the first time. Beautiful morning, the herons were back."
+> Just finished the river loop, second time this week — six and a
+> half kilometers, came in just under thirty minutes for the first
+> time since the surgery last spring. The herons are back at the
+> bend by the old pump house, three of them this morning, standing
+> like statues, and the willow has started to bud out which means
+> we're maybe two weeks from the bay being warm enough to swim.
+> Felt good in my knees, no twinges, which has not been the case
+> for most of February. I think the new shoes are working. Also I
+> need to remember to thank Daniel for picking those out, the color
+> is hideous but the fit is right.
 
-Why: contains the habit-tracking patterns ("ran X km") — feeds the
-**Habits tab** with a believable activity.
+Why: contains the habit-tracking patterns ("ran X km", "running")
+— feeds the **Habits tab**. Also has a thank-Daniel mention that
+the AI may pick up as a person reference.
 
 ---
 
 ### 9 ▸ Photo · 5 days ago
 
-**Type**: Photo
-**Caption**: leave blank — let the AI infer it
+**Type:** Photo
+**Capture flow:** any landscape or outdoor shot from the simulator
+library.
 
-Use a generic outdoor / city / coffee shot from the simulator
-library. This adds a photo memory deeper in the timeline.
+**Caption:**
+
+```
+The bay from the bench by the lighthouse, just before sunset. There
+were three sailboats out, all heading the same direction, which
+never happens. It looked staged. I stood there for ten minutes
+after I took this just to make sure I wasn't going to take it for
+granted later.
+```
+
+Why: depth in the timeline + a beautifully written photo caption
+that reinforces the app's calm register.
 
 ---
 
 ### 10 ▸ Link · last week
 
-**Type**: Link
-**URL**:
+**Type:** Link
+**URL:**
 
 ```
 https://every.to/p/the-end-of-organizing
 ```
 
-Or any real essay URL. The link memory shows up in **Reading List**
-as a "want to read" entry if you preface it with "want to read".
-For this one, leave the body blank.
+(any real essay URL works.)
+
+**Body / comment:**
+
+```
+Saving this for later — Olivia mentioned it on the call last night,
+said it changed how she thinks about deadlines and to-do lists. The
+premise is that organization is a coping mechanism for anxiety more
+than a productivity strategy, and most of the systems we build are
+just ways to feel in control. Worth thirty minutes when I'm not
+exhausted. Read with the phone in another room.
+```
+
+Why: Reading List entry, varied timeline content.
 
 ---
 
 ### 11 ▸ Text note · 2 weeks ago
 
-**Type**: Text
+**Type:** Text
 
-> I want to read "The Master and Margarita" — Pamela mentioned it
-> twice now in different contexts. The translation she said matters
-> is the Pevear one.
+```
+I want to read "The Master and Margarita" — Pamela has mentioned it
+twice now in different contexts, once when we were talking about
+Bulgakov in general and once when she was describing the cat that
+lives in the apartment downstairs from her. The translation she
+said matters is the Pevear and Volokhonsky one, not the older one
+with the simpler prose. She said the cat — Behemoth, in the novel —
+is the best character in any novel she's read.
 
-Why: contains the "I want to read X" pattern — feeds **Reading
-List** with a believable entry.
+I trust her completely on this. Add to the list. Borrow from the
+library first, buy a copy if I love it.
+```
+
+Why: contains the "I want to read…" pattern — feeds **Reading
+List** with a real-feeling entry.
 
 ---
 
 ### 12 ▸ Letter to future self · today (Time Capsule)
 
-**Type**: Letter
-**Capture flow**: Home → tap the **letter pill** → write the body
+**Type:** Letter
+**Capture flow:** Home → tap the **letter pill** → paste the body
 below → set surface date to **6 months from today** → seal it.
 
-> Dear me, six months from now —
->
-> I started something this month that I wasn't sure I could finish.
-> By the time you read this, you either did, or you didn't, and
-> either way I want you to know I'm proud of the part where I
-> tried.
->
-> Be gentle.
+```
+Dear me, six months from now —
 
-Why: shows the **Letter / Time Capsule** flow. The home screen will
-show a "1 sealed" indicator after this. Not used directly in the 8
-screenshots, but adds depth if anyone looks closely.
+I started something this month that I wasn't sure I could finish,
+and by the time you read this you'll either know how it went or
+you'll be in the middle of finding out. Either way, I'm writing to
+you now because the version of me that started it deserves to be
+remembered by the version of you that knows the ending.
+
+Some specifics for context. I'm sitting in the kitchen, it's late,
+there's half a mug of cold tea next to the laptop and Chispita is
+asleep under the table. The talk is in three weeks. The annual
+physical is in March. Daniel's birthday is in April and I haven't
+planned anything yet but I will. Maria called yesterday about the
+trip and we agreed to push it to June, so don't beat yourself up
+about not having gone in May — that was the right call.
+
+What I want you to know — what I'm telling you, future self — is
+that the part where you tried, even if it didn't work out, is the
+part that matters. I'm proud of that part. Be proud of that part.
+Whatever happened next, you didn't make it not have happened. You
+started. That counts.
+
+Be gentle with yourself. Eat something. Call your sister.
+
+— me, today.
+```
+
+Why: a full letter that reads as a real letter — specific names,
+real time markers, emotional substance. The Home screen will show
+a "1 sealed" indicator after this. Not used directly in the eight
+screenshots, but adds depth if anyone tests time-capsule UI.
 
 ---
 
 ## Seed tasks
 
-6 tasks, generated naturally if you capture memories #2 + #6 (the
-"I should…" patterns will surface them as task suggestions). To
-fill the Tasks tab beyond suggestions:
+Promote three of the suggestions Orbit auto-generates from the
+memories above, then manually add three more.
 
 ### Promote 3 suggestions → real tasks
 
-After capture #6 + #11, open the **Tasks** tab. You'll see them as
-**Suggestions**. Tap each → **Add task**.
+After captures #2, #6, and #11 land, open the **Tasks tab**. The
+"Suggestions" section will show:
 
-After capture #2, the talk-opener idea: tap the suggestion → **Add
-task**, set due date to **next Friday**.
+- **Ask Maria if she'll do the intro for the talk** (from #2)
+- **Write to Dr. Tanaka about the follow-up in March** (from #6)
+- **Read "The Master and Margarita" (Pevear translation)** (from #11)
+
+Tap each → **Add task**. Set due dates:
+
+- "Ask Maria for intro" → **next Friday**
+- "Write to Dr. Tanaka" → **end of next week**
+- "Read 'Master and Margarita'" → no due date (it's a reading list
+  item, not a deadline)
 
 ### Manually add 3 more
 
-From the Tasks tab → tap **+** → add each with the due dates shown:
+Tasks tab → tap **+** → add each:
 
-| Title                                    | Due       | Notes                                |
-|------------------------------------------|-----------|--------------------------------------|
-| Call dentist about Friday appointment    | Tomorrow  | Confirm 2:30 still works             |
-| Pick up dry cleaning                     | Today     | _(leave notes blank)_                |
-| Book flights for spring trip             | Next week | Daniel + Maria want to come now too  |
+#### Task 1
+- **Title:** `Call dentist about Friday appointment`
+- **Due:** Tomorrow
+- **Notes:**
+  ```
+  Confirm the 2:30 slot still works. Need to ask about the crown
+  estimate too — Dr. Patel mentioned insurance would cover roughly
+  70%, but I want to see the actual number before saying yes. If
+  they need to reschedule, push to the following week, not the one
+  after — Daniel's parents are in town starting the 19th.
+  ```
 
-Now the Tasks tab has:
-- 3 promoted from memory suggestions
+#### Task 2
+- **Title:** `Pick up dry cleaning`
+- **Due:** Today
+- **Notes:**
+  ```
+  Two shirts (the white linen and the blue oxford) plus the navy
+  suit at the place on 4th. They close at 6 on Wednesdays. Pay
+  cash if they have it — they prefer it and there's a small
+  discount.
+  ```
+
+#### Task 3
+- **Title:** `Book flights for spring trip`
+- **Due:** Next week
+- **Notes:**
+  ```
+  Daniel and Maria both want to come now, so we're looking at four
+  tickets, not two. Aim for the second week of May, ideally landing
+  on the 11th. Daniel needs to be back by the 19th for the
+  conference. Aim for under $600 a ticket if we go through SFO —
+  OAK is fine if SFO doesn't work, but the connection is brutal.
+  Use the Chase points first.
+  ```
+
+After this, the Tasks tab has:
+
+- 3 promoted from memory suggestions (with linked-memory chips)
 - 3 manually added
-- A **Today** section (Pick up dry cleaning)
-- An **Open** section (the rest)
+- A populated **Today** row (Pick up dry cleaning)
+- A populated **Upcoming** section (Call dentist tomorrow, others later)
 - (Optional) Mark "Pick up dry cleaning" as completed for a
-  **Completed** section to appear
+  **Completed** section in the screenshot.
 
 ---
 
 ## Seed health data (for Daily Recap screenshot)
 
-If the simulator's HealthKit is empty, the bottom of the Daily Recap
-won't show the sleep + steps line. To populate it:
+The simulator's HealthKit is empty by default. To populate:
 
-1. Open the **Health** app in the simulator.
+1. Open the **Health** app in the simulator (it's pre-installed).
 2. Browse → **Sleep** → Add Data:
-   - Bedtime: yesterday at 11:14 PM
-   - Wake: today at 6:42 AM
+   - Bedtime: yesterday at **11:14 PM**
+   - Wake: today at **6:42 AM**
 3. Browse → **Steps** → Add Data:
    - Today: **8,432** steps
-4. Open Orbit → Settings → **Health** → toggle on → grant access.
+4. Back in Orbit → Settings → **Health** → toggle on → grant
+   access when iOS prompts.
 
-Now the Daily Recap footer reads:
+Now the Daily Recap footer renders:
 > 🛏 7h 28m asleep · 🚶 8,432 steps
 
 ---
@@ -285,154 +471,173 @@ Now the Daily Recap footer reads:
 
 ### 1 ▸ Brand opener (composed in Figma)
 
-No simulator capture needed. This is a Figma composition:
-- Solid dark background `#0E0E0E`
-- Orbit glyph centered, sized 280×280, tinted Aurora `#5A82FF`
-- Wordmark "Orbit" centered below, 96pt SF Pro Display semibold
-- Tagline "A calm second brain for iPhone." in serif 56pt, textSecondary
+No simulator capture. Figma composition:
+
+- Background `#0E0E0E` (solid dark)
+- Orbit glyph centered, sized 280 × 280, tinted Aurora `#5A82FF`
+- Below the glyph: wordmark **Orbit** at 96 pt SF Pro Display
+  semibold, in the off-white `#F4F1EB`
+- Below: tagline **A calm second brain for iPhone.** in serif
+  56 pt, in textSecondary `#A8A8A8`
 
 ---
 
 ### 2 ▸ Capture flow
 
-**Navigate**: Tap the FAB (+) on any tab → Capture sheet opens.
-**State**:
+**Navigate:** Tap the FAB (+) on any tab → Capture sheet opens.
+
+**State:**
 - Mode switcher: **Text** selected
-- Body field: paste this in (it reads as a natural mid-thought
-  capture):
+- Paste this into the body field:
+  ```
+  Need to remember the name of that bookshop in Roatan — the one
+  with the iron spiral staircase. The owner pulled three novels off
+  the shelf for me and made me coffee in a little Bialetti while we
+  talked. Pretty sure he said the Argentinian one was the best
+  starting point.
+  ```
+- Tap the title bar or scroll the sheet up to **dismiss the
+  keyboard** so the screenshot shows the populated body, not a
+  keyboard.
+- Save button visible at the bottom — don't tap.
 
-> Need to remember the name of that bookshop in Roatan — the owner
-> gave me a coffee and a hardcover I still need to crack open.
-
-- Save button visible at bottom (don't tap it).
-- Keyboard hidden — tap the body field once then tap somewhere else
-  to dismiss the keyboard so it doesn't dominate the screenshot.
-
-**Capture**: ⌘S in simulator → save PNG.
+**Capture:** ⌘S in simulator.
 
 ---
 
 ### 3 ▸ Memory Detail with AI metadata
 
-**Navigate**: Timeline tab → tap memory #1 (the voice note about
-the bookshop).
-**State**:
-- The header shows the category eyebrow (will be auto-inferred —
-  likely `travel` or `note`)
-- Below: voice waveform + transcript ("Note to self — that
-  bookshop in Roatan…")
-- Further down: an **AI metadata** card showing the generated
-  summary + 2-3 tag chips
+**Navigate:** Timeline tab → tap memory #1 (the bookshop voice note).
 
-**If the AI section is empty** (heuristic fallback didn't fire
-quickly enough), pull-to-refresh the screen or wait 10 seconds —
-enrichment runs in the background. If it's still empty, switch to
-memory #2 (the Kandinsky talk note) instead, which heuristic
-extraction always tags.
+**State:**
+- Category eyebrow at top — should auto-infer to `travel` or
+  `note` (the AI will pick from the content).
+- Below: voice waveform + transcript (the full bookshop monologue).
+- Further down: the **AI metadata** card with a generated summary
+  + 2-3 tag chips like `travel`, `books`, `places`.
+
+**If the AI section is blank** (heuristic fallback hasn't fired
+yet), wait 15-30 seconds, pull-to-refresh, or fall back to memory
+#2 (the Kandinsky talk note) — the heuristic always tags that one
+with the talk/creativity signals.
 
 ---
 
 ### 4 ▸ Daily Recap
 
-**Navigate**: Home tab → tap **Daily Recap** pill.
-**State**:
-- The recap should show:
-  - Day number (today, e.g. 12) in the accent color, oversized
-  - Day-of-week in serif
-  - A narrative paragraph (auto-generated; if it looks generic, just
-    accept it — the screenshot is about the typography)
-  - Stats row: **5 captures · Reflective** (or whatever mood AI picks)
-  - Sleep + steps footer (from the health data you seeded)
+**Prep:** Make sure today has all five of memories #1–4 + #12
+captured. The recap generator needs 4+ same-day captures to
+produce a substantive paragraph.
 
-**Tip**: capture just below the navigation bar so the "Daily Recap"
-inline title doesn't cut off. The screenshot should bleed the
-content slightly into the bottom safe area.
+**Navigate:** Home tab → tap **Daily Recap** pill.
+
+**State:**
+- Day number (today's date) in Aurora blue, 168 pt
+- Day-of-week in serif (e.g. "Tuesday")
+- Month + year in tracked small caps (e.g. "MAY 2026")
+- Narrative paragraph (auto-generated)
+- Stats row: **5 captures · Reflective** (or whatever mood the AI
+  picks)
+- Sleep + steps footer (from the health data you seeded)
+
+**Capture below the navigation bar** so the inline title doesn't
+clip the top of the recap.
 
 ---
 
 ### 5 ▸ Ask Orbit
 
-**Navigate**: Home tab → tap **Ask Orbit** pill.
-**State**:
-- Tap the field, type:
-  > What did Pamela say about the restaurant?
-- Hit submit. Wait for the answer to render.
-- The screenshot should show:
-  - Your question at the top
-  - The answer in serif, 2-3 sentences referencing the lamb tasting
-    menu / Castro detail
-  - **Sources** section below with 1-2 memory chips linked to the
-    relevant captures
+**Navigate:** Home tab → tap **Ask Orbit** pill.
 
-**Tip**: if the AI says "I couldn't find anything related," capture
-the voice note (#5) again with the Pamela phrasing more verbatim,
-then re-ask.
+**State:**
+
+1. Tap the question field, type:
+   ```
+   What did Pamela say about the restaurant?
+   ```
+2. Hit submit. Wait for the answer to render.
+3. The screenshot should show:
+   - Your question at the top
+   - The answer in serif, 2–3 sentences referencing the lamb
+     tasting menu, Florín, the Sonoma farm, and the
+     reservation timing
+   - **Sources** section below with the Pamela voice note (memory
+     #5) as a clickable chip
+
+**If the answer is generic** ("I couldn't find anything…"),
+re-capture memory #5 with the phrasing closer to: *"Pamela said the
+new restaurant Florín in the Castro is incredible — she had the
+lamb tasting menu with her sister, three cuts from the same Sonoma
+farm. We should book three weeks out."* Then re-ask.
 
 ---
 
 ### 6 ▸ Share card preview
 
-**Navigate**: Open any memory's detail view → tap the share button
-(top-right toolbar).
+**Navigate:** Open memory #2 (the Kandinsky talk note) → tap the
+share button (top-right toolbar).
 
-**State**:
+**State:**
 - iOS share sheet appears with the rendered share card filling the
   preview area
-- The card shows: Orbit brand mark at top, hero quote/summary in
-  serif, attribution block at bottom
+- The card shows: Orbit brand mark at top, the talk-opener body in
+  serif as the hero text, attribution block at the bottom
 
-**Tip**: pick memory #2 (the Kandinsky talk note) — its content
-reads beautifully on the card. Or memory #5 (Pamela / restaurant)
+Memory #2 is the right pick because its content reads beautifully
+on the card. Memory #5 (Pamela/restaurant) is a fine alternative
 for a more conversational tone.
 
-Alternative: take the screenshot of the rendered card itself by
-opening Daily Recap → tap share → save the card to Photos → import
-and frame it standalone. This avoids the system share sheet UI.
+**Alternative:** capture the rendered card image directly. Open
+Daily Recap → tap share → save the card to Photos → import and
+frame it standalone in Figma. This avoids the system share-sheet
+UI and gives you a cleaner shot.
 
 ---
 
 ### 7 ▸ Year in Review
 
-**Navigate**:
-- Open **Settings → About** _(in DEBUG builds, the "Preview Year in
-  Review" affordance used to be here — we removed it in the
-  release-readiness pass)_.
-- Since we removed the dev preview, the simplest way to force the
-  Year in Review surface for screenshot purposes is to change the
-  simulator clock to **December 28** for a moment:
-  1. Simulator → **Features → Time Travel → Tomorrow** (repeat
-     until December 28).
-  2. Restart Orbit.
-  3. Home → Year in Review banner appears → tap it.
+**Prep:** Since we removed the dev-mode "Preview Year in Review"
+affordance in the release-readiness pass, the simplest way to force
+this surface for screenshot purposes is to time-travel the
+simulator clock:
 
-**State**:
-- 220pt year glyph in Aurora blue
-- "[N] memories captured…" headline in serif
-- Sparkline below
-- Two or three label/value rows (Top category, Recurring name,
-  etc.)
+1. Simulator → **Features → Time Travel → Tomorrow** (repeat until
+   the clock reaches **December 28**).
+2. Quit and re-launch Orbit.
+3. Home → the **Year in Review** banner appears.
+4. Tap the banner.
 
-**Tip**: the year hero is the dominant visual. Frame the screenshot
-so it gets full top placement.
+**State:**
+- 220 pt year glyph in Aurora blue
+- "[N] memories — a year in motion." in serif as the headline
+- Sparkline below showing monthly counts
+- Two or three label/value rows (Top category, Recurring name)
 
-After capturing, **revert the simulator clock** to the real date so
-subsequent screenshots aren't dated weird.
+The year glyph is the dominant visual. Frame so it gets full top
+placement in the screenshot.
+
+After capturing, **revert the simulator clock to the real date**
+before continuing.
 
 ---
 
 ### 8 ▸ Privacy close (composed in Figma)
 
 No simulator capture. Figma composition:
-- Dark background `#0E0E0E`
-- Centered Orbit glyph at 120×120, accent color
-- Below, a stacked checklist in SF Pro Display:
-  - ✓ On-device AI
-  - ✓ End-to-end iCloud
-  - ✓ No analytics or tracking
-  - ✓ No data sold or shared
-- Each row 56pt, weight 500, textPrimary
-- Checkmark glyphs 36pt in `OrbitColor.success` (a quiet green ~`#3FAE6A`)
-- Generous spacing between rows (~28pt)
+
+- Background `#0E0E0E`
+- Centered Orbit glyph at 120 × 120, accent color
+- Below, a stacked checklist in SF Pro Display, each row 56 pt,
+  weight 500:
+  ```
+  ✓  On-device AI
+  ✓  End-to-end iCloud
+  ✓  No analytics or tracking
+  ✓  No data sold or shared
+  ```
+- Checkmark glyphs 36 pt in `OrbitColor.success` (`#3FAE6A`)
+- 28 pt spacing between rows
+- Foreground text in off-white `#F4F1EB`
 
 ---
 
@@ -442,37 +647,48 @@ No simulator capture. Figma composition:
 Enrichment runs in the background after capture. Give it 15–30
 seconds. If it still hasn't run on the simulator (Apple Intelligence
 unavailable), the heuristic fallback still fills tags + category —
-make sure your memory text contains a clear category-signaling word
-like "ran" (fitness), "Pamela said" (people), "I should" (task),
-"want to read" (reading), "grateful for" (gratitude).
+just make sure your memory text contains a clear category-signaling
+word: `ran` (fitness), `Pamela said` (people), `I should` (task),
+`want to read` (reading), `grateful for` (gratitude).
 
 **The Daily Recap narrative reads generic.**
 The recap generator works from the day's captures. If you've only
 saved 1–2 things today, the prose will be sparse. Make sure today
-has 4–5 captures from the seed list before opening Daily Recap.
+has at least 4–5 captures from the seed list before opening Daily
+Recap. The order: capture memories #1–4 and #12 today, then open
+the recap.
+
+**Voice transcripts come out wrong or empty.**
+The simulator records from your Mac's microphone. If you're in a
+noisy room or speaking too fast, Speech Recognition will hallucinate.
+Two fixes: (a) use the `say -v Ava -r 175 "…"` approach to play the
+transcript through your Mac speakers while the simulator records,
+or (b) record a quiet 5-second placeholder and edit the memory's
+transcript field in the detail view if the in-app editor allows it.
+For v1 screenshots, (a) is foolproof.
 
 **Status bar shows 9:41 but the wrong battery / signal.**
-The override command from the "Before you start" section sets all
-three (time, battery, cellular). Re-run it any time the simulator
-re-launches.
+Re-run the `xcrun simctl status_bar booted override …` command from
+the "Before you start" section any time the simulator boots.
 
 **Year in Review doesn't appear after time-traveling the clock.**
-The banner gates on `shouldOfferYearInReview()` which checks if the
-target year was already seen. If you previously dismissed it,
-re-install the app or wipe content + settings before the time-jump.
+The banner gates on whether the target year was already dismissed.
+If you previously dismissed it, wipe content + settings before the
+time-jump (Simulator → Device → **Erase All Content and Settings**),
+re-seed memories, then time-travel.
 
 **Capture sheet keyboard covers the body in screenshots.**
-After typing, tap the title bar or scroll the sheet up slightly to
-dismiss the keyboard. The screenshot should show the empty
-input-area state with content already populated.
+After typing, tap the title bar or drag the sheet up slightly to
+dismiss the keyboard. The screenshot should show the input area
+fully populated with content visible.
 
 ---
 
 ## After capture
 
-Move all eight PNGs into a single folder (e.g. `~/Desktop/orbit-app-store/`).
-File-name them in order so the App Store upload UI orders them
-correctly:
+Move all eight PNGs into a single folder
+(e.g. `~/Desktop/orbit-app-store/`). Filename them so the App Store
+upload UI orders them correctly:
 
 ```
 01-brand-opener.png
@@ -485,5 +701,5 @@ correctly:
 08-privacy.png
 ```
 
-App Store Connect → Media → drag all eight in at once. The order
-shown in the listing will match the filename sort.
+App Store Connect → **Media** → drag all eight in at once. The
+order shown in the listing matches the filename sort.
