@@ -150,9 +150,18 @@ public final class PermissionsCoordinator {
     }
 
     private func requestMicrophone() async -> Status {
+        // Apple's completion fires "on an arbitrary serial queue,"
+        // which on iOS 26 has tripped a libdispatch queue assertion
+        // when the awaiting context resumed on that arbitrary queue
+        // and then bounced back to MainActor mid-callback. Hopping
+        // to the main queue explicitly before resuming the
+        // continuation keeps the rest of the path on a thread iOS
+        // expects.
         let granted = await withCheckedContinuation { (continuation: CheckedContinuation<Bool, Never>) in
             AVAudioApplication.requestRecordPermission { granted in
-                continuation.resume(returning: granted)
+                DispatchQueue.main.async {
+                    continuation.resume(returning: granted)
+                }
             }
         }
         let status: Status = granted ? .granted : .denied
@@ -173,9 +182,15 @@ public final class PermissionsCoordinator {
     }
 
     private func requestSpeech() async -> Status {
+        // Same defensive main-queue hop as requestMicrophone — see
+        // its comment for why. SFSpeechRecognizer's completion fires
+        // on an arbitrary queue and the resume needs to land
+        // somewhere libdispatch is happy with.
         let raw = await withCheckedContinuation { (continuation: CheckedContinuation<SFSpeechRecognizerAuthorizationStatus, Never>) in
             SFSpeechRecognizer.requestAuthorization { status in
-                continuation.resume(returning: status)
+                DispatchQueue.main.async {
+                    continuation.resume(returning: status)
+                }
             }
         }
         let status: Status
