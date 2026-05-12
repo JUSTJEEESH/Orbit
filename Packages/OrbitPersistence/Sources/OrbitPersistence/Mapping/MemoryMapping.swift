@@ -118,17 +118,31 @@ extension MemoryEntity {
         self.aiExtractedDates = ai.extractedDates
         self.aiExtractedPeople = ai.extractedPeople
         self.aiExtractedLocations = ai.extractedLocations
+        // Empty signals are persisted as nil so we don't write a JSON blob
+        // on every text-only row.
+        if ai.signals.isEmpty {
+            self.signalsJSON = nil
+        } else {
+            self.signalsJSON = try? JSONEncoder().encode(ai.signals)
+        }
     }
 
     private func decodeAI() -> MemoryAIMetadata {
-        MemoryAIMetadata(
+        let signals: ExtractedSignals = {
+            guard let data = signalsJSON,
+                  let decoded = try? JSONDecoder().decode(ExtractedSignals.self, from: data)
+            else { return .empty }
+            return decoded
+        }()
+        return MemoryAIMetadata(
             status: MemoryAIMetadata.ProcessingStatus(rawValue: aiStatus) ?? .pending,
             summary: aiSummary,
             category: aiCategory,
             priority: MemoryAIMetadata.Priority(rawValue: aiPriority) ?? .normal,
             extractedDates: aiExtractedDates,
             extractedPeople: aiExtractedPeople,
-            extractedLocations: aiExtractedLocations
+            extractedLocations: aiExtractedLocations,
+            signals: signals
         )
     }
 }

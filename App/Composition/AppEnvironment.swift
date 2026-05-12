@@ -166,7 +166,12 @@ final class AppEnvironment {
 
         self.onboardingComplete = UserDefaults.standard.bool(forKey: Self.onboardingKey)
 
-        let captureMemoryUseCase = CaptureMemoryUseCase(repository: memories, clock: clock)
+        let signals = SignalExtractor()
+        let captureMemoryUseCase = CaptureMemoryUseCase(
+            repository: memories,
+            clock: clock,
+            signalExtractor: signals
+        )
         self.captureMemory = captureMemoryUseCase
         self.watchSession = watchSession ?? WatchSessionService(
             mediaStorage: mediaStorage,
@@ -178,7 +183,12 @@ final class AppEnvironment {
         self.deleteMemory = DeleteMemoryUseCase(repository: memories)
         self.linkTask = LinkTaskToMemoryUseCase(memories: memories, tasks: tasks, clock: clock)
         self.toggleTask = ToggleTaskUseCase(repository: tasks, clock: clock)
-        self.enrichMemory = EnrichMemoryUseCase(ai: ai, memories: memories, clock: clock)
+        self.enrichMemory = EnrichMemoryUseCase(
+            ai: ai,
+            memories: memories,
+            clock: clock,
+            signalExtractor: signals
+        )
         self.searchMemories = SearchMemoriesUseCase(search: search, memories: memories)
         self.generateDailyRecap = GenerateDailyRecapUseCase(memories: memories, ai: ai, clock: clock)
         self.generateInsights = GenerateInsightsUseCase(

@@ -41,6 +41,10 @@ public final class MemoryEntity {
     public var aiExtractedDates: [Date] = []
     public var aiExtractedPeople: [String] = []
     public var aiExtractedLocations: [String] = []
+    /// JSON-encoded `ExtractedSignals`. Stored opaquely so adding a new
+    /// signal kind doesn't require a schema migration. Optional + defaulted
+    /// to nil so existing CloudKit rows decode cleanly.
+    public var signalsJSON: Data?
 
     // MARK: - Relationships (must be optional for CloudKit)
     @Relationship(deleteRule: .cascade, inverse: \MediaAssetEntity.memory)

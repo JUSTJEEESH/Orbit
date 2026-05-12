@@ -8,15 +8,18 @@ public struct EnrichMemoryUseCase: Sendable {
     private let ai: any AIService
     private let memories: any MemoryRepository
     private let clock: any OrbitClock
+    private let signalExtractor: any SignalExtracting
 
     public init(
         ai: any AIService,
         memories: any MemoryRepository,
-        clock: any OrbitClock
+        clock: any OrbitClock,
+        signalExtractor: any SignalExtracting = NoOpSignalExtractor()
     ) {
         self.ai = ai
         self.memories = memories
         self.clock = clock
+        self.signalExtractor = signalExtractor
     }
 
     /// Best-effort enrichment. Never throws — failures are recorded on the
@@ -28,6 +31,10 @@ public struct EnrichMemoryUseCase: Sendable {
         try? await memories.update(memory)
 
         let raw = RawCapture(memory: memory)
+        // Re-run signal extraction during enrichment so older memories
+        // captured before the SignalExtractor existed pick up signals via
+        // the re-enrich-all flow without needing a separate migration.
+        let refreshedSignals = signalExtractor.extract(from: memory)
         do {
             let result = try await ai.classify(raw)
             memory.ai = MemoryAIMetadata(
@@ -37,7 +44,8 @@ public struct EnrichMemoryUseCase: Sendable {
                 priority: result.priority,
                 extractedDates: result.extractedDates,
                 extractedPeople: result.extractedPeople,
-                extractedLocations: result.extractedLocations
+                extractedLocations: result.extractedLocations,
+                signals: refreshedSignals
             )
             let existingTagNames = Set(memory.tags.map(\.name))
             let aiTags = result.suggestedTags

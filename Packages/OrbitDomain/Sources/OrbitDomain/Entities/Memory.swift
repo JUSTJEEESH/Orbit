@@ -80,6 +80,10 @@ public struct MemoryAIMetadata: Sendable, Hashable {
     public var extractedDates: [Date]
     public var extractedPeople: [String]
     public var extractedLocations: [String]
+    /// Heuristic signals the SignalExtractor pulled from the memory's text.
+    /// Populated synchronously at capture time — present even before the AI
+    /// pipeline finishes the surrounding metadata.
+    public var signals: ExtractedSignals
 
     public enum ProcessingStatus: String, Sendable {
         case pending
@@ -106,7 +110,8 @@ public struct MemoryAIMetadata: Sendable, Hashable {
         priority: .normal,
         extractedDates: [],
         extractedPeople: [],
-        extractedLocations: []
+        extractedLocations: [],
+        signals: .empty
     )
 
     public init(
@@ -116,7 +121,8 @@ public struct MemoryAIMetadata: Sendable, Hashable {
         priority: Priority,
         extractedDates: [Date],
         extractedPeople: [String],
-        extractedLocations: [String]
+        extractedLocations: [String],
+        signals: ExtractedSignals = .empty
     ) {
         self.status = status
         self.summary = summary
@@ -125,5 +131,6 @@ public struct MemoryAIMetadata: Sendable, Hashable {
         self.extractedDates = extractedDates
         self.extractedPeople = extractedPeople
         self.extractedLocations = extractedLocations
+        self.signals = signals
     }
 }
