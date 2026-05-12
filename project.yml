@@ -141,6 +141,8 @@ targets:
         product: OrbitYearInReviewFeature
       - package: OrbitWorkspace
         product: OrbitWellnessFeature
+      - package: OrbitWorkspace
+        product: OrbitShareFeature
       - target: OrbitShareExtension
         embed: true
       - target: OrbitWidgets

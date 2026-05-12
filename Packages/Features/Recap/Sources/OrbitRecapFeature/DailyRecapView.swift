@@ -2,6 +2,7 @@ import SwiftUI
 import OrbitDesignSystem
 import OrbitDomain
 import OrbitKit
+import OrbitShareFeature
 
 /// Full-screen recap experience. Lays out as an editorial reading
 /// surface: oversized date, calm narrative paragraph, mood pill, capture
@@ -34,6 +35,13 @@ public struct DailyRecapView: View {
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                if let recap = model.recap {
+                    ToolbarItem(placement: .topBarLeading) {
+                        OrbitShareCardButton(previewTitle: "Daily Recap") {
+                            RecapShareCard(recap: recap)
+                        }
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done", action: onDismiss)
                         .font(OrbitTypography.bodyEmphasized)

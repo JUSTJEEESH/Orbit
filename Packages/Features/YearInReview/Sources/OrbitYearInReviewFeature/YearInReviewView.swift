@@ -4,6 +4,7 @@ import OrbitDesignSystem
 import OrbitDomain
 import OrbitKit
 import OrbitMemoryDetailFeature
+import OrbitShareFeature
 
 public struct YearInReviewView: View {
     @State private var model: YearInReviewViewModel
@@ -31,6 +32,13 @@ public struct YearInReviewView: View {
             .navigationTitle("Year in Review")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                if let review = currentReview {
+                    ToolbarItem(placement: .topBarLeading) {
+                        OrbitShareCardButton(previewTitle: "Year in Review") {
+                            YearInReviewShareCard(review: review)
+                        }
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Done", action: onDismiss)
                         .font(OrbitTypography.bodyEmphasized)
@@ -51,6 +59,14 @@ public struct YearInReviewView: View {
             }
         }
         .task { await model.load() }
+    }
+
+    /// Extracts the loaded `YearInReview` for the toolbar share button.
+    /// Returns `nil` while loading / on empty / on failure so the share
+    /// glyph stays hidden until there's something worth exporting.
+    private var currentReview: YearInReview? {
+        if case .loaded(let review) = model.state { return review }
+        return nil
     }
 
     @ViewBuilder

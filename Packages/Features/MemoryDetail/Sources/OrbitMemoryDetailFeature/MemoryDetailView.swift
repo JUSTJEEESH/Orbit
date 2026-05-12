@@ -3,6 +3,7 @@ import OrbitDesignSystem
 import OrbitDomain
 import OrbitKit
 import OrbitMedia
+import OrbitShareFeature
 
 public struct MemoryDetailView: View {
     @State private var model: MemoryDetailViewModel
@@ -54,6 +55,13 @@ public struct MemoryDetailView: View {
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
+        if let memory = model.memory {
+            ToolbarItem(placement: .topBarTrailing) {
+                OrbitShareCardButton(previewTitle: "Memory") {
+                    MemoryShareCard(memory: memory)
+                }
+            }
+        }
         ToolbarItem(placement: .topBarTrailing) {
             Button {
                 showDeleteConfirmation = true

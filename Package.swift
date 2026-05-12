@@ -36,6 +36,7 @@ let package = Package(
         .library(name: "OrbitAskFeature", targets: ["OrbitAskFeature"]),
         .library(name: "OrbitYearInReviewFeature", targets: ["OrbitYearInReviewFeature"]),
         .library(name: "OrbitWellnessFeature", targets: ["OrbitWellnessFeature"]),
+        .library(name: "OrbitShareFeature", targets: ["OrbitShareFeature"]),
     ],
     targets: [
         // MARK: - Cross-cutting
@@ -132,13 +133,13 @@ let package = Package(
         ),
         .target(
             name: "OrbitMemoryDetailFeature",
-            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitMedia"],
+            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitMedia", "OrbitShareFeature"],
             path: "Packages/Features/MemoryDetail/Sources/OrbitMemoryDetailFeature",
             swiftSettings: swiftSettings
         ),
         .target(
             name: "OrbitRecapFeature",
-            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain"],
+            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitShareFeature"],
             path: "Packages/Features/Recap/Sources/OrbitRecapFeature",
             swiftSettings: swiftSettings
         ),
@@ -162,7 +163,7 @@ let package = Package(
         ),
         .target(
             name: "OrbitYearInReviewFeature",
-            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitMemoryDetailFeature"],
+            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitMemoryDetailFeature", "OrbitShareFeature"],
             path: "Packages/Features/YearInReview/Sources/OrbitYearInReviewFeature",
             swiftSettings: swiftSettings
         ),
@@ -170,6 +171,12 @@ let package = Package(
             name: "OrbitWellnessFeature",
             dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain"],
             path: "Packages/Features/Wellness/Sources/OrbitWellnessFeature",
+            swiftSettings: swiftSettings
+        ),
+        .target(
+            name: "OrbitShareFeature",
+            dependencies: ["OrbitDesignSystem", "OrbitDomain"],
+            path: "Packages/Features/Share/Sources/OrbitShareFeature",
             swiftSettings: swiftSettings
         ),
 
