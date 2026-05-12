@@ -67,7 +67,18 @@ struct RootView: View {
                     onPresentPaywall: { env.requestedModal = .paywall },
                     onDeleteAccount: { try await env.wipeAccountAndData() },
                     onReindexAll: { await env.reenrichAllMemories() },
-                    onDismiss: { env.requestedModal = nil }
+                    onDismiss: { env.requestedModal = nil },
+                    remindersSyncEnabled: env.remindersSync.isEnabled,
+                    remindersAuthorized: env.remindersSync.isAuthorized,
+                    remindersDenied: env.remindersSync.authorizationStatus == .denied || env.remindersSync.authorizationStatus == .restricted,
+                    onToggleRemindersSync: { newValue in
+                        if newValue {
+                            _ = await env.remindersSync.enable()
+                        } else {
+                            env.remindersSync.disable()
+                        }
+                    },
+                    onOpenRemindersSettings: { env.remindersSync.openSystemSettings() }
                 )
                 .presentationDetents([.large])
             case .paywall:
@@ -139,7 +150,13 @@ struct RootView: View {
                     updateTaskUseCase: env.updateTask,
                     deleteTaskUseCase: env.deleteTask,
                     memories: env.memories,
-                    clock: env.clock
+                    clock: env.clock,
+                    onTaskMutated: { task in
+                        await env.remindersSync.mirror(task)
+                    },
+                    onTaskDeleted: { task in
+                        await env.remindersSync.removeMirror(for: task)
+                    }
                 ),
                 refreshToken: env.memoryListVersion
             )

@@ -36,6 +36,7 @@ struct OrbitApp: App {
 /// modifiers (deep links, credential-state refresh) at a single place.
 private struct ContentRoot: View {
     let environment: AppEnvironment
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         Group {
@@ -58,6 +59,15 @@ private struct ContentRoot: View {
             // WCSession activation is idempotent and any queued files from a
             // prior cold-start arrive after this call.
             environment.watchSession.activate()
+            // Pull any task completions the user toggled in iOS Reminders
+            // while Orbit was suspended.
+            await environment.remindersSync.pullCompletionUpdates()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            // Re-pull on every foreground so completions surface promptly.
+            if newPhase == .active {
+                Task { await environment.remindersSync.pullCompletionUpdates() }
+            }
         }
         .onOpenURL { url in
             guard let link = DeepLink(url: url) else {

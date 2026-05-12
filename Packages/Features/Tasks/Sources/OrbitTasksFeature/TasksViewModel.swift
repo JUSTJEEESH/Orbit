@@ -30,6 +30,14 @@ public final class TasksViewModel {
     private let deleteTaskUseCase: DeleteTaskUseCase
     private let memories: any MemoryRepository
     private let clock: any OrbitClock
+    /// Fired after a create / update / toggle persists. RootView wires this
+    /// into `RemindersSyncService.mirror(_:)` so iOS Reminders stays in
+    /// step without OrbitTasksFeature having to know EventKit exists.
+    private let onTaskMutated: @MainActor @Sendable (MemoryTask) async -> Void
+    /// Fired after a delete persists; receives the full task value so the
+    /// sync layer can tear down the mirrored reminder via its stored
+    /// identifier.
+    private let onTaskDeleted: @MainActor @Sendable (MemoryTask) async -> Void
 
     public init(
         listTasks: ListTasksUseCase,
@@ -39,7 +47,9 @@ public final class TasksViewModel {
         updateTaskUseCase: UpdateTaskUseCase,
         deleteTaskUseCase: DeleteTaskUseCase,
         memories: any MemoryRepository,
-        clock: any OrbitClock
+        clock: any OrbitClock,
+        onTaskMutated: @escaping @MainActor @Sendable (MemoryTask) async -> Void = { _ in },
+        onTaskDeleted: @escaping @MainActor @Sendable (MemoryTask) async -> Void = { _ in }
     ) {
         self.listTasks = listTasks
         self.listSuggestions = listSuggestions
@@ -49,6 +59,8 @@ public final class TasksViewModel {
         self.deleteTaskUseCase = deleteTaskUseCase
         self.memories = memories
         self.clock = clock
+        self.onTaskMutated = onTaskMutated
+        self.onTaskDeleted = onTaskDeleted
     }
 
     public func load() async {
@@ -86,9 +98,10 @@ public final class TasksViewModel {
 
     public func promote(_ suggestion: ListTaskSuggestionsUseCase.Suggestion) async {
         do {
-            _ = try await promoteUseCase(memory: suggestion.memory, hint: suggestion.hint)
+            let task = try await promoteUseCase(memory: suggestion.memory, hint: suggestion.hint)
             Haptics.play(.success)
             await load()
+            await onTaskMutated(task)
         } catch {
             errorMessage = String(describing: error)
             Haptics.play(.failure)
@@ -97,9 +110,12 @@ public final class TasksViewModel {
 
     public func toggle(_ task: MemoryTask) async {
         do {
-            _ = try await toggleTask(id: task.id)
+            let updated = try await toggleTask(id: task.id)
             Haptics.play(.selection)
             await load()
+            if let updated {
+                await onTaskMutated(updated)
+            }
         } catch {
             errorMessage = String(describing: error)
         }
@@ -109,6 +125,7 @@ public final class TasksViewModel {
         do {
             try await updateTaskUseCase(task)
             await load()
+            await onTaskMutated(task)
         } catch {
             errorMessage = String(describing: error)
         }
@@ -119,6 +136,7 @@ public final class TasksViewModel {
             try await deleteTaskUseCase(id: task.id)
             Haptics.play(.warning)
             await load()
+            await onTaskDeleted(task)
         } catch {
             errorMessage = String(describing: error)
         }

@@ -38,6 +38,7 @@ final class AppEnvironment {
     let iconService: IconService
     let notifications: NotificationService
     let watchSession: WatchSessionService
+    let remindersSync: RemindersSyncService
 
     let captureMemory: CaptureMemoryUseCase
     let listMemories: ListMemoriesUseCase
@@ -168,6 +169,7 @@ final class AppEnvironment {
         self.themeService = themeService
         self.iconService = iconService
         self.notifications = notifications
+        self.remindersSync = RemindersSyncService(tasks: tasks)
 
         self.onboardingComplete = UserDefaults.standard.bool(forKey: Self.onboardingKey)
 

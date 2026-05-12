@@ -75,6 +75,7 @@ targets:
         NSSpeechRecognitionUsageDescription: Orbit transcribes your voice notes on-device so they become searchable.
         NSPhotoLibraryUsageDescription: Orbit lets you save screenshots and photos as memories.
         NSCameraUsageDescription: Orbit lets you capture moments straight into your memory timeline.
+        NSRemindersFullAccessUsageDescription: Orbit mirrors your tasks to iOS Reminders so you can manage them from Siri, CarPlay, or the Reminders app.
         NSUserActivityTypes:
           - com.orbit.capture
         CFBundleURLTypes:

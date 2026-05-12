@@ -18,6 +18,15 @@ public struct SettingsView: View {
     private let onReindexAll: @MainActor @Sendable () async -> Void
     private let onDismiss: @MainActor () -> Void
 
+    /// Reminders sync state surfaced through plain values so this feature
+    /// package doesn't have to depend on EventKit. RootView wires the live
+    /// bindings to `RemindersSyncService`.
+    private let remindersSyncEnabled: Bool
+    private let remindersAuthorized: Bool
+    private let remindersDenied: Bool
+    private let onToggleRemindersSync: @MainActor @Sendable (Bool) async -> Void
+    private let onOpenRemindersSettings: @MainActor () -> Void
+
     @State private var showDeleteConfirmation = false
     @State private var deletionError: String?
     @State private var isReindexing = false
@@ -33,7 +42,12 @@ public struct SettingsView: View {
         onPresentPaywall: @escaping @MainActor () -> Void,
         onDeleteAccount: @escaping @MainActor @Sendable () async throws -> Void,
         onReindexAll: @escaping @MainActor @Sendable () async -> Void,
-        onDismiss: @escaping @MainActor () -> Void
+        onDismiss: @escaping @MainActor () -> Void,
+        remindersSyncEnabled: Bool = false,
+        remindersAuthorized: Bool = false,
+        remindersDenied: Bool = false,
+        onToggleRemindersSync: @escaping @MainActor @Sendable (Bool) async -> Void = { _ in },
+        onOpenRemindersSettings: @escaping @MainActor () -> Void = {}
     ) {
         self.appConfig = appConfig
         self.account = account
@@ -46,6 +60,11 @@ public struct SettingsView: View {
         self.onDeleteAccount = onDeleteAccount
         self.onReindexAll = onReindexAll
         self.onDismiss = onDismiss
+        self.remindersSyncEnabled = remindersSyncEnabled
+        self.remindersAuthorized = remindersAuthorized
+        self.remindersDenied = remindersDenied
+        self.onToggleRemindersSync = onToggleRemindersSync
+        self.onOpenRemindersSettings = onOpenRemindersSettings
     }
 
     public var body: some View {
@@ -56,6 +75,7 @@ public struct SettingsView: View {
                         accountSection
                         appearanceSection
                         notificationsSection
+                        remindersSection
                         subscriptionSection
                         aboutSection
                         dangerSection
@@ -309,6 +329,61 @@ public struct SettingsView: View {
                         hour: comps.hour ?? 20,
                         minute: comps.minute ?? 0
                     )
+                }
+            }
+        )
+    }
+
+    // MARK: - Reminders
+
+    private var remindersSection: some View {
+        VStack(alignment: .leading, spacing: OrbitSpacing.md) {
+            OrbitSectionHeader("Reminders", subtitle: "Mirror your tasks to the iOS Reminders app.")
+            OrbitCard {
+                VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+                    Toggle(isOn: remindersSyncToggleBinding) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Sync with Reminders")
+                                .font(OrbitTypography.bodyEmphasized)
+                                .foregroundStyle(OrbitColor.textPrimary)
+                            Text("Manage Orbit tasks from Siri, CarPlay, or the Reminders app — and watch completions flow back automatically.")
+                                .font(OrbitTypography.footnote)
+                                .foregroundStyle(OrbitColor.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .tint(currentTheme.primary)
+
+                    if remindersDenied {
+                        VStack(alignment: .leading, spacing: OrbitSpacing.xs) {
+                            Text("Reminders access is turned off for Orbit in iOS Settings.")
+                                .font(OrbitTypography.footnote)
+                                .foregroundStyle(OrbitColor.warning)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Button("Open iOS Settings") {
+                                onOpenRemindersSettings()
+                            }
+                            .font(OrbitTypography.footnote)
+                            .foregroundStyle(currentTheme.primary)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private var remindersSyncToggleBinding: Binding<Bool> {
+        Binding(
+            get: { remindersSyncEnabled },
+            set: { newValue in
+                Task { @MainActor in
+                    await onToggleRemindersSync(newValue)
+                    if newValue, !remindersSyncEnabled {
+                        // Toggle snapped back: permission denied.
+                        Haptics.play(.warning)
+                    } else if newValue {
+                        Haptics.play(.success)
+                    }
                 }
             }
         )
