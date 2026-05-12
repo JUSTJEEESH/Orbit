@@ -8,7 +8,7 @@ import OrbitKit
 /// a quieter, more editorial scaffold: serif body editor, forced surface
 /// date, and a sealed-envelope save action.
 public struct LetterCaptureView: View {
-    @State private var body: String = ""
+    @State private var letterText: String = ""
     @State private var surfaceDate: Date
     @State private var isSaving: Bool = false
     @State private var errorMessage: String?
@@ -98,7 +98,7 @@ public struct LetterCaptureView: View {
     private var editor: some View {
         OrbitCard(elevation: .resting) {
             ZStack(alignment: .topLeading) {
-                if body.isEmpty {
+                if letterText.isEmpty {
                     Text("Tell yourself something you'll want to remember…")
                         .font(.system(size: 17, design: .serif))
                         .italic()
@@ -107,7 +107,7 @@ public struct LetterCaptureView: View {
                         .padding(.leading, 4)
                         .allowsHitTesting(false)
                 }
-                TextEditor(text: $body)
+                TextEditor(text: $letterText)
                     .font(.system(size: 17, design: .serif))
                     .foregroundStyle(OrbitColor.textPrimary)
                     .frame(minHeight: 220)
@@ -166,7 +166,7 @@ public struct LetterCaptureView: View {
     // MARK: - Save
 
     private var trimmedBody: String {
-        body.trimmingCharacters(in: .whitespacesAndNewlines)
+        letterText.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private func save() async {
