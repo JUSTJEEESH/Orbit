@@ -214,8 +214,13 @@ targets:
   # photo into Orbit without unlocking. Captures land in a per-session App
   # Group directory; the host app's CaptureInboxService drains them on the
   # next foreground.
+  #
+  # `type: extensionkit-extension` is the modern ExtensionKit-style product
+  # type — it gets embedded in `Contents/Extensions/` instead of the legacy
+  # `PlugIns/` directory. Xcode refuses to load LockedCameraCapture
+  # extensions out of PlugIns.
   OrbitCameraCapture:
-    type: app-extension
+    type: extensionkit-extension
     platform: iOS
     deploymentTarget: "26.0"
     sources:
