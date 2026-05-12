@@ -256,39 +256,49 @@ struct OnboardingView: View {
     /// permissions use the coordinator's built-in request.
     @MainActor
     private func handleRequest(for permission: PermissionsCoordinator.Permission) async {
-        // For Reminders/Calendar/Health we route through the host
-        // closure so a single Allow tap both grants the OS permission
-        // AND flips Orbit's downstream sync on. The closure's return
-        // value isn't authoritative for the row's checkmark, though —
-        // it can return false for non-permission reasons (no
-        // Reminders list available on a fresh device, no writeable
-        // Calendar source, etc.). Always refresh from the system
-        // source of truth after running, so the green check / orange
-        // X reflects the actual EventKit / HealthKit auth state, not
-        // Orbit's sync result.
+        // For Reminders / Calendar / Health we route through the
+        // host-supplied closure so a single Allow tap both grants
+        // the OS permission AND flips Orbit's downstream sync on.
+        // The closure's return value isn't authoritative for the
+        // row checkmark, though — it can report false for
+        // non-permission reasons (no Reminders list available, no
+        // writeable Calendar source). After those closures run we
+        // pull the system source of truth via `refreshAll()` so the
+        // green check / orange X reflects the actual EventKit /
+        // HealthKit state.
+        //
+        // For the simple permissions (microphone, speech, photos,
+        // notifications) `request(_:)` already writes the resolved
+        // status into the coordinator, so no extra refresh is
+        // needed — and skipping it avoids a system-framework hop
+        // (UNUserNotificationCenter + EKEventStore re-queries) that
+        // tripped a libdispatch queue assertion right after the
+        // Speech prompt resolved on some iOS builds.
         switch permission {
         case .reminders:
             if let onEnableReminders {
                 _ = await onEnableReminders()
+                await permissions.refreshAll()
             } else {
                 _ = await permissions.request(permission)
             }
         case .calendar:
             if let onEnableCalendar {
                 _ = await onEnableCalendar()
+                await permissions.refreshAll()
             } else {
                 _ = await permissions.request(permission)
             }
         case .health:
             if let onEnableHealth {
                 _ = await onEnableHealth()
+                await permissions.refreshAll()
             } else {
                 _ = await permissions.request(permission)
             }
         default:
             _ = await permissions.request(permission)
         }
-        await permissions.refreshAll()
     }
 
     // MARK: - 5. Sign in
