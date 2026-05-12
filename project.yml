@@ -23,6 +23,11 @@ configs:
 settings:
   base:
     SWIFT_VERSION: "6.0"
+    # `Scripts/setup-identity.sh` replaces this placeholder with your real
+    # Apple developer team id from Config/Identity.xcconfig. xcconfig
+    # inheritance alone wasn't reliably propagating the team through
+    # Xcode's Signing tab, so we also pin it here.
+    DEVELOPMENT_TEAM: "ORBIT_TEAM_ID_PLACEHOLDER"
   configs:
     Debug:
       baseConfig: Config/Debug.xcconfig

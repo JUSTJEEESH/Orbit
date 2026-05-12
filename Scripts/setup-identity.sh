@@ -26,6 +26,7 @@ set -euo pipefail
 
 CANONICAL_BUNDLE="com.orbit.app"
 CANONICAL_GROUP="group.com.orbit.app"
+TEAM_PLACEHOLDER="ORBIT_TEAM_ID_PLACEHOLDER"
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 IDENTITY_FILE="$REPO_ROOT/Config/Identity.xcconfig"
@@ -102,6 +103,9 @@ for file in "${TARGETS[@]}"; do
     # prefix (otherwise the bundle replace would corrupt group.com.orbit.app).
     perl -i -pe "s/\Q$CANONICAL_GROUP\E/$NEW_GROUP/g" "$file"
     perl -i -pe "s/\Q$CANONICAL_BUNDLE\E/$NEW_BUNDLE/g" "$file"
+    if [ -n "$NEW_TEAM" ]; then
+        perl -i -pe "s/\Q$TEAM_PLACEHOLDER\E/$NEW_TEAM/g" "$file"
+    fi
     echo "Patched: $file"
 done
 
