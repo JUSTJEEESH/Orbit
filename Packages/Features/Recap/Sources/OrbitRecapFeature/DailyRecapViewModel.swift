@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import OrbitDomain
+import OrbitKit
 
 @MainActor
 @Observable
@@ -15,20 +16,27 @@ public final class DailyRecapViewModel {
     public private(set) var state: LoadState = .loading
     public private(set) var recap: DailyRecap?
     public private(set) var highlights: [Memory] = []
+    /// Optional sleep + steps for the recap date. The surface shows a
+    /// quiet footer when this is non-nil; nil means "skip the row" so
+    /// users without HealthKit on never see an empty placeholder.
+    public private(set) var healthSnapshot: HealthSnapshot?
 
     private let date: Date?
     private let generate: GenerateDailyRecapUseCase
     private let memories: any MemoryRepository
+    private let healthKit: HealthKitService?
 
     /// `date == nil` → today's recap.
     public init(
         date: Date? = nil,
         generate: GenerateDailyRecapUseCase,
-        memories: any MemoryRepository
+        memories: any MemoryRepository,
+        healthKit: HealthKitService? = nil
     ) {
         self.date = date
         self.generate = generate
         self.memories = memories
+        self.healthKit = healthKit
     }
 
     public func load() async {
@@ -44,6 +52,14 @@ public final class DailyRecapViewModel {
             self.state = .loaded
         } catch {
             self.state = .failed(String(describing: error))
+        }
+
+        // Pull HealthKit data after the recap is on screen so primary
+        // copy never waits on Health. Only attempt the read when the user
+        // has already gone through the prompt.
+        if let healthKit, healthKit.hasRequestedAuthorization {
+            let snapshot = await healthKit.snapshot(for: date ?? Date())
+            self.healthSnapshot = snapshot.isEmpty ? nil : snapshot
         }
     }
 

@@ -52,6 +52,12 @@ private struct ContentRoot: View {
                     // Settings.
                     onEnableReminders: {
                         await environment.remindersSync.enable()
+                    },
+                    // Same idea for Health — prompt HealthKit + persist
+                    // the asked-once flag so subsequent visits to the
+                    // permissions screen don't re-ask.
+                    onEnableHealth: {
+                        await environment.healthKit.requestAuthorization()
                     }
                 )
                 .orbitTheme(environment.themeService.theme)

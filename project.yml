@@ -81,6 +81,7 @@ targets:
         NSPhotoLibraryUsageDescription: Orbit lets you save screenshots and photos as memories.
         NSCameraUsageDescription: Orbit lets you capture moments straight into your memory timeline.
         NSRemindersFullAccessUsageDescription: Orbit mirrors your tasks to iOS Reminders so you can manage them from Siri, CarPlay, or the Reminders app.
+        NSHealthShareUsageDescription: Orbit privately reads your sleep and step data to enrich your Daily Recap with the rhythms of your day.
         NSUserActivityTypes:
           - com.orbit.capture
         CFBundleURLTypes:

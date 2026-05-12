@@ -24,6 +24,11 @@ struct OnboardingView: View {
     /// flips the sync toggle on) instead of just the bare permission
     /// request. ContentRoot wires this to `env.remindersSync.enable()`.
     let onEnableReminders: (@MainActor @Sendable () async -> Bool)?
+    /// Custom Health handler. When supplied, the Health row's Allow tap
+    /// routes through this closure (which prompts HealthKit + persists
+    /// the asked-once flag) instead of the bare PermissionsCoordinator
+    /// path. ContentRoot wires this to `env.healthKit.requestAuthorization()`.
+    let onEnableHealth: (@MainActor @Sendable () async -> Bool)?
 
     @Environment(\.orbitTheme) private var orbitTheme
 
@@ -223,13 +228,27 @@ struct OnboardingView: View {
 
     /// Routes the Reminders permission through the host-supplied handler
     /// so a single "Allow" tap both grants EventKit access and turns Orbit
-    /// sync on. Other permissions use the coordinator's built-in request.
+    /// sync on. Health follows the same pattern so onboarding can prompt
+    /// HealthKit + persist Orbit's "asked once" flag in one tap. Other
+    /// permissions use the coordinator's built-in request.
     @MainActor
     private func handleRequest(for permission: PermissionsCoordinator.Permission) async {
-        if permission == .reminders, let onEnableReminders {
-            let granted = await onEnableReminders()
-            permissions.setStatus(granted ? .granted : .denied, for: .reminders)
-        } else {
+        switch permission {
+        case .reminders:
+            if let onEnableReminders {
+                let granted = await onEnableReminders()
+                permissions.setStatus(granted ? .granted : .denied, for: .reminders)
+            } else {
+                _ = await permissions.request(permission)
+            }
+        case .health:
+            if let onEnableHealth {
+                let granted = await onEnableHealth()
+                permissions.setStatus(granted ? .granted : .denied, for: .health)
+            } else {
+                _ = await permissions.request(permission)
+            }
+        default:
             _ = await permissions.request(permission)
         }
     }

@@ -89,7 +89,67 @@ public struct DailyRecapView: View {
             narrative(recap)
             stats(recap)
             highlightsSection
+            if let snapshot = model.healthSnapshot {
+                healthFooter(snapshot)
+            }
         }
+    }
+
+    /// Quiet single line at the bottom of the recap surfacing the day's
+    /// sleep + step totals from HealthKit. Visible only when the user has
+    /// authorized read access AND we got at least one signal back.
+    private func healthFooter(_ snapshot: HealthSnapshot) -> some View {
+        HStack(spacing: OrbitSpacing.md) {
+            if let sleep = snapshot.sleepDuration {
+                healthStat(systemImage: "bed.double.fill", value: Self.formatSleep(sleep))
+            }
+            if snapshot.sleepDuration != nil, snapshot.steps != nil {
+                Circle()
+                    .fill(OrbitColor.textTertiary)
+                    .frame(width: 3, height: 3)
+            }
+            if let steps = snapshot.steps {
+                healthStat(systemImage: "figure.walk", value: Self.formatSteps(steps))
+            }
+            Spacer()
+        }
+        .padding(.top, OrbitSpacing.sm)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Self.accessibilityLabel(for: snapshot))
+    }
+
+    private func healthStat(systemImage: String, value: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: systemImage)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(OrbitColor.textTertiary)
+            Text(value)
+                .font(OrbitTypography.footnote)
+                .foregroundStyle(OrbitColor.textSecondary)
+        }
+    }
+
+    private static func formatSleep(_ seconds: TimeInterval) -> String {
+        let totalMinutes = Int((seconds / 60).rounded())
+        let hours = totalMinutes / 60
+        let minutes = totalMinutes % 60
+        if hours == 0 { return "\(minutes)m asleep" }
+        if minutes == 0 { return "\(hours)h asleep" }
+        return "\(hours)h \(minutes)m asleep"
+    }
+
+    private static func formatSteps(_ steps: Int) -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        let formatted = formatter.string(from: NSNumber(value: steps)) ?? "\(steps)"
+        return "\(formatted) steps"
+    }
+
+    private static func accessibilityLabel(for snapshot: HealthSnapshot) -> String {
+        var parts: [String] = []
+        if let sleep = snapshot.sleepDuration { parts.append(formatSleep(sleep)) }
+        if let steps = snapshot.steps { parts.append(formatSteps(steps)) }
+        return parts.joined(separator: ", ")
     }
 
     private func header(_ recap: DailyRecap) -> some View {

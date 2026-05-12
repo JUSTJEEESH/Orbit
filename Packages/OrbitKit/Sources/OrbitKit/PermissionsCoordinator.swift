@@ -1,6 +1,7 @@
 import Foundation
 import AVFoundation
 import EventKit
+import HealthKit
 import Speech
 import Photos
 import UserNotifications
@@ -33,6 +34,7 @@ public final class PermissionsCoordinator {
         case photos
         case notifications
         case reminders
+        case health
 
         public var title: String {
             switch self {
@@ -41,6 +43,7 @@ public final class PermissionsCoordinator {
             case .photos:            return "Photos"
             case .notifications:     return "Notifications"
             case .reminders:         return "Reminders"
+            case .health:            return "Health"
             }
         }
 
@@ -51,6 +54,7 @@ public final class PermissionsCoordinator {
             case .photos:            return "photo.fill"
             case .notifications:     return "bell.fill"
             case .reminders:         return "checklist"
+            case .health:            return "heart.text.square.fill"
             }
         }
 
@@ -66,6 +70,8 @@ public final class PermissionsCoordinator {
                 return "A gentle nudge to revisit your day with Daily Recap."
             case .reminders:
                 return "Mirror your tasks to iOS Reminders — manage them from Siri, CarPlay, or the Reminders app."
+            case .health:
+                return "Add a quiet line of sleep + steps to your Daily Recap. Nothing is shared."
             }
         }
     }
@@ -90,6 +96,7 @@ public final class PermissionsCoordinator {
         statuses[.photos]            = currentPhotosStatus()
         statuses[.notifications]     = await currentNotificationsStatus()
         statuses[.reminders]         = currentRemindersStatus()
+        statuses[.health]            = currentHealthStatus()
     }
 
     /// Triggers the system prompt for a single permission and updates the
@@ -102,6 +109,7 @@ public final class PermissionsCoordinator {
         case .photos:            return await requestPhotos()
         case .notifications:     return await requestNotifications()
         case .reminders:         return await requestReminders()
+        case .health:            return await requestHealth()
         }
     }
 
@@ -244,6 +252,38 @@ public final class PermissionsCoordinator {
         } catch {
             statuses[.reminders] = .denied
             return .denied
+        }
+    }
+
+    // MARK: - Health (HealthKit)
+
+    private static let healthRequestedKey = "orbit.healthkit.requested"
+
+    private func currentHealthStatus() -> Status {
+        guard HKHealthStore.isHealthDataAvailable() else { return .denied }
+        // HealthKit intentionally hides per-type read authorization, so we
+        // fall back to "have we asked yet?" as the user-visible signal.
+        // HealthKitService writes the same key.
+        return UserDefaults.standard.bool(forKey: Self.healthRequestedKey) ? .granted : .notDetermined
+    }
+
+    private func requestHealth() async -> Status {
+        guard HKHealthStore.isHealthDataAvailable() else {
+            statuses[.health] = .denied
+            return .denied
+        }
+        let store = HKHealthStore()
+        let readTypes: Set<HKObjectType> = Set([
+            HKObjectType.categoryType(forIdentifier: .sleepAnalysis),
+            HKObjectType.quantityType(forIdentifier: .stepCount)
+        ].compactMap { $0 as HKObjectType? })
+        do {
+            try await store.requestAuthorization(toShare: [], read: readTypes)
+            UserDefaults.standard.set(true, forKey: Self.healthRequestedKey)
+            statuses[.health] = .granted
+            return .granted
+        } catch {
+            return .notDetermined
         }
     }
 }

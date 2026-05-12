@@ -10,6 +10,11 @@ public struct SettingsView: View {
     @Bindable private var account: AccountService
     @Bindable private var entitlements: EntitlementService
     @Bindable private var notifications: NotificationService
+    /// Optional — when supplied, the Notifications section warns the user
+    /// if their chosen Daily Recap time falls inside their typical sleep
+    /// window. Sourced from HealthKit on appear.
+    private let healthKit: HealthKitService?
+    @State private var typicalSleepWindow: SleepWindow?
     private let currentTheme: OrbitTheme
     private let onSelectTheme: @MainActor @Sendable (OrbitTheme) async -> Void
     private let iconError: String?
@@ -51,7 +56,8 @@ public struct SettingsView: View {
         remindersDenied: Bool = false,
         remindersLastError: String? = nil,
         onToggleRemindersSync: @escaping @MainActor @Sendable (Bool) async -> Void = { _ in },
-        onOpenRemindersSettings: @escaping @MainActor () -> Void = {}
+        onOpenRemindersSettings: @escaping @MainActor () -> Void = {},
+        healthKit: HealthKitService? = nil
     ) {
         self.appConfig = appConfig
         self.account = account
@@ -71,6 +77,7 @@ public struct SettingsView: View {
         self.remindersLastError = remindersLastError
         self.onToggleRemindersSync = onToggleRemindersSync
         self.onOpenRemindersSettings = onOpenRemindersSettings
+        self.healthKit = healthKit
     }
 
     public var body: some View {
@@ -284,6 +291,17 @@ public struct SettingsView: View {
                             )
                             .labelsHidden()
                         }
+                        if let sleepHint = sleepConflictHint {
+                            HStack(alignment: .top, spacing: 6) {
+                                Image(systemName: "moon.stars.fill")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundStyle(OrbitColor.warning)
+                                Text(sleepHint)
+                                    .font(OrbitTypography.footnote)
+                                    .foregroundStyle(OrbitColor.warning)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
                     }
 
                     if notifications.authorizationStatus == .denied {
@@ -302,7 +320,25 @@ public struct SettingsView: View {
                 }
             }
         }
-        .task { await notifications.refreshAuthorizationStatus() }
+        .task {
+            await notifications.refreshAuthorizationStatus()
+            if let healthKit, healthKit.hasRequestedAuthorization {
+                typicalSleepWindow = await healthKit.typicalSleepWindow()
+            }
+        }
+    }
+
+    /// Returns a single warning sentence when the user's chosen Daily
+    /// Recap time falls inside their inferred sleep window. Nil when
+    /// HealthKit hasn't been authorized, the window can't be computed,
+    /// or the time is safely outside it.
+    private var sleepConflictHint: String? {
+        guard let typicalSleepWindow else { return nil }
+        let hour = notifications.time.hour ?? 20
+        let minute = notifications.time.minute ?? 0
+        guard HealthKitService.isInWindow(hour: hour, minute: minute, window: typicalSleepWindow) else { return nil }
+        let wake = String(format: "%d:%02d", typicalSleepWindow.wakeHour, typicalSleepWindow.wakeMinute)
+        return "You usually sleep at this hour. Consider moving it past \(wake)."
     }
 
     private var dailyRecapToggleBinding: Binding<Bool> {

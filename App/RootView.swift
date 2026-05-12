@@ -84,7 +84,8 @@ struct RootView: View {
                             env.remindersSync.disable()
                         }
                     },
-                    onOpenRemindersSettings: { env.remindersSync.openSystemSettings() }
+                    onOpenRemindersSettings: { env.remindersSync.openSystemSettings() },
+                    healthKit: env.healthKit
                 )
                 .presentationDetents([.large])
             case .paywall:
@@ -97,7 +98,8 @@ struct RootView: View {
                 DailyRecapView(
                     viewModel: DailyRecapViewModel(
                         generate: env.generateDailyRecap,
-                        memories: env.memories
+                        memories: env.memories,
+                        healthKit: env.healthKit
                     ),
                     onDismiss: { env.requestedModal = nil }
                 )
