@@ -47,6 +47,7 @@ final class AppEnvironment {
     let enrichMemory: EnrichMemoryUseCase
     let searchMemories: SearchMemoriesUseCase
     let generateDailyRecap: GenerateDailyRecapUseCase
+    let generateInsights: GenerateInsightsUseCase
 
     /// Bumped whenever the memory collection changes. Feature views observe
     /// it via `.task(id: env.memoryListVersion)` to refetch lazily — until
@@ -172,6 +173,12 @@ final class AppEnvironment {
         self.enrichMemory = EnrichMemoryUseCase(ai: ai, memories: memories, clock: clock)
         self.searchMemories = SearchMemoriesUseCase(search: search, memories: memories)
         self.generateDailyRecap = GenerateDailyRecapUseCase(memories: memories, ai: ai, clock: clock)
+        self.generateInsights = GenerateInsightsUseCase(
+            memories: memories,
+            generator: InsightsEngine(),
+            dismissals: UserDefaultsInsightDismissalStore(),
+            clock: clock
+        )
 
         // Notifications can't reach the modal binding directly (it lives on
         // env). Hand the service a closure that flips the binding when the

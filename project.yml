@@ -118,6 +118,8 @@ targets:
         product: OrbitMemoryDetailFeature
       - package: OrbitWorkspace
         product: OrbitRecapFeature
+      - package: OrbitWorkspace
+        product: OrbitInsightsFeature
       - target: OrbitShareExtension
         embed: true
       - target: OrbitWidgets

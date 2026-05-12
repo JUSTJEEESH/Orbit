@@ -6,13 +6,16 @@ import OrbitMemoryDetailFeature
 
 public struct HomeView: View {
     private let listMemories: ListMemoriesUseCase
+    private let generateInsights: GenerateInsightsUseCase
     private let refreshToken: Int
     private let clock: any OrbitClock
     private let makeDetailViewModel: @MainActor (UUID) -> MemoryDetailViewModel
     private let onPresentRecap: @MainActor () -> Void
+    private let onPresentPatterns: @MainActor () -> Void
 
     @State private var memories: [Memory] = []
     @State private var loadState: LoadState = .idle
+    @State private var primaryInsight: SmartInsight?
     @Namespace private var heroNamespace
     @Environment(\.orbitTheme) private var orbitTheme
 
@@ -22,16 +25,20 @@ public struct HomeView: View {
 
     public init(
         listMemories: ListMemoriesUseCase,
+        generateInsights: GenerateInsightsUseCase,
         refreshToken: Int = 0,
         clock: any OrbitClock = SystemClock(),
         makeDetailViewModel: @escaping @MainActor (UUID) -> MemoryDetailViewModel,
-        onPresentRecap: @escaping @MainActor () -> Void
+        onPresentRecap: @escaping @MainActor () -> Void,
+        onPresentPatterns: @escaping @MainActor () -> Void
     ) {
         self.listMemories = listMemories
+        self.generateInsights = generateInsights
         self.refreshToken = refreshToken
         self.clock = clock
         self.makeDetailViewModel = makeDetailViewModel
         self.onPresentRecap = onPresentRecap
+        self.onPresentPatterns = onPresentPatterns
     }
 
     public var body: some View {
@@ -110,8 +117,48 @@ public struct HomeView: View {
             if shouldShowRecapInvite {
                 recapCard
             }
+            if let primaryInsight {
+                insightCard(primaryInsight)
+            }
             recentSection
         }
+    }
+
+    /// Single rotating insight surface on Home. We deliberately show one at a
+    /// time so the surface stays calm; the full set lives in the Patterns
+    /// sheet, presented when the user taps through.
+    private func insightCard(_ insight: SmartInsight) -> some View {
+        let themeColor = themeAccent
+        return Button {
+            Haptics.play(.tap)
+            onPresentPatterns()
+        } label: {
+            OrbitCard(elevation: .resting) {
+                VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+                    OrbitEyebrow(
+                        label: insight.kind.label,
+                        suffix: "patterns",
+                        tint: themeColor
+                    )
+                    HStack(alignment: .firstTextBaseline, spacing: OrbitSpacing.xs) {
+                        Text(insight.headline)
+                            .font(.system(size: 22, weight: .semibold, design: .serif))
+                            .foregroundStyle(OrbitColor.textPrimary)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer(minLength: 0)
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(OrbitColor.textTertiary)
+                    }
+                    Text(insight.body)
+                        .font(OrbitTypography.callout)
+                        .foregroundStyle(OrbitColor.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .buttonStyle(OrbitBloomButtonStyle(tint: themeAccent))
     }
 
     /// We only invite the user into the recap experience once the day has
@@ -337,6 +384,31 @@ public struct HomeView: View {
         } catch {
             loadState = .failed(String(describing: error))
         }
+        // Insights run in parallel with the list; failure is silent because
+        // an empty insight surface is the natural fallback.
+        await reloadInsights()
+    }
+
+    private func reloadInsights() async {
+        do {
+            let all = try await generateInsights()
+            primaryInsight = preferred(from: all)
+        } catch {
+            primaryInsight = nil
+        }
+    }
+
+    /// Picks the highest-priority insight to surface on Home. Order is
+    /// deliberate: an entity feels more personal than a category, which
+    /// feels more personal than a pace number.
+    private func preferred(from insights: [SmartInsight]) -> SmartInsight? {
+        let priority: [SmartInsight.Kind] = [.topEntity, .trendingCategory, .weeklyVolume, .dayOfWeek]
+        for kind in priority {
+            if let match = insights.first(where: { $0.kind == kind }) {
+                return match
+            }
+        }
+        return insights.first
     }
 }
 

@@ -31,6 +31,7 @@ let package = Package(
         .library(name: "OrbitSettingsFeature", targets: ["OrbitSettingsFeature"]),
         .library(name: "OrbitMemoryDetailFeature", targets: ["OrbitMemoryDetailFeature"]),
         .library(name: "OrbitRecapFeature", targets: ["OrbitRecapFeature"]),
+        .library(name: "OrbitInsightsFeature", targets: ["OrbitInsightsFeature"]),
     ],
     targets: [
         // MARK: - Cross-cutting
@@ -135,6 +136,12 @@ let package = Package(
             name: "OrbitRecapFeature",
             dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain"],
             path: "Packages/Features/Recap/Sources/OrbitRecapFeature",
+            swiftSettings: swiftSettings
+        ),
+        .target(
+            name: "OrbitInsightsFeature",
+            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitMemoryDetailFeature"],
+            path: "Packages/Features/Insights/Sources/OrbitInsightsFeature",
             swiftSettings: swiftSettings
         ),
 
