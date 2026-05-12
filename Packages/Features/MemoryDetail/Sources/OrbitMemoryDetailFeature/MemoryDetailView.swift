@@ -154,7 +154,7 @@ public struct MemoryDetailView: View {
             OrbitCard {
                 VStack(alignment: .leading, spacing: OrbitSpacing.md) {
                     voicePlaybackBar(duration: duration)
-                    Text(transcript?.isEmpty == false ? transcript! : "No transcript yet")
+                    Text(transcript.flatMap { $0.isEmpty ? nil : $0 } ?? "No transcript yet")
                         .font(OrbitTypography.body)
                         .foregroundStyle(transcript?.isEmpty == false
                             ? OrbitColor.textPrimary
@@ -216,7 +216,7 @@ public struct MemoryDetailView: View {
                         .clipShape(.rect(cornerRadius: OrbitRadius.md))
                 } else {
                     Image(systemName: systemFallback)
-                        .font(.system(size: 32))
+                        .scaledFont(size: 32)
                         .foregroundStyle(OrbitColor.textTertiary)
                         .frame(maxWidth: .infinity, minHeight: 120)
                 }
@@ -262,7 +262,7 @@ public struct MemoryDetailView: View {
                 }
             } label: {
                 Image(systemName: isPlaying ? "pause.fill" : "play.fill")
-                    .font(.system(size: 18, weight: .semibold))
+                    .scaledFont(size: 18, weight: .semibold)
                     .foregroundStyle(OrbitColor.textInverted)
                     .frame(width: 44, height: 44)
                     .background(OrbitColor.textPrimary, in: .circle)

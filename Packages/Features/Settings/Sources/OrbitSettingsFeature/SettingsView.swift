@@ -245,7 +245,7 @@ public struct SettingsView: View {
                         .frame(width: 44, height: 44)
                     if isSelected {
                         Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 18, weight: .semibold))
+                            .scaledFont(size: 18, weight: .semibold)
                             .foregroundStyle(OrbitColor.textInverted, theme.primary)
                             .offset(x: 6, y: -6)
                     }
@@ -317,7 +317,7 @@ public struct SettingsView: View {
                         if let sleepHint = sleepConflictHint {
                             HStack(alignment: .top, spacing: 6) {
                                 Image(systemName: "moon.stars.fill")
-                                    .font(.system(size: 12, weight: .semibold))
+                                    .scaledFont(size: 12, weight: .semibold)
                                     .foregroundStyle(OrbitColor.warning)
                                 Text(sleepHint)
                                     .font(OrbitTypography.footnote)
@@ -692,7 +692,7 @@ public struct SettingsView: View {
                     Image(systemName: status.isAvailable
                           ? "checkmark.circle.fill"
                           : "exclamationmark.triangle.fill")
-                        .font(.system(size: 16, weight: .semibold))
+                        .scaledFont(size: 16, weight: .semibold)
                         .foregroundStyle(status.isAvailable
                                          ? OrbitColor.success
                                          : OrbitColor.warning)

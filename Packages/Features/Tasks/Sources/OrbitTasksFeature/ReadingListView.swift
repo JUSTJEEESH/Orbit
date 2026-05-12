@@ -95,7 +95,7 @@ struct ReadingListView: View {
                     .stroke(strokeColor(for: entry.status), lineWidth: 1.5)
                     .frame(width: 22, height: 22)
                 Image(systemName: iconName(for: entry.status))
-                    .font(.system(size: 11, weight: .bold))
+                    .scaledFont(size: 11, weight: .bold)
                     .foregroundStyle(strokeColor(for: entry.status))
                     .opacity(entry.status == .wantToRead ? 0 : 1)
             }

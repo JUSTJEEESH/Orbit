@@ -74,7 +74,7 @@ public struct GratitudeCaptureView: View {
         VStack(alignment: .leading, spacing: OrbitSpacing.xs) {
             HStack(spacing: 6) {
                 Image(systemName: "heart.fill")
-                    .font(.system(size: 13, weight: .semibold))
+                    .scaledFont(size: 13, weight: .semibold)
                     .foregroundStyle(orbitTheme.primary)
                 Text("Today")
                     .font(OrbitTypography.caption)
@@ -83,7 +83,7 @@ public struct GratitudeCaptureView: View {
             }
             .accessibilityHidden(true)
             Text("Three things you're grateful for")
-                .font(.system(size: 26, weight: .semibold, design: .serif))
+                .scaledFont(size: 26, weight: .semibold, design: .serif)
                 .foregroundStyle(OrbitColor.textPrimary)
                 .accessibilityAddTraits(.isHeader)
             Text("Big or small. The point is to notice.")
@@ -99,7 +99,7 @@ public struct GratitudeCaptureView: View {
     private func entryField(index: Int) -> some View {
         HStack(alignment: .top, spacing: OrbitSpacing.sm) {
             Text("\(index + 1)")
-                .font(.system(size: 18, weight: .semibold, design: .serif))
+                .scaledFont(size: 18, weight: .semibold, design: .serif)
                 .foregroundStyle(orbitTheme.primary)
                 .frame(width: 22, alignment: .leading)
                 .padding(.top, 8)

@@ -105,7 +105,13 @@ extension MemoryEntity {
         case .image:
             return .image(caption: imageCaption)
         case .link:
-            let url = URL(string: linkURLString ?? "") ?? URL(string: "about:blank")!
+            // `about:blank` is a known-valid URL but using it as a
+            // force-unwrap leaves a crash path if anyone changes the
+            // literal. Use a file-URL fallback that the URL initializer
+            // accepts unconditionally.
+            let url = URL(string: linkURLString ?? "")
+                ?? URL(string: "about:blank")
+                ?? URL(fileURLWithPath: "/")
             return .link(url: url, title: linkTitle, summary: linkSummary)
         case .screenshot:
             return .screenshot(ocrText: screenshotOCRText)

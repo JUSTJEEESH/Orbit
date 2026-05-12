@@ -174,7 +174,7 @@ public struct HomeView: View {
         } label: {
             HStack(spacing: OrbitSpacing.sm) {
                 Image(systemName: gratitudeStatus.hasEntryToday ? "heart.fill" : "heart")
-                    .font(.system(size: 13, weight: .semibold))
+                    .scaledFont(size: 13, weight: .semibold)
                     .foregroundStyle(gratitudeStatus.hasEntryToday ? themeColor : OrbitColor.textSecondary)
                 Text(label)
                     .font(OrbitTypography.footnote)
@@ -182,7 +182,7 @@ public struct HomeView: View {
                     .foregroundStyle(OrbitColor.textPrimary)
                 Spacer()
                 Image(systemName: "arrow.up.right")
-                    .font(.system(size: 11, weight: .semibold))
+                    .scaledFont(size: 11, weight: .semibold)
                     .foregroundStyle(OrbitColor.textTertiary)
             }
             .padding(.horizontal, OrbitSpacing.md)
@@ -212,7 +212,7 @@ public struct HomeView: View {
         } label: {
             HStack(spacing: OrbitSpacing.sm) {
                 Image(systemName: "envelope.fill")
-                    .font(.system(size: 13, weight: .semibold))
+                    .scaledFont(size: 13, weight: .semibold)
                     .foregroundStyle(OrbitColor.textSecondary)
                 Text("Write a letter to future you")
                     .font(OrbitTypography.footnote)
@@ -220,7 +220,7 @@ public struct HomeView: View {
                     .foregroundStyle(OrbitColor.textPrimary)
                 Spacer()
                 Image(systemName: "arrow.up.right")
-                    .font(.system(size: 11, weight: .semibold))
+                    .scaledFont(size: 11, weight: .semibold)
                     .foregroundStyle(OrbitColor.textTertiary)
             }
             .padding(.horizontal, OrbitSpacing.md)
@@ -248,14 +248,14 @@ public struct HomeView: View {
         } label: {
             HStack(spacing: OrbitSpacing.sm) {
                 Image(systemName: "sparkle")
-                    .font(.system(size: 14, weight: .semibold))
+                    .scaledFont(size: 14, weight: .semibold)
                     .foregroundStyle(themeAccent)
                 Text("Ask Orbit anything")
                     .font(OrbitTypography.body)
                     .foregroundStyle(OrbitColor.textPrimary)
                 Spacer()
                 Image(systemName: "arrow.up.right")
-                    .font(.system(size: 12, weight: .semibold))
+                    .scaledFont(size: 12, weight: .semibold)
                     .foregroundStyle(OrbitColor.textTertiary)
             }
             .padding(.horizontal, OrbitSpacing.md)
@@ -306,7 +306,7 @@ public struct HomeView: View {
                     VStack(alignment: .leading, spacing: OrbitSpacing.xs) {
                         HStack(spacing: 6) {
                             Image(systemName: "sparkles")
-                                .font(.system(size: 13, weight: .semibold))
+                                .scaledFont(size: 13, weight: .semibold)
                                 .foregroundStyle(themeColor)
                             Text("Year in Review")
                                 .font(OrbitTypography.caption)
@@ -314,7 +314,7 @@ public struct HomeView: View {
                                 .tracking(1.1)
                         }
                         Text("Your year, reflected back")
-                            .font(.system(size: 22, weight: .semibold, design: .serif))
+                            .scaledFont(size: 22, weight: .semibold, design: .serif)
                             .foregroundStyle(OrbitColor.textPrimary)
                         Text("Tap to see the moments, people, and places that shaped the year you just lived.")
                             .font(OrbitTypography.footnote)
@@ -323,7 +323,7 @@ public struct HomeView: View {
                     }
                     Spacer()
                     Image(systemName: "arrow.right")
-                        .font(.system(size: 14, weight: .semibold))
+                        .scaledFont(size: 14, weight: .semibold)
                         .foregroundStyle(OrbitColor.textTertiary)
                         .padding(.top, 4)
                 }
@@ -356,7 +356,7 @@ public struct HomeView: View {
                         tint: themeColor
                     )
                     Text(yearsAgo == 1 ? "1 year ago today" : "\(yearsAgo) years ago today")
-                        .font(.system(size: 22, weight: .semibold, design: .serif))
+                        .scaledFont(size: 22, weight: .semibold, design: .serif)
                         .foregroundStyle(OrbitColor.textPrimary)
                         .fixedSize(horizontal: false, vertical: true)
                     if let featured {
@@ -372,7 +372,7 @@ public struct HomeView: View {
                             .foregroundStyle(OrbitColor.textTertiary)
                         Spacer()
                         Image(systemName: "arrow.right")
-                            .font(.system(size: 13, weight: .semibold))
+                            .scaledFont(size: 13, weight: .semibold)
                             .foregroundStyle(OrbitColor.textTertiary)
                     }
                     .padding(.top, OrbitSpacing.xxs)
@@ -411,13 +411,13 @@ public struct HomeView: View {
                     )
                     HStack(alignment: .firstTextBaseline, spacing: OrbitSpacing.xs) {
                         Text(insight.headline)
-                            .font(.system(size: 22, weight: .semibold, design: .serif))
+                            .scaledFont(size: 22, weight: .semibold, design: .serif)
                             .foregroundStyle(OrbitColor.textPrimary)
                             .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
                         Spacer(minLength: 0)
                         Image(systemName: "arrow.right")
-                            .font(.system(size: 14, weight: .semibold))
+                            .scaledFont(size: 14, weight: .semibold)
                             .foregroundStyle(OrbitColor.textTertiary)
                     }
                     Text(insight.body)
@@ -456,7 +456,7 @@ public struct HomeView: View {
                         tint: themeColor
                     )
                     Text("See your day reflected back")
-                        .font(.system(size: 22, weight: .semibold, design: .serif))
+                        .scaledFont(size: 22, weight: .semibold, design: .serif)
                         .foregroundStyle(OrbitColor.textPrimary)
                         .fixedSize(horizontal: false, vertical: true)
                     Text("Orbit reads your captures and writes a calm, two-sentence summary of the day.")
@@ -467,7 +467,7 @@ public struct HomeView: View {
                         Text("Open recap")
                             .font(OrbitTypography.bodyEmphasized)
                         Image(systemName: "arrow.right")
-                            .font(.system(size: 14, weight: .semibold))
+                            .scaledFont(size: 14, weight: .semibold)
                     }
                     .foregroundStyle(OrbitColor.textPrimary)
                     .padding(.top, OrbitSpacing.xxs)
@@ -550,7 +550,7 @@ public struct HomeView: View {
                             )
                             HStack(alignment: .top, spacing: OrbitSpacing.sm) {
                                 Image(systemName: icon(for: memory.content.kind))
-                                    .font(.system(size: 14, weight: .regular))
+                                    .scaledFont(size: 14, weight: .regular)
                                     .foregroundStyle(OrbitColor.textTertiary)
                                     .padding(.top, 3)
                                     .accessibilityHidden(true)

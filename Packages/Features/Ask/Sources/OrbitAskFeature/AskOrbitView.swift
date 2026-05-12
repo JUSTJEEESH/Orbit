@@ -69,7 +69,7 @@ public struct AskOrbitView: View {
         VStack(alignment: .leading, spacing: OrbitSpacing.xxs) {
             HStack(spacing: 6) {
                 Image(systemName: "sparkle")
-                    .font(.system(size: 14, weight: .semibold))
+                    .scaledFont(size: 14, weight: .semibold)
                     .foregroundStyle(orbitTheme.primary)
                 Text("Ask")
                     .font(OrbitTypography.caption)
@@ -77,7 +77,7 @@ public struct AskOrbitView: View {
                     .tracking(1.1)
             }
             Text("What's on your mind?")
-                .font(.system(size: 30, weight: .semibold, design: .serif))
+                .scaledFont(size: 30, weight: .semibold, design: .serif)
                 .foregroundStyle(OrbitColor.textPrimary)
             Text("Orbit reads only your memories. Nothing leaves your phone.")
                 .font(OrbitTypography.footnote)
@@ -103,7 +103,7 @@ public struct AskOrbitView: View {
                 model.submit()
             } label: {
                 Image(systemName: "arrow.up")
-                    .font(.system(size: 16, weight: .bold))
+                    .scaledFont(size: 16, weight: .bold)
                     .foregroundStyle(OrbitColor.textInverted)
                     .frame(width: 40, height: 40)
                     .background(
@@ -154,7 +154,7 @@ public struct AskOrbitView: View {
                                 .multilineTextAlignment(.leading)
                             Spacer()
                             Image(systemName: "arrow.up.right")
-                                .font(.system(size: 12, weight: .semibold))
+                                .scaledFont(size: 12, weight: .semibold)
                                 .foregroundStyle(OrbitColor.textTertiary)
                         }
                         .padding(.horizontal, OrbitSpacing.md)
@@ -188,7 +188,7 @@ public struct AskOrbitView: View {
                         .foregroundStyle(OrbitColor.textTertiary)
                         .italic()
                     Text(answer.narrative)
-                        .font(.system(size: 19, design: .serif))
+                        .scaledFont(size: 19, design: .serif)
                         .foregroundStyle(OrbitColor.textPrimary)
                         .lineSpacing(4)
                         .fixedSize(horizontal: false, vertical: true)
@@ -232,7 +232,7 @@ public struct AskOrbitView: View {
                 }
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 11, weight: .semibold))
+                    .scaledFont(size: 11, weight: .semibold)
                     .foregroundStyle(OrbitColor.textTertiary)
             }
             .padding(.horizontal, OrbitSpacing.md)

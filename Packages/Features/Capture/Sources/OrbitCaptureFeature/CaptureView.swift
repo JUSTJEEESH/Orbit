@@ -166,7 +166,7 @@ public struct CaptureView: View {
                             .font(OrbitTypography.monoNumeric)
                             .foregroundStyle(OrbitColor.textSecondary)
                     }
-                    Text(transcript?.isEmpty == false ? transcript! : "No transcript")
+                    Text(transcript.flatMap { $0.isEmpty ? nil : $0 } ?? "No transcript")
                         .font(OrbitTypography.body)
                         .foregroundStyle(OrbitColor.textPrimary)
                 }
@@ -284,7 +284,7 @@ public struct CaptureView: View {
         if let surfaceDate = model.surfaceDate {
             HStack(spacing: OrbitSpacing.sm) {
                 Image(systemName: "lock.fill")
-                    .font(.system(size: 13, weight: .semibold))
+                    .scaledFont(size: 13, weight: .semibold)
                     .foregroundStyle(orbitTheme.primary)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Sealed until")
@@ -300,7 +300,7 @@ public struct CaptureView: View {
                     model.surfaceDate = nil
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 18))
+                        .scaledFont(size: 18)
                         .foregroundStyle(OrbitColor.textTertiary)
                 }
                 .buttonStyle(.plain)
@@ -316,7 +316,7 @@ public struct CaptureView: View {
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "calendar.badge.clock")
-                        .font(.system(size: 13, weight: .semibold))
+                        .scaledFont(size: 13, weight: .semibold)
                     Text("Schedule for later")
                         .font(OrbitTypography.footnote)
                         .fontWeight(.semibold)
@@ -426,7 +426,7 @@ private struct PhotoPlaceholder: View {
     var body: some View {
         VStack(spacing: OrbitSpacing.sm) {
             Image(systemName: "photo.badge.plus")
-                .font(.system(size: 36, weight: .regular))
+                .scaledFont(size: 36, weight: .regular)
                 .foregroundStyle(OrbitColor.textSecondary)
             Text("Choose a photo")
                 .font(OrbitTypography.bodyEmphasized)

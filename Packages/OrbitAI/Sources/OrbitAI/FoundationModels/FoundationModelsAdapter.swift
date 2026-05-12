@@ -378,7 +378,8 @@ public actor FoundationModelsAdapter: AIService {
             case 2: return "\(kindWords[0]) and \(kindWords[1])"
             default:
                 let head = kindWords.prefix(kindWords.count - 1).joined(separator: ", ")
-                return "\(head), and \(kindWords.last!)"
+                let tail = kindWords.last ?? "moments"
+                return "\(head), and \(tail)"
             }
         }()
         let countWord = count == 1 ? "moment" : "moments"

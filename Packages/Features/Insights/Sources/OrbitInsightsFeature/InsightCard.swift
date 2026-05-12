@@ -69,14 +69,14 @@ public struct InsightCard: View {
     private var headlineRow: some View {
         HStack(alignment: .firstTextBaseline, spacing: OrbitSpacing.xs) {
             Text(insight.headline)
-                .font(.system(size: density == .compact ? 22 : 26, weight: .semibold, design: .serif))
+                .scaledFont(size: density == .compact ? 22 : 26, weight: .semibold, design: .serif)
                 .foregroundStyle(OrbitColor.textPrimary)
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)
             if density == .compact {
                 Image(systemName: "arrow.right")
-                    .font(.system(size: 14, weight: .semibold))
+                    .scaledFont(size: 14, weight: .semibold)
                     .foregroundStyle(OrbitColor.textTertiary)
             }
         }

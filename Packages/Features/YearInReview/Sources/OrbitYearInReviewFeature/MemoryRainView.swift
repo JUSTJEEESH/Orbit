@@ -53,7 +53,7 @@ struct MemoryRainView: View {
         let memory = memory(for: particle)
         let tint = OrbitCategoryPalette.tint(for: memory?.ai.category)
         return Text(particle.text)
-            .font(.system(size: particle.fontSize, weight: .medium, design: .serif))
+            .scaledFont(size: particle.fontSize, weight: .medium, design: .serif)
             .foregroundStyle(tint)
             .padding(.horizontal, 12)
             .padding(.vertical, 6)

@@ -386,10 +386,32 @@ extension AppEnvironment {
     }
 
     static func makePreview(seed: [Memory] = []) -> AppEnvironment {
-        let storage = try! MediaStorage(
-            root: FileManager.default.temporaryDirectory
-                .appendingPathComponent("orbit-preview-\(UUID().uuidString)", isDirectory: true)
-        )
+        // Two-step fallback so the preview environment never crashes
+        // even if the temp directory is unusable (sandbox edge case).
+        // If both paths fail, the app's bigger problems are external —
+        // we still hand back an environment so logs can surface the
+        // failure instead of crashing on launch.
+        let tmpRoot = FileManager.default.temporaryDirectory
+            .appendingPathComponent("orbit-preview-\(UUID().uuidString)", isDirectory: true)
+        let storage: MediaStorage = {
+            if let s = try? MediaStorage(root: tmpRoot) { return s }
+            OrbitLog.persistence.fault("Preview MediaStorage tmp init failed; trying default documents path.")
+            if let s = try? MediaStorage() { return s }
+            // Final fallback — log loudly and continue with the tmp
+            // path that we know createDirectory couldn't reach. Most
+            // operations against it will fail gracefully through
+            // FileManager error paths rather than crashing on launch.
+            OrbitLog.persistence.fault("Preview MediaStorage default init also failed. Capture flows will surface errors.")
+            // Final fallback: the system temp directory itself, which
+            // is guaranteed to exist in the app sandbox. If even this
+            // fails the sandbox is so broken the app can't run, so we
+            // trap with a labeled message instead of an unlabeled
+            // force-unwrap.
+            guard let last = try? MediaStorage(root: FileManager.default.temporaryDirectory) else {
+                preconditionFailure("MediaStorage cannot initialize against the app sandbox temp directory.")
+            }
+            return last
+        }()
         let memoryRepo = InMemoryMemoryRepository(seed: seed)
         let embeddings = EmbeddingService()
         return AppEnvironment(

@@ -63,7 +63,7 @@ public struct OnThisDayView: View {
         VStack(alignment: .leading, spacing: OrbitSpacing.xxs) {
             HStack(spacing: 6) {
                 Image(systemName: "calendar")
-                    .font(.system(size: 13, weight: .semibold))
+                    .scaledFont(size: 13, weight: .semibold)
                     .foregroundStyle(orbitTheme.primary)
                 Text("On This Day")
                     .font(OrbitTypography.caption)
@@ -86,7 +86,7 @@ public struct OnThisDayView: View {
         VStack(alignment: .leading, spacing: OrbitSpacing.md) {
             HStack(alignment: .firstTextBaseline, spacing: OrbitSpacing.xs) {
                 Text("\(yearsAgo(group.year))")
-                    .font(.system(size: 32, weight: .semibold, design: .serif))
+                    .scaledFont(size: 32, weight: .semibold, design: .serif)
                     .foregroundStyle(orbitTheme.primary)
                 Text(yearLabel(group.year))
                     .font(OrbitTypography.footnote)

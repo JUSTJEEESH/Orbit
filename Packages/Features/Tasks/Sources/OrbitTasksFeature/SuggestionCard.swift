@@ -37,7 +37,7 @@ struct SuggestionCard: View {
                     } label: {
                         HStack(spacing: 6) {
                             Image(systemName: "plus")
-                                .font(.system(size: 13, weight: .semibold))
+                                .scaledFont(size: 13, weight: .semibold)
                             Text("Add task")
                                 .font(OrbitTypography.footnote)
                                 .fontWeight(.semibold)

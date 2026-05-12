@@ -47,7 +47,7 @@ struct InsightMemoriesView: View {
         VStack(alignment: .leading, spacing: OrbitSpacing.xs) {
             OrbitEyebrow(label: insight.kind.label, suffix: nil, tint: OrbitColor.textTertiary)
             Text(insight.headline)
-                .font(.system(size: 30, weight: .semibold, design: .serif))
+                .scaledFont(size: 30, weight: .semibold, design: .serif)
                 .foregroundStyle(OrbitColor.textPrimary)
             Text(insight.body)
                 .font(OrbitTypography.callout)

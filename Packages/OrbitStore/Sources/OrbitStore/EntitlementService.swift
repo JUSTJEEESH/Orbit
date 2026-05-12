@@ -121,7 +121,9 @@ public final class EntitlementService {
             guard productIdentifiers.contains(transaction.productID) else { continue }
             pro = true
             if let expiration = transaction.expirationDate {
-                if earliestExpiry == nil || expiration < earliestExpiry! {
+                if let current = earliestExpiry {
+                    if expiration < current { earliestExpiry = expiration }
+                } else {
                     earliestExpiry = expiration
                 }
             }

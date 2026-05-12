@@ -33,7 +33,7 @@ struct TaskRowView: View {
                         if let due = task.dueDate {
                             HStack(spacing: 4) {
                                 Image(systemName: "calendar")
-                                    .font(.system(size: 11, weight: .regular))
+                                    .scaledFont(size: 11, weight: .regular)
                                 Text(dueLabel(due))
                                     .font(OrbitTypography.footnote)
                             }
@@ -70,7 +70,7 @@ struct TaskRowView: View {
                     .frame(width: 22, height: 22)
                 if task.isCompleted {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 11, weight: .bold))
+                        .scaledFont(size: 11, weight: .bold)
                         .foregroundStyle(orbitTheme.primary)
                 }
             }

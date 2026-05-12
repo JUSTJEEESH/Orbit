@@ -179,7 +179,7 @@ private struct SearchResultRow: View {
 
                 HStack(alignment: .top, spacing: OrbitSpacing.sm) {
                     Image(systemName: kindIcon)
-                        .font(.system(size: 14, weight: .regular))
+                        .scaledFont(size: 14, weight: .regular)
                         .foregroundStyle(OrbitColor.textTertiary)
                         .padding(.top, 3)
                         .accessibilityHidden(true)

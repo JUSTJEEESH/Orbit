@@ -125,7 +125,7 @@ public struct DailyRecapView: View {
     private func healthStat(systemImage: String, value: String) -> some View {
         HStack(spacing: 6) {
             Image(systemName: systemImage)
-                .font(.system(size: 12, weight: .semibold))
+                .scaledFont(size: 12, weight: .semibold)
                 .foregroundStyle(OrbitColor.textTertiary)
             Text(value)
                 .font(OrbitTypography.footnote)
@@ -172,7 +172,7 @@ public struct DailyRecapView: View {
 
     private func narrative(_ recap: DailyRecap) -> some View {
         Text(recap.narrative)
-            .font(.system(size: 22, weight: .regular, design: .serif))
+            .scaledFont(size: 22, weight: .regular, design: .serif)
             .foregroundStyle(OrbitColor.textPrimary)
             .lineSpacing(6)
             .fixedSize(horizontal: false, vertical: true)

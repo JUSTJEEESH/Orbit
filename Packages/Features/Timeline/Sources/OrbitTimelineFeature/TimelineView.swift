@@ -204,7 +204,7 @@ private struct MemoryRow: View {
 
                 HStack(alignment: .top, spacing: OrbitSpacing.sm) {
                     Image(systemName: kindIcon)
-                        .font(.system(size: 14, weight: .regular))
+                        .scaledFont(size: 14, weight: .regular)
                         .foregroundStyle(OrbitColor.textTertiary)
                         .padding(.top, 3)
                     Text(headline)
@@ -221,7 +221,7 @@ private struct MemoryRow: View {
                             .fill(OrbitColor.textTertiary)
                             .frame(width: 5, height: 5)
                         Text("Organizing")
-                            .font(.system(size: 11, weight: .medium))
+                            .scaledFont(size: 11, weight: .medium)
                             .foregroundStyle(OrbitColor.textTertiary)
                             .tracking(0.8)
                     }

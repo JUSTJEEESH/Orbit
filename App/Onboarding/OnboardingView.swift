@@ -37,6 +37,7 @@ struct OnboardingView: View {
     let onEnableHealth: (@MainActor @Sendable () async -> Bool)?
 
     @Environment(\.orbitTheme) private var orbitTheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         OrbitScreen {
@@ -60,7 +61,7 @@ struct OnboardingView: View {
                     )
                 )
             }
-            .animation(.easeInOut(duration: 0.42), value: stage)
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.42), value: stage)
         }
         .task {
             await permissions.refreshAll()
@@ -77,7 +78,7 @@ struct OnboardingView: View {
                           ? orbitTheme.primary
                           : OrbitColor.separator)
                     .frame(width: dotStage == stage ? 22 : 6, height: 6)
-                    .animation(.spring(duration: 0.4), value: stage)
+                    .animation(reduceMotion ? nil : .spring(duration: 0.4), value: stage)
             }
         }
         .accessibilityHidden(true)
@@ -93,11 +94,11 @@ struct OnboardingView: View {
                 .accessibilityHidden(true)
             Spacer().frame(height: OrbitSpacing.xl)
             Text("Orbit")
-                .font(.system(size: 44, weight: .semibold, design: .serif))
+                .scaledFont(size: 44, weight: .semibold, design: .serif)
                 .foregroundStyle(OrbitColor.textPrimary)
                 .accessibilityAddTraits(.isHeader)
             Text("Memories find their orbit.")
-                .font(.system(size: 17, design: .serif))
+                .scaledFont(size: 17, design: .serif)
                 .italic()
                 .foregroundStyle(OrbitColor.textSecondary)
                 .padding(.top, OrbitSpacing.sm)
@@ -198,7 +199,7 @@ struct OnboardingView: View {
         return OrbitCard(elevation: .resting) {
             HStack(alignment: .center, spacing: OrbitSpacing.md) {
                 Image(systemName: permission.systemImage)
-                    .font(.system(size: 18, weight: .semibold))
+                    .scaledFont(size: 18, weight: .semibold)
                     .foregroundStyle(orbitTheme.primary)
                     .frame(width: 36, height: 36)
                     .background(orbitTheme.primary.opacity(0.12), in: .circle)
@@ -225,12 +226,12 @@ struct OnboardingView: View {
         switch status {
         case .granted, .provisional:
             Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 22, weight: .semibold))
+                .scaledFont(size: 22, weight: .semibold)
                 .foregroundStyle(OrbitColor.success)
                 .accessibilityLabel("Granted")
         case .denied:
             Image(systemName: "xmark.circle.fill")
-                .font(.system(size: 22, weight: .semibold))
+                .scaledFont(size: 22, weight: .semibold)
                 .foregroundStyle(OrbitColor.warning)
                 .accessibilityLabel("Denied")
         case .notDetermined:
@@ -512,7 +513,7 @@ private struct CaptureMotif: View {
                 .shadow(color: orbitTheme.primary.opacity(0.45), radius: 22)
                 .overlay(
                     Image(systemName: "plus")
-                        .font(.system(size: 30, weight: .semibold))
+                        .scaledFont(size: 30, weight: .semibold)
                         .foregroundStyle(OrbitColor.textInverted)
                 )
                 .scaleEffect(pulse && !reduceMotion ? 1.06 : 1.0)
@@ -535,7 +536,7 @@ private struct CaptureMotif: View {
         let x = radius * CGFloat(cos(angle))
         let y = radius * CGFloat(sin(angle))
         return Image(systemName: symbol)
-            .font(.system(size: 16, weight: .semibold))
+            .scaledFont(size: 16, weight: .semibold)
             .foregroundStyle(orbitTheme.primary)
             .frame(width: 40, height: 40)
             .background(OrbitColor.surface, in: .circle)
@@ -558,7 +559,7 @@ private struct IntelligenceMotif: View {
             cardMock
             // Sparkle hint
             Image(systemName: "sparkles")
-                .font(.system(size: 22, weight: .semibold))
+                .scaledFont(size: 22, weight: .semibold)
                 .foregroundStyle(orbitTheme.primary)
                 .offset(x: 110, y: -75)
                 .opacity(chipsVisible ? 1 : 0)
@@ -601,7 +602,7 @@ private struct IntelligenceMotif: View {
 
     private func floatingChip(text: String, xOffset: CGFloat, yOffset: CGFloat, delay: Double) -> some View {
         Text(text)
-            .font(.system(size: 12, weight: .semibold))
+            .scaledFont(size: 12, weight: .semibold)
             .foregroundStyle(orbitTheme.primary)
             .padding(.horizontal, 10)
             .padding(.vertical, 5)

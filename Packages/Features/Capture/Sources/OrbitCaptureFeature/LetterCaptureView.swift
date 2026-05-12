@@ -78,7 +78,7 @@ public struct LetterCaptureView: View {
         VStack(alignment: .leading, spacing: OrbitSpacing.xs) {
             HStack(spacing: 6) {
                 Image(systemName: "envelope.fill")
-                    .font(.system(size: 13, weight: .semibold))
+                    .scaledFont(size: 13, weight: .semibold)
                     .foregroundStyle(orbitTheme.primary)
                 Text("Letter to Future You")
                     .font(OrbitTypography.caption)
@@ -87,7 +87,7 @@ public struct LetterCaptureView: View {
             }
             .accessibilityHidden(true)
             Text("Dear future self,")
-                .font(.system(size: 28, weight: .semibold, design: .serif))
+                .scaledFont(size: 28, weight: .semibold, design: .serif)
                 .foregroundStyle(OrbitColor.textPrimary)
                 .accessibilityAddTraits(.isHeader)
         }
@@ -100,7 +100,7 @@ public struct LetterCaptureView: View {
             ZStack(alignment: .topLeading) {
                 if letterText.isEmpty {
                     Text("Tell yourself something you'll want to remember…")
-                        .font(.system(size: 17, design: .serif))
+                        .scaledFont(size: 17, design: .serif)
                         .italic()
                         .foregroundStyle(OrbitColor.textTertiary)
                         .padding(.top, 8)
@@ -108,7 +108,7 @@ public struct LetterCaptureView: View {
                         .allowsHitTesting(false)
                 }
                 TextEditor(text: $letterText)
-                    .font(.system(size: 17, design: .serif))
+                    .scaledFont(size: 17, design: .serif)
                     .foregroundStyle(OrbitColor.textPrimary)
                     .frame(minHeight: 220)
                     .focused($fieldFocus)

@@ -39,7 +39,7 @@ struct HabitsView: View {
         VStack(alignment: .leading, spacing: OrbitSpacing.xxs) {
             HStack(spacing: 6) {
                 Image(systemName: "figure.run")
-                    .font(.system(size: 13, weight: .semibold))
+                    .scaledFont(size: 13, weight: .semibold)
                     .foregroundStyle(orbitTheme.primary)
                 Text("Last 12 weeks")
                     .font(OrbitTypography.caption)

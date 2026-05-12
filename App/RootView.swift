@@ -263,7 +263,7 @@ struct RootView: View {
                 env.requestedModal = .settings
             } label: {
                 Image(systemName: "person.crop.circle")
-                    .font(.system(size: 22, weight: .regular))
+                    .scaledFont(size: 22, weight: .regular)
                     .foregroundStyle(OrbitColor.textPrimary)
                     .accessibilityLabel("Settings")
             }

@@ -28,6 +28,7 @@ public struct TasksView: View {
     private let makeDetailViewModel: @MainActor (UUID) -> MemoryDetailViewModel
 
     @Environment(\.orbitTheme) private var orbitTheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(
         viewModel: TasksViewModel,
@@ -60,7 +61,7 @@ public struct TasksView: View {
                         case .habits:  HabitsView(model: habitsModel)
                         }
                     }
-                    .animation(.easeInOut(duration: 0.18), value: section)
+                    .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: section)
                 }
             }
             .navigationTitle(section.title)
@@ -196,7 +197,7 @@ public struct TasksView: View {
                     } label: {
                         HStack(spacing: 6) {
                             Image(systemName: "bell.badge")
-                                .font(.system(size: 13, weight: .semibold))
+                                .scaledFont(size: 13, weight: .semibold)
                             Text("Set reminder")
                                 .font(OrbitTypography.footnote)
                                 .fontWeight(.semibold)
@@ -266,7 +267,7 @@ public struct TasksView: View {
     private var completedSection: some View {
         VStack(alignment: .leading, spacing: OrbitSpacing.md) {
             Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
+                withAnimation(OrbitMotion.respectfully(.easeInOut(duration: 0.2), reduceMotion: reduceMotion)) {
                     showingCompleted.toggle()
                 }
             } label: {
@@ -277,7 +278,7 @@ public struct TasksView: View {
                     )
                     Spacer()
                     Image(systemName: showingCompleted ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 14, weight: .semibold))
+                        .scaledFont(size: 14, weight: .semibold)
                         .foregroundStyle(OrbitColor.textSecondary)
                 }
             }
