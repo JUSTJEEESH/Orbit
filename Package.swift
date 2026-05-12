@@ -34,6 +34,7 @@ let package = Package(
         .library(name: "OrbitInsightsFeature", targets: ["OrbitInsightsFeature"]),
         .library(name: "OrbitTasksFeature", targets: ["OrbitTasksFeature"]),
         .library(name: "OrbitAskFeature", targets: ["OrbitAskFeature"]),
+        .library(name: "OrbitYearInReviewFeature", targets: ["OrbitYearInReviewFeature"]),
     ],
     targets: [
         // MARK: - Cross-cutting
@@ -156,6 +157,12 @@ let package = Package(
             name: "OrbitAskFeature",
             dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitMemoryDetailFeature"],
             path: "Packages/Features/Ask/Sources/OrbitAskFeature",
+            swiftSettings: swiftSettings
+        ),
+        .target(
+            name: "OrbitYearInReviewFeature",
+            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitMemoryDetailFeature"],
+            path: "Packages/Features/YearInReview/Sources/OrbitYearInReviewFeature",
             swiftSettings: swiftSettings
         ),
 

@@ -16,6 +16,7 @@ public struct SettingsView: View {
     private let onPresentPaywall: @MainActor () -> Void
     private let onDeleteAccount: @MainActor @Sendable () async throws -> Void
     private let onReindexAll: @MainActor @Sendable () async -> Void
+    private let onPreviewYearInReview: @MainActor () -> Void
     private let onDismiss: @MainActor () -> Void
 
     /// Reminders sync state surfaced through plain values so this feature
@@ -43,6 +44,7 @@ public struct SettingsView: View {
         onPresentPaywall: @escaping @MainActor () -> Void,
         onDeleteAccount: @escaping @MainActor @Sendable () async throws -> Void,
         onReindexAll: @escaping @MainActor @Sendable () async -> Void,
+        onPreviewYearInReview: @escaping @MainActor () -> Void = {},
         onDismiss: @escaping @MainActor () -> Void,
         remindersSyncEnabled: Bool = false,
         remindersAuthorized: Bool = false,
@@ -61,6 +63,7 @@ public struct SettingsView: View {
         self.onPresentPaywall = onPresentPaywall
         self.onDeleteAccount = onDeleteAccount
         self.onReindexAll = onReindexAll
+        self.onPreviewYearInReview = onPreviewYearInReview
         self.onDismiss = onDismiss
         self.remindersSyncEnabled = remindersSyncEnabled
         self.remindersAuthorized = remindersAuthorized
@@ -521,6 +524,29 @@ public struct SettingsView: View {
                     .disabled(isReindexing)
                 }
             }
+
+            Button {
+                Haptics.play(.tap)
+                onPreviewYearInReview()
+            } label: {
+                OrbitCard {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Preview Year in Review")
+                                .font(OrbitTypography.bodyEmphasized)
+                                .foregroundStyle(OrbitColor.textPrimary)
+                            Text("Show the annual reflection surface for the most-recently-completed year, ignoring the December gate.")
+                                .font(OrbitTypography.footnote)
+                                .foregroundStyle(OrbitColor.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .foregroundStyle(OrbitColor.textTertiary)
+                    }
+                }
+            }
+            .buttonStyle(.plain)
 
             NavigationLink {
                 DesignSystemGallery()

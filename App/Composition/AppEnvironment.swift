@@ -57,6 +57,7 @@ final class AppEnvironment {
     let deleteTask: DeleteTaskUseCase
     let askOrbit: AskOrbitUseCase
     let listOnThisDay: ListOnThisDayUseCase
+    let generateYearInReview: GenerateYearInReviewUseCase
 
     /// Bumped whenever the memory collection changes. Feature views observe
     /// it via `.task(id: env.memoryListVersion)` to refetch lazily — until
@@ -78,6 +79,43 @@ final class AppEnvironment {
     }
 
     private static let onboardingKey = "orbit.onboarding.completed"
+    private static let yearInReviewLastSeenKey = "orbit.yearInReview.lastSeenYear"
+
+    /// The most recent calendar year for which the user has dismissed
+    /// the Year in Review surface. Drives the late-December Home banner
+    /// so it doesn't re-show the same review on every launch.
+    var yearInReviewLastSeenYear: Int? {
+        get { UserDefaults.standard.object(forKey: Self.yearInReviewLastSeenKey) as? Int }
+        set {
+            if let newValue {
+                UserDefaults.standard.set(newValue, forKey: Self.yearInReviewLastSeenKey)
+            } else {
+                UserDefaults.standard.removeObject(forKey: Self.yearInReviewLastSeenKey)
+            }
+        }
+    }
+
+    /// Whether to surface the Year-in-Review banner on Home. True from
+    /// Dec 15 through Jan 14, scoped to the year that's ending, and only
+    /// when the user hasn't already dismissed that year's review.
+    func shouldOfferYearInReview(at date: Date = Date()) -> Bool {
+        let calendar = Calendar.current
+        let comps = calendar.dateComponents([.year, .month, .day], from: date)
+        guard let year = comps.year, let month = comps.month, let day = comps.day else { return false }
+        let inWindow = (month == 12 && day >= 15) || (month == 1 && day <= 14)
+        guard inWindow else { return false }
+        let targetYear = month == 1 ? year - 1 : year
+        return yearInReviewLastSeenYear != targetYear
+    }
+
+    /// Mark the most-recent target year as seen so the banner stops
+    /// surfacing for that year.
+    func markYearInReviewSeen(at date: Date = Date()) {
+        let calendar = Calendar.current
+        let comps = calendar.dateComponents([.year, .month], from: date)
+        guard let year = comps.year, let month = comps.month else { return }
+        yearInReviewLastSeenYear = month == 1 ? year - 1 : year
+    }
 
     func memoriesDidChange() {
         memoryListVersion &+= 1
@@ -254,6 +292,7 @@ final class AppEnvironment {
             clock: clock
         )
         self.listOnThisDay = ListOnThisDayUseCase(memories: memories, clock: clock)
+        self.generateYearInReview = GenerateYearInReviewUseCase(memories: memories, clock: clock)
 
         // Notifications can't reach the modal binding directly (it lives on
         // env). Hand the service a closure that flips the binding when the

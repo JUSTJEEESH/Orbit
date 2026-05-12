@@ -14,6 +14,7 @@ import OrbitRecapFeature
 import OrbitInsightsFeature
 import OrbitTasksFeature
 import OrbitAskFeature
+import OrbitYearInReviewFeature
 
 struct RootView: View {
     @Environment(AppEnvironment.self) private var env
@@ -69,6 +70,7 @@ struct RootView: View {
                     onPresentPaywall: { env.requestedModal = .paywall },
                     onDeleteAccount: { try await env.wipeAccountAndData() },
                     onReindexAll: { await env.reenrichAllMemories() },
+                    onPreviewYearInReview: { env.requestedModal = .yearInReview },
                     onDismiss: { env.requestedModal = nil },
                     remindersSyncEnabled: env.remindersSync.isEnabled,
                     remindersAuthorized: env.remindersSync.isAuthorized,
@@ -129,6 +131,16 @@ struct RootView: View {
                     onCancel: { env.requestedModal = nil }
                 )
                 .presentationDetents([.large])
+            case .yearInReview:
+                YearInReviewView(
+                    viewModel: YearInReviewViewModel(generate: env.generateYearInReview),
+                    makeDetailViewModel: makeDetailViewModel,
+                    onDismiss: {
+                        env.requestedModal = nil
+                        env.markYearInReviewSeen()
+                    }
+                )
+                .presentationDetents([.large])
             }
         }
         .onAppear { Haptics.prepare() }
@@ -150,7 +162,9 @@ struct RootView: View {
                     onPresentRecap: { env.requestedModal = .dailyRecap },
                     onPresentPatterns: { env.requestedModal = .patterns },
                     onPresentAskOrbit: { env.requestedModal = .askOrbit },
-                    onPresentLetter: { env.requestedModal = .letter }
+                    onPresentLetter: { env.requestedModal = .letter },
+                    onPresentYearInReview: { env.requestedModal = .yearInReview },
+                    shouldShowYearInReviewBanner: env.shouldOfferYearInReview()
                 )
                 .navigationTitle("")
                 .navigationBarTitleDisplayMode(.inline)

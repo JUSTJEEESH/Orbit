@@ -15,6 +15,8 @@ public struct HomeView: View {
     private let onPresentPatterns: @MainActor () -> Void
     private let onPresentAskOrbit: @MainActor () -> Void
     private let onPresentLetter: @MainActor () -> Void
+    private let onPresentYearInReview: @MainActor () -> Void
+    private let shouldShowYearInReviewBanner: Bool
 
     @State private var memories: [Memory] = []
     @State private var loadState: LoadState = .idle
@@ -38,7 +40,9 @@ public struct HomeView: View {
         onPresentRecap: @escaping @MainActor () -> Void,
         onPresentPatterns: @escaping @MainActor () -> Void,
         onPresentAskOrbit: @escaping @MainActor () -> Void,
-        onPresentLetter: @escaping @MainActor () -> Void
+        onPresentLetter: @escaping @MainActor () -> Void,
+        onPresentYearInReview: @escaping @MainActor () -> Void,
+        shouldShowYearInReviewBanner: Bool = false
     ) {
         self.listMemories = listMemories
         self.generateInsights = generateInsights
@@ -50,6 +54,8 @@ public struct HomeView: View {
         self.onPresentPatterns = onPresentPatterns
         self.onPresentAskOrbit = onPresentAskOrbit
         self.onPresentLetter = onPresentLetter
+        self.onPresentYearInReview = onPresentYearInReview
+        self.shouldShowYearInReviewBanner = shouldShowYearInReviewBanner
     }
 
     public var body: some View {
@@ -209,6 +215,9 @@ public struct HomeView: View {
 
     private var loadedContent: some View {
         VStack(alignment: .leading, spacing: OrbitSpacing.xxl) {
+            if shouldShowYearInReviewBanner {
+                yearInReviewBanner
+            }
             todaySection
             if let onThisDay, !onThisDay.isEmpty {
                 onThisDayCard(onThisDay)
@@ -221,6 +230,51 @@ public struct HomeView: View {
             }
             recentSection
         }
+    }
+
+    // MARK: - Year in Review banner
+
+    /// Surfaces in the late-December window when there's a year ready to
+    /// reflect on. Hidden the moment the user dismisses the review for
+    /// that year so the banner doesn't reappear every launch.
+    private var yearInReviewBanner: some View {
+        let themeColor = themeAccent
+        return Button {
+            Haptics.play(.tap)
+            onPresentYearInReview()
+        } label: {
+            OrbitCard(elevation: .lifted) {
+                HStack(alignment: .top, spacing: OrbitSpacing.md) {
+                    VStack(alignment: .leading, spacing: OrbitSpacing.xs) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(themeColor)
+                            Text("Year in Review")
+                                .font(OrbitTypography.caption)
+                                .foregroundStyle(OrbitColor.textSecondary)
+                                .tracking(1.1)
+                        }
+                        Text("Your year, reflected back")
+                            .font(.system(size: 22, weight: .semibold, design: .serif))
+                            .foregroundStyle(OrbitColor.textPrimary)
+                        Text("Tap to see the moments, people, and places that shaped the year you just lived.")
+                            .font(OrbitTypography.footnote)
+                            .foregroundStyle(OrbitColor.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer()
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(OrbitColor.textTertiary)
+                        .padding(.top, 4)
+                }
+            }
+        }
+        .buttonStyle(OrbitBloomButtonStyle(tint: themeAccent))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Year in Review. Your year, reflected back.")
+        .accessibilityHint("Double-tap to open.")
     }
 
     // MARK: - On This Day

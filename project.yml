@@ -129,6 +129,8 @@ targets:
         product: OrbitTasksFeature
       - package: OrbitWorkspace
         product: OrbitAskFeature
+      - package: OrbitWorkspace
+        product: OrbitYearInReviewFeature
       - target: OrbitShareExtension
         embed: true
       - target: OrbitWidgets
