@@ -194,6 +194,7 @@ public struct SettingsView: View {
                             .offset(x: 6, y: -6)
                     }
                 }
+                .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(theme.name)
                         .font(OrbitTypography.bodyEmphasized)
@@ -217,6 +218,10 @@ public struct SettingsView: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(theme.name) theme. \(theme.promotionalCopy)")
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+        .accessibilityHint(isSelected ? "Currently selected." : "Double-tap to switch to this theme.")
     }
 
     // MARK: - Notifications

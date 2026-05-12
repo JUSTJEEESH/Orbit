@@ -188,6 +188,7 @@ private struct SearchResultRow: View {
                         .font(.system(size: 14, weight: .regular))
                         .foregroundStyle(OrbitColor.textTertiary)
                         .padding(.top, 3)
+                        .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: OrbitSpacing.xxs) {
                         Text(headline)
                             .font(OrbitTypography.body)
@@ -204,6 +205,8 @@ private struct SearchResultRow: View {
                 }
             }
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(eyebrowLabel). \(headline). \(timestamp)")
     }
 
     private var eyebrowLabel: String {

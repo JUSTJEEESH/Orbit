@@ -46,6 +46,24 @@ public struct InsightCard: View {
                 }
             }
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityLabel)
+    }
+
+    /// VoiceOver reads the insight as a single sentence, with the sparkline
+    /// summarized as "trend over 8 weeks: 0, 1, 3, 4…" rather than silent.
+    private var accessibilityLabel: String {
+        var parts: [String] = ["\(insight.kind.label). \(insight.headline). \(insight.body)"]
+        if density == .expanded {
+            if let detail = insight.detail, detail != insight.body {
+                parts.append(detail)
+            }
+            if !insight.sparkline.isEmpty {
+                let series = insight.sparkline.map(String.init).joined(separator: ", ")
+                parts.append("Weekly trend: \(series).")
+            }
+        }
+        return parts.joined(separator: " ")
     }
 
     private var headlineRow: some View {

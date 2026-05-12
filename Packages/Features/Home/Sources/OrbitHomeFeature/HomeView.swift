@@ -159,6 +159,9 @@ public struct HomeView: View {
             }
         }
         .buttonStyle(OrbitBloomButtonStyle(tint: themeAccent))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(insight.kind.label). \(insight.headline). \(insight.body)")
+        .accessibilityHint("Double-tap to open patterns.")
     }
 
     /// We only invite the user into the recap experience once the day has
@@ -203,6 +206,9 @@ public struct HomeView: View {
             }
         }
         .buttonStyle(OrbitBloomButtonStyle(tint: themeAccent))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Daily Recap. See your day reflected back.")
+        .accessibilityHint("Double-tap to open today's recap.")
     }
 
     // MARK: - Today
@@ -263,6 +269,7 @@ public struct HomeView: View {
     private var recentSection: some View {
         VStack(alignment: .leading, spacing: OrbitSpacing.md) {
             OrbitSectionHeader("Recent")
+                .accessibilityAddTraits(.isHeader)
             ForEach(memories.prefix(3)) { memory in
                 NavigationLink(value: MemoryDetailRoute(memoryID: memory.id)) {
                     OrbitCard(elevation: .resting) {
@@ -277,6 +284,7 @@ public struct HomeView: View {
                                     .font(.system(size: 14, weight: .regular))
                                     .foregroundStyle(OrbitColor.textTertiary)
                                     .padding(.top, 3)
+                                    .accessibilityHidden(true)
                                 Text(headlineText(for: memory))
                                     .font(OrbitTypography.body)
                                     .foregroundStyle(OrbitColor.textPrimary)
@@ -290,6 +298,9 @@ public struct HomeView: View {
                     tint: OrbitCategoryPalette.tint(for: memory.ai.category)
                 ))
                 .matchedTransitionSource(id: memory.id, in: heroNamespace)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("\(eyebrowLabel(for: memory)). \(headlineText(for: memory)). \(memory.createdAt.formatted(.relative(presentation: .named)))")
+                .accessibilityHint("Double-tap to open.")
             }
         }
     }

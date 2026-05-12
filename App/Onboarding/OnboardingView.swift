@@ -74,10 +74,12 @@ struct OnboardingView: View {
             Spacer()
             OrbitMoment()
                 .frame(width: 260, height: 260)
+                .accessibilityHidden(true)
             Spacer().frame(height: OrbitSpacing.xl)
             Text("Orbit")
                 .font(.system(size: 44, weight: .semibold, design: .serif))
                 .foregroundStyle(OrbitColor.textPrimary)
+                .accessibilityAddTraits(.isHeader)
             Text("Memories find their orbit.")
                 .font(.system(size: 17, design: .serif))
                 .italic()
@@ -98,6 +100,7 @@ struct OnboardingView: View {
             Spacer()
             CaptureMotif()
                 .frame(width: 240, height: 240)
+                .accessibilityHidden(true)
             Spacer().frame(height: OrbitSpacing.xl)
             explainerCopy(
                 title: "Capture in two taps",
@@ -116,6 +119,7 @@ struct OnboardingView: View {
             Spacer()
             IntelligenceMotif()
                 .frame(width: 260, height: 220)
+                .accessibilityHidden(true)
             Spacer().frame(height: OrbitSpacing.xl)
             explainerCopy(
                 title: "Quiet intelligence",
@@ -259,6 +263,7 @@ struct OnboardingView: View {
             Text(title)
                 .font(OrbitTypography.largeTitle)
                 .foregroundStyle(OrbitColor.textPrimary)
+                .accessibilityAddTraits(.isHeader)
             Text(body)
                 .font(OrbitTypography.body)
                 .foregroundStyle(OrbitColor.textSecondary)

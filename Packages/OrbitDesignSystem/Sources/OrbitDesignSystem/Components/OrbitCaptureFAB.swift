@@ -7,6 +7,7 @@ import OrbitKit
 public struct OrbitCaptureFAB: View {
     private let action: @MainActor () -> Void
     @State private var isPressed = false
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     public init(action: @escaping @MainActor () -> Void) {
         self.action = action
@@ -24,17 +25,38 @@ public struct OrbitCaptureFAB: View {
                 // refracting through the glass.
                 .foregroundStyle(OrbitColor.textPrimary)
                 .frame(width: 64, height: 64)
-                // iOS 26 Liquid Glass — pure translucent material, no
-                // tint. The orb picks up whatever the user scrolls
-                // behind it: timeline rows, the recap card's serif
-                // text, the home greeting. Tinting white (as we did
-                // before) makes the orb look solid because the bright
-                // tint masks any refraction.
-                .glassEffect(.regular.interactive(), in: .circle)
+                .modifier(FABBackground(reduceTransparency: reduceTransparency))
                 .orbitShadow(.lifted)
         }
         .buttonStyle(OrbitPressedButtonStyle())
         .accessibilityLabel("Capture")
         .accessibilityHint("Open the capture sheet to save a new memory.")
+        .accessibilityAddTraits(.isButton)
+    }
+}
+
+/// Honors `accessibilityReduceTransparency`: when on, swap the iOS 26
+/// Liquid Glass material for an opaque high-contrast surface so the FAB
+/// stays legible for users who can't tolerate refractive backgrounds.
+private struct FABBackground: ViewModifier {
+    let reduceTransparency: Bool
+
+    func body(content: Content) -> some View {
+        if reduceTransparency {
+            content
+                .background(OrbitColor.surfaceMuted, in: .circle)
+                .overlay(
+                    Circle()
+                        .stroke(OrbitColor.separator, lineWidth: 0.5)
+                )
+        } else {
+            // iOS 26 Liquid Glass — pure translucent material, no
+            // tint. The orb picks up whatever the user scrolls
+            // behind it: timeline rows, the recap card's serif
+            // text, the home greeting. Tinting white (as we did
+            // before) makes the orb look solid because the bright
+            // tint masks any refraction.
+            content.glassEffect(.regular.interactive(), in: .circle)
+        }
     }
 }

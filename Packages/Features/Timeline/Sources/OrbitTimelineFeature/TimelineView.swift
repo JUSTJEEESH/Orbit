@@ -87,6 +87,12 @@ public struct TimelineView: View {
                                 Label("Delete", systemImage: "trash")
                             }
                         }
+                        // Surface the destructive swipe as a VoiceOver
+                        // custom action so rotor users don't have to know
+                        // the two-finger swipe gesture.
+                        .accessibilityAction(named: "Delete memory") {
+                            deleteRow(memory)
+                        }
                     }
                 } header: {
                     Text(section.title)
@@ -96,6 +102,7 @@ public struct TimelineView: View {
                         .padding(.vertical, OrbitSpacing.xs)
                         .listRowInsets(EdgeInsets(top: OrbitSpacing.lg, leading: 0, bottom: 0, trailing: 0))
                         .listRowBackground(Color.clear)
+                        .accessibilityAddTraits(.isHeader)
                 }
             }
 
@@ -233,7 +240,7 @@ private struct MemoryRow: View {
         .contentShape(.rect(cornerRadius: OrbitRadius.lg))
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabel)
-        .accessibilityHint("Double-tap to open. Swipe with two fingers up or down to delete.")
+        .accessibilityHint("Double-tap to open.")
     }
 
     private var accessibilityLabel: String {
