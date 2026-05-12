@@ -38,13 +38,16 @@ public final class PermissionsCoordinator {
         case health
 
         /// Permissions worth asking during first-launch onboarding —
-        /// the ones that gate core features (capture, transcription,
-        /// the Daily Recap chime). Everything else is an opt-in
-        /// integration the user enables from Settings when they
-        /// discover the feature, which is kinder than confronting
-        /// them with seven Allow buttons on day one.
+        /// the bare minimum to make the first session feel alive.
+        /// Microphone unlocks voice capture (the home screen's most
+        /// visible affordance); Notifications enables the Daily
+        /// Recap chime. Everything else (Speech, Photos, Reminders,
+        /// Calendar, Health) is a just-in-time ask the user
+        /// encounters the first time they actually use the feature,
+        /// which is kinder than confronting them with a wall of
+        /// Allow buttons on day one.
         public static let onboardingEssentials: [Permission] = [
-            .notifications, .microphone, .speechRecognition, .photos
+            .notifications, .microphone
         ]
 
         public var title: String {

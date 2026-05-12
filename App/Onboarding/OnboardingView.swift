@@ -172,10 +172,12 @@ struct OnboardingView: View {
                             permissionRow(for: permission)
                         }
                     }
-                    // Quiet signpost for the integrations we deliberately
-                    // *don't* surface up front (Reminders, Calendar,
-                    // Health). Discoverable, not demanded.
-                    Text("Want sync with Reminders, Calendar, or Health? Enable any of them from Settings whenever you're ready.")
+                    // Quiet signpost for everything we deliberately
+                    // *don't* surface up front. Discoverable, not
+                    // demanded — iOS itself will ask for transcription
+                    // and photo access the first time you reach for
+                    // those features.
+                    Text("Photos, transcription, and integrations (Reminders, Calendar, Health) are enabled later — Orbit will ask once when you need each one.")
                         .font(OrbitTypography.footnote)
                         .foregroundStyle(OrbitColor.textTertiary)
                         .fixedSize(horizontal: false, vertical: true)
