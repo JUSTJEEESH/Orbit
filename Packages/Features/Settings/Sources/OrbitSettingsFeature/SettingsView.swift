@@ -614,12 +614,14 @@ public struct SettingsView: View {
 
     // MARK: - About
 
-    /// Replace these with the live URLs before App Store submission.
-    /// Apple's review will fail if the privacy + terms links point at
-    /// 404s; the support address must accept incoming mail.
-    private static let privacyURL  = URL(string: "https://orbit.app/privacy")!
-    private static let termsURL    = URL(string: "https://orbit.app/terms")!
-    private static let supportURL  = URL(string: "mailto:support@orbit.app")!
+    /// Live URLs for the App Store-required legal + support pages.
+    /// Hosted on Netlify (orbitbrain2.netlify.app). Apple Review will
+    /// fail submission if any of these return 404, so update both
+    /// here and the Netlify site together when the domain or routes
+    /// change.
+    private static let privacyURL = URL(string: "https://orbitbrain2.netlify.app/privacy")!
+    private static let termsURL   = URL(string: "https://orbitbrain2.netlify.app/terms")!
+    private static let supportURL = URL(string: "https://orbitbrain2.netlify.app/support")!
 
     private var aboutSection: some View {
         VStack(alignment: .leading, spacing: OrbitSpacing.md) {
