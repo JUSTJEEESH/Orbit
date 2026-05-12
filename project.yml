@@ -124,6 +124,8 @@ targets:
         product: OrbitRecapFeature
       - package: OrbitWorkspace
         product: OrbitInsightsFeature
+      - package: OrbitWorkspace
+        product: OrbitTasksFeature
       - target: OrbitShareExtension
         embed: true
       - target: OrbitWidgets

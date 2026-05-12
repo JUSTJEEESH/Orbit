@@ -6,12 +6,14 @@ import Foundation
 enum AppTab: Hashable, CaseIterable {
     case home
     case timeline
+    case tasks
     case search
 
     var systemImage: String {
         switch self {
         case .home:     return "circle.hexagongrid"
         case .timeline: return "clock"
+        case .tasks:    return "checklist"
         case .search:   return "magnifyingglass"
         }
     }
@@ -20,6 +22,7 @@ enum AppTab: Hashable, CaseIterable {
         switch self {
         case .home:     return "Home"
         case .timeline: return "Timeline"
+        case .tasks:    return "Tasks"
         case .search:   return "Search"
         }
     }

@@ -49,6 +49,12 @@ public actor SwiftDataTaskRepository: TaskRepository {
         return try modelContext.fetch(descriptor).map { $0.toDomain() }
     }
 
+    public func allTasks() async throws -> [MemoryTask] {
+        var descriptor = FetchDescriptor<MemoryTaskEntity>()
+        descriptor.sortBy = [SortDescriptor(\.createdAt, order: .reverse)]
+        return try modelContext.fetch(descriptor).map { $0.toDomain() }
+    }
+
     public func tasks(linkedTo memoryID: UUID) async throws -> [MemoryTask] {
         var descriptor = FetchDescriptor<MemoryTaskEntity>(
             predicate: #Predicate { $0.linkedMemoryID == memoryID }

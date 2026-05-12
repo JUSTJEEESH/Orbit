@@ -10,6 +10,14 @@ public struct MemoryTask: Identifiable, Sendable, Hashable {
     public var dueDate: Date?
     public var priority: MemoryAIMetadata.Priority
     public var linkedMemoryID: UUID?
+    /// The `TaskHint.id` this task was promoted from, when applicable. Lets
+    /// the Tasks UI hide a hint once it has been promoted without needing to
+    /// mutate the source memory's signals.
+    public var sourceHintID: UUID?
+    /// The `EKReminder.calendarItemIdentifier` once the task is mirrored to
+    /// iOS Reminders. `nil` while Reminders sync is off or the user hasn't
+    /// granted permission.
+    public var remindersIdentifier: String?
     public var createdAt: Date
     public var completedAt: Date?
 
@@ -21,6 +29,8 @@ public struct MemoryTask: Identifiable, Sendable, Hashable {
         dueDate: Date? = nil,
         priority: MemoryAIMetadata.Priority = .normal,
         linkedMemoryID: UUID? = nil,
+        sourceHintID: UUID? = nil,
+        remindersIdentifier: String? = nil,
         createdAt: Date,
         completedAt: Date? = nil
     ) {
@@ -31,6 +41,8 @@ public struct MemoryTask: Identifiable, Sendable, Hashable {
         self.dueDate = dueDate
         self.priority = priority
         self.linkedMemoryID = linkedMemoryID
+        self.sourceHintID = sourceHintID
+        self.remindersIdentifier = remindersIdentifier
         self.createdAt = createdAt
         self.completedAt = completedAt
     }

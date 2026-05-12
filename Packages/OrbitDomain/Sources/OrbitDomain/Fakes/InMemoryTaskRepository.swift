@@ -30,6 +30,10 @@ public actor InMemoryTaskRepository: TaskRepository {
             .sorted { ($0.dueDate ?? .distantFuture) < ($1.dueDate ?? .distantFuture) }
     }
 
+    public func allTasks() async throws -> [MemoryTask] {
+        storage.values.sorted { $0.createdAt > $1.createdAt }
+    }
+
     public func tasks(linkedTo memoryID: UUID) async throws -> [MemoryTask] {
         storage.values
             .filter { $0.linkedMemoryID == memoryID }

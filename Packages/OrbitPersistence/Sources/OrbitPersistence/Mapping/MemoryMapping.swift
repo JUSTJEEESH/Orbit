@@ -164,6 +164,8 @@ extension MemoryTaskEntity {
         self.dueDate = task.dueDate
         self.priority = task.priority.rawValue
         self.linkedMemoryID = task.linkedMemoryID
+        self.sourceHintID = task.sourceHintID
+        self.remindersIdentifier = task.remindersIdentifier
         self.createdAt = task.createdAt
         self.completedAt = task.completedAt
     }
@@ -177,6 +179,8 @@ extension MemoryTaskEntity {
             dueDate: dueDate,
             priority: MemoryAIMetadata.Priority(rawValue: priority) ?? .normal,
             linkedMemoryID: linkedMemoryID,
+            sourceHintID: sourceHintID,
+            remindersIdentifier: remindersIdentifier,
             createdAt: createdAt,
             completedAt: completedAt
         )

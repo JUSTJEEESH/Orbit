@@ -108,6 +108,11 @@ public final class MemoryTaskEntity {
     public var dueDate: Date?
     public var priority: Int = 1
     public var linkedMemoryID: UUID?
+    /// The `TaskHint.id` this task was promoted from. Optional so existing
+    /// rows decode cleanly under SwiftData's lightweight migration.
+    public var sourceHintID: UUID?
+    /// `EKReminder.calendarItemIdentifier` once mirrored to iOS Reminders.
+    public var remindersIdentifier: String?
     public var createdAt: Date = Date()
     public var completedAt: Date?
 

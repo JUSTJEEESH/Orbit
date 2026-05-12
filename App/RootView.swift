@@ -12,6 +12,7 @@ import OrbitSettingsFeature
 import OrbitMemoryDetailFeature
 import OrbitRecapFeature
 import OrbitInsightsFeature
+import OrbitTasksFeature
 
 struct RootView: View {
     @Environment(AppEnvironment.self) private var env
@@ -127,6 +128,23 @@ struct RootView: View {
             )
                 .tag(AppTab.timeline)
                 .tabItem { Label(AppTab.timeline.title, systemImage: AppTab.timeline.systemImage) }
+                .toolbar { profileToolbar }
+
+            TasksView(
+                viewModel: TasksViewModel(
+                    listTasks: env.listTasks,
+                    listSuggestions: env.listTaskSuggestions,
+                    promote: env.promoteHintToTask,
+                    toggleTask: env.toggleTask,
+                    updateTaskUseCase: env.updateTask,
+                    deleteTaskUseCase: env.deleteTask,
+                    memories: env.memories,
+                    clock: env.clock
+                ),
+                refreshToken: env.memoryListVersion
+            )
+                .tag(AppTab.tasks)
+                .tabItem { Label(AppTab.tasks.title, systemImage: AppTab.tasks.systemImage) }
                 .toolbar { profileToolbar }
 
             NavigationStack {

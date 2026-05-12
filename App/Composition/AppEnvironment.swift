@@ -49,6 +49,11 @@ final class AppEnvironment {
     let searchMemories: SearchMemoriesUseCase
     let generateDailyRecap: GenerateDailyRecapUseCase
     let generateInsights: GenerateInsightsUseCase
+    let listTasks: ListTasksUseCase
+    let listTaskSuggestions: ListTaskSuggestionsUseCase
+    let promoteHintToTask: PromoteHintToTaskUseCase
+    let updateTask: UpdateTaskUseCase
+    let deleteTask: DeleteTaskUseCase
 
     /// Bumped whenever the memory collection changes. Feature views observe
     /// it via `.task(id: env.memoryListVersion)` to refetch lazily — until
@@ -197,6 +202,11 @@ final class AppEnvironment {
             dismissals: UserDefaultsInsightDismissalStore(),
             clock: clock
         )
+        self.listTasks = ListTasksUseCase(repository: tasks)
+        self.listTaskSuggestions = ListTaskSuggestionsUseCase(memories: memories, tasks: tasks)
+        self.promoteHintToTask = PromoteHintToTaskUseCase(tasks: tasks, clock: clock)
+        self.updateTask = UpdateTaskUseCase(tasks: tasks)
+        self.deleteTask = DeleteTaskUseCase(tasks: tasks)
 
         // Notifications can't reach the modal binding directly (it lives on
         // env). Hand the service a closure that flips the binding when the
