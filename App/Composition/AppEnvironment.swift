@@ -37,6 +37,7 @@ final class AppEnvironment {
     let themeService: ThemeService
     let iconService: IconService
     let notifications: NotificationService
+    let watchSession: WatchSessionService
 
     let captureMemory: CaptureMemoryUseCase
     let listMemories: ListMemoriesUseCase
@@ -142,7 +143,8 @@ final class AppEnvironment {
         entitlements: EntitlementService,
         themeService: ThemeService = ThemeService(),
         iconService: IconService = IconService(),
-        notifications: NotificationService = NotificationService()
+        notifications: NotificationService = NotificationService(),
+        watchSession: WatchSessionService? = nil
     ) {
         self.appConfig = appConfig
         self.clock = clock
@@ -164,7 +166,13 @@ final class AppEnvironment {
 
         self.onboardingComplete = UserDefaults.standard.bool(forKey: Self.onboardingKey)
 
-        self.captureMemory = CaptureMemoryUseCase(repository: memories, clock: clock)
+        let captureMemoryUseCase = CaptureMemoryUseCase(repository: memories, clock: clock)
+        self.captureMemory = captureMemoryUseCase
+        self.watchSession = watchSession ?? WatchSessionService(
+            mediaStorage: mediaStorage,
+            captureMemory: captureMemoryUseCase,
+            speechTranscriber: speechTranscriber
+        )
         self.listMemories = ListMemoriesUseCase(repository: memories)
         self.updateMemory = UpdateMemoryUseCase(repository: memories, clock: clock)
         self.deleteMemory = DeleteMemoryUseCase(repository: memories)
@@ -186,6 +194,14 @@ final class AppEnvironment {
         // stored property is initialized so `self` is fully formed.
         self.notifications.onOpenRecap = { [weak self] in
             self?.requestedModal = .dailyRecap
+        }
+
+        // Same pattern for the watch session — the receiver needs to nudge
+        // the timeline + schedule enrichment after each watch capture.
+        self.watchSession.onCapture = { [weak self] memoryID in
+            guard let self else { return }
+            self.memoriesDidChange()
+            self.scheduleEnrichment(for: memoryID)
         }
     }
 }

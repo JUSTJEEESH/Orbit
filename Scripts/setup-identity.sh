@@ -67,6 +67,8 @@ TARGETS=(
     "Extensions/ShareExtension/ShareViewController.swift"
     "Extensions/OrbitWidgets/RecentMemoryWidget.swift"
     "Packages/OrbitKit/Sources/OrbitKit/AppConfig.swift"
+    "WatchApp/Info.plist"
+    "WatchApp/Orbit.entitlements"
 )
 
 for file in "${TARGETS[@]}"; do

@@ -53,6 +53,10 @@ private struct ContentRoot: View {
         .task {
             await environment.account.refreshCredentialState()
             await environment.notifications.bootstrap()
+            // Start listening for watch transfers. Safe to call repeatedly —
+            // WCSession activation is idempotent and any queued files from a
+            // prior cold-start arrive after this call.
+            environment.watchSession.activate()
         }
         .onOpenURL { url in
             guard let link = DeepLink(url: url) else {
