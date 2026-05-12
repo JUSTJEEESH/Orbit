@@ -17,6 +17,7 @@ public final class TasksViewModel {
     }
 
     public private(set) var suggestions: [ListTaskSuggestionsUseCase.Suggestion] = []
+    public private(set) var reminderSuggestions: [ReminderSuggestion] = []
     public private(set) var sections: Sections = Sections(soon: [], open: [], completed: [])
     public private(set) var memoriesByID: [UUID: Memory] = [:]
     public private(set) var isLoading: Bool = false
@@ -24,7 +25,9 @@ public final class TasksViewModel {
 
     private let listTasks: ListTasksUseCase
     private let listSuggestions: ListTaskSuggestionsUseCase
+    private let listReminderSuggestions: ListReminderSuggestionsUseCase
     private let promoteUseCase: PromoteHintToTaskUseCase
+    private let promoteReminderUseCase: PromoteReminderToTaskUseCase
     private let toggleTask: ToggleTaskUseCase
     private let updateTaskUseCase: UpdateTaskUseCase
     private let deleteTaskUseCase: DeleteTaskUseCase
@@ -42,7 +45,9 @@ public final class TasksViewModel {
     public init(
         listTasks: ListTasksUseCase,
         listSuggestions: ListTaskSuggestionsUseCase,
+        listReminderSuggestions: ListReminderSuggestionsUseCase,
         promote: PromoteHintToTaskUseCase,
+        promoteReminder: PromoteReminderToTaskUseCase,
         toggleTask: ToggleTaskUseCase,
         updateTaskUseCase: UpdateTaskUseCase,
         deleteTaskUseCase: DeleteTaskUseCase,
@@ -53,7 +58,9 @@ public final class TasksViewModel {
     ) {
         self.listTasks = listTasks
         self.listSuggestions = listSuggestions
+        self.listReminderSuggestions = listReminderSuggestions
         self.promoteUseCase = promote
+        self.promoteReminderUseCase = promoteReminder
         self.toggleTask = toggleTask
         self.updateTaskUseCase = updateTaskUseCase
         self.deleteTaskUseCase = deleteTaskUseCase
@@ -69,9 +76,15 @@ public final class TasksViewModel {
         do {
             async let allTasks = listTasks()
             async let suggestionsTask = listSuggestions()
-            let (tasks, suggestions) = try await (allTasks, suggestionsTask)
+            async let reminderSuggestionsTask = listReminderSuggestions()
+            let (tasks, suggestions, reminders) = try await (
+                allTasks,
+                suggestionsTask,
+                reminderSuggestionsTask
+            )
 
             self.suggestions = suggestions
+            self.reminderSuggestions = reminders
             self.sections = slice(tasks: tasks)
 
             // Fetch the linked-memory snippets in one pass so each task row
@@ -99,6 +112,18 @@ public final class TasksViewModel {
     public func promote(_ suggestion: ListTaskSuggestionsUseCase.Suggestion) async {
         do {
             let task = try await promoteUseCase(memory: suggestion.memory, hint: suggestion.hint)
+            Haptics.play(.success)
+            await load()
+            await onTaskMutated(task)
+        } catch {
+            errorMessage = String(describing: error)
+            Haptics.play(.failure)
+        }
+    }
+
+    public func promote(_ suggestion: ReminderSuggestion) async {
+        do {
+            let task = try await promoteReminderUseCase(memory: suggestion.memory, date: suggestion.date)
             Haptics.play(.success)
             await load()
             await onTaskMutated(task)

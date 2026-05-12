@@ -4,50 +4,70 @@ import OrbitDomain
 import OrbitKit
 
 public struct TasksView: View {
+    public enum Section: Hashable {
+        case tasks, reading, habits
+
+        var title: String {
+            switch self {
+            case .tasks:   return "Tasks"
+            case .reading: return "Reading"
+            case .habits:  return "Habits"
+            }
+        }
+    }
+
     @State private var model: TasksViewModel
+    @State private var readingModel: ReadingListViewModel
+    @State private var habitsModel: HabitsViewModel
     @State private var editing: MemoryTask?
     @State private var showingCompleted: Bool = false
+    @State private var section: Section = .tasks
     private let refreshToken: Int
+    private let onOpenMemory: @MainActor (UUID) -> Void
 
     @Environment(\.orbitTheme) private var orbitTheme
 
-    public init(viewModel: TasksViewModel, refreshToken: Int = 0) {
+    public init(
+        viewModel: TasksViewModel,
+        readingViewModel: ReadingListViewModel,
+        habitsViewModel: HabitsViewModel,
+        refreshToken: Int = 0,
+        onOpenMemory: @escaping @MainActor (UUID) -> Void = { _ in }
+    ) {
         self._model = State(initialValue: viewModel)
+        self._readingModel = State(initialValue: readingViewModel)
+        self._habitsModel = State(initialValue: habitsViewModel)
         self.refreshToken = refreshToken
+        self.onOpenMemory = onOpenMemory
     }
 
     public var body: some View {
         NavigationStack {
             OrbitScreen {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: OrbitSpacing.xxl) {
-                        if hasAnyContent {
-                            if !model.suggestions.isEmpty {
-                                suggestionsSection
-                            }
-                            if !model.sections.soon.isEmpty {
-                                section(title: "Today & Soon", tasks: model.sections.soon)
-                            }
-                            if !model.sections.open.isEmpty {
-                                section(title: "Open", tasks: model.sections.open)
-                            }
-                            if !model.sections.completed.isEmpty {
-                                completedSection
-                            }
-                        } else {
-                            emptyState
+                VStack(spacing: 0) {
+                    sectionPicker
+                        .padding(.horizontal, OrbitSpacing.pageHorizontal)
+                        .padding(.top, OrbitSpacing.md)
+                    Group {
+                        switch section {
+                        case .tasks:   tasksBody
+                        case .reading: ReadingListView(model: readingModel, onOpenMemory: onOpenMemory)
+                        case .habits:  HabitsView(model: habitsModel)
                         }
-                        Spacer(minLength: 96)
                     }
-                    .padding(.top, OrbitSpacing.lg)
+                    .animation(.easeInOut(duration: 0.18), value: section)
                 }
-                .scrollIndicators(.hidden)
-                .refreshable { await model.load() }
             }
-            .navigationTitle("Tasks")
+            .navigationTitle(section.title)
             .navigationBarTitleDisplayMode(.large)
         }
-        .task(id: refreshToken) { await model.load() }
+        .task(id: refreshToken) {
+            await model.load()
+            // Reading + Habits each load themselves via their own .task
+            // hooks; refreshing the tab pulls everything in step.
+            await readingModel.load()
+            await habitsModel.load()
+        }
         .sheet(item: $editing) { task in
             TaskDetailSheet(
                 task: task,
@@ -66,11 +86,118 @@ public struct TasksView: View {
         }
     }
 
+    private var sectionPicker: some View {
+        Picker("Section", selection: $section) {
+            Text("Tasks").tag(Section.tasks)
+            Text("Reading").tag(Section.reading)
+            Text("Habits").tag(Section.habits)
+        }
+        .pickerStyle(.segmented)
+    }
+
+    private var tasksBody: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: OrbitSpacing.xxl) {
+                if hasAnyContent {
+                    if !model.suggestions.isEmpty {
+                        suggestionsSection
+                    }
+                    if !model.reminderSuggestions.isEmpty {
+                        reminderSuggestionsSection
+                    }
+                    if !model.sections.soon.isEmpty {
+                        section(title: "Today & Soon", tasks: model.sections.soon)
+                    }
+                    if !model.sections.open.isEmpty {
+                        section(title: "Open", tasks: model.sections.open)
+                    }
+                    if !model.sections.completed.isEmpty {
+                        completedSection
+                    }
+                } else {
+                    emptyState
+                }
+                Spacer(minLength: 96)
+            }
+            .padding(.top, OrbitSpacing.lg)
+        }
+        .scrollIndicators(.hidden)
+        .refreshable { await model.load() }
+    }
+
     private var hasAnyContent: Bool {
         !model.suggestions.isEmpty
+        || !model.reminderSuggestions.isEmpty
         || !model.sections.soon.isEmpty
         || !model.sections.open.isEmpty
         || !model.sections.completed.isEmpty
+    }
+
+    private var reminderSuggestionsSection: some View {
+        VStack(alignment: .leading, spacing: OrbitSpacing.md) {
+            OrbitSectionHeader(
+                "Upcoming dates",
+                subtitle: model.reminderSuggestions.count == 1
+                    ? "1 memory mentions a future date"
+                    : "\(model.reminderSuggestions.count) memories mention future dates"
+            )
+            .accessibilityAddTraits(.isHeader)
+            VStack(spacing: OrbitSpacing.sm) {
+                ForEach(model.reminderSuggestions) { suggestion in
+                    reminderSuggestionCard(suggestion)
+                }
+            }
+        }
+    }
+
+    private func reminderSuggestionCard(_ suggestion: ReminderSuggestion) -> some View {
+        OrbitCard(elevation: .resting) {
+            VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+                OrbitEyebrow(
+                    label: "Reminder",
+                    suffix: suggestion.date.formatted(date: .abbreviated, time: .shortened),
+                    tint: orbitTheme.primary
+                )
+                Text(reminderHeadline(for: suggestion.memory))
+                    .font(OrbitTypography.bodyEmphasized)
+                    .foregroundStyle(OrbitColor.textPrimary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: OrbitSpacing.sm) {
+                    Spacer()
+                    Button {
+                        Task { await model.promote(suggestion) }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "bell.badge")
+                                .font(.system(size: 13, weight: .semibold))
+                            Text("Set reminder")
+                                .font(OrbitTypography.footnote)
+                                .fontWeight(.semibold)
+                        }
+                        .foregroundStyle(orbitTheme.primary)
+                        .padding(.horizontal, OrbitSpacing.md)
+                        .padding(.vertical, OrbitSpacing.xs)
+                        .background(orbitTheme.primary.opacity(0.12), in: .capsule)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Set reminder for \(suggestion.date.formatted(date: .abbreviated, time: .shortened))")
+                }
+            }
+        }
+    }
+
+    private func reminderHeadline(for memory: Memory) -> String {
+        if let summary = memory.ai.summary, !summary.isEmpty { return summary }
+        switch memory.content {
+        case .text(let s):                              return s
+        case .voiceNote(let t, _):                      return t ?? "Voice note"
+        case .image(let caption):                       return caption ?? "Photo"
+        case .link(_, let title, let summary):          return summary ?? title ?? "Link"
+        case .screenshot(let ocr):                      return ocr ?? "Screenshot"
+        case .location(let name, _, _):                 return name ?? "Location"
+        }
     }
 
     // MARK: - Sections

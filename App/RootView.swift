@@ -187,7 +187,9 @@ struct RootView: View {
                 viewModel: TasksViewModel(
                     listTasks: env.listTasks,
                     listSuggestions: env.listTaskSuggestions,
+                    listReminderSuggestions: env.listReminderSuggestions,
                     promote: env.promoteHintToTask,
+                    promoteReminder: env.promoteReminderToTask,
                     toggleTask: env.toggleTask,
                     updateTaskUseCase: env.updateTask,
                     deleteTaskUseCase: env.deleteTask,
@@ -200,7 +202,18 @@ struct RootView: View {
                         await env.remindersSync.removeMirror(for: task)
                     }
                 ),
-                refreshToken: env.memoryListVersion
+                readingViewModel: ReadingListViewModel(
+                    listEntries: env.listReadingItems,
+                    updateStatus: env.updateReadingItemStatus
+                ),
+                habitsViewModel: HabitsViewModel(listHabits: env.listHabits),
+                refreshToken: env.memoryListVersion,
+                onOpenMemory: { _ in
+                    // Reading-list rows would jump into MemoryDetail here, but
+                    // the Tasks tab doesn't host a NavigationStack
+                    // destination for memories yet — surface as a no-op so the
+                    // segmented switch stays focused on read-status changes.
+                }
             )
                 .tag(AppTab.tasks)
                 .tabItem { Label(AppTab.tasks.title, systemImage: AppTab.tasks.systemImage) }

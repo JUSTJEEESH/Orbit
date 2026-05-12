@@ -58,6 +58,11 @@ final class AppEnvironment {
     let askOrbit: AskOrbitUseCase
     let listOnThisDay: ListOnThisDayUseCase
     let generateYearInReview: GenerateYearInReviewUseCase
+    let listReadingItems: ListReadingItemsUseCase
+    let updateReadingItemStatus: UpdateReadingItemStatusUseCase
+    let listHabits: ListHabitsUseCase
+    let listReminderSuggestions: ListReminderSuggestionsUseCase
+    let promoteReminderToTask: PromoteReminderToTaskUseCase
 
     /// Bumped whenever the memory collection changes. Feature views observe
     /// it via `.task(id: env.memoryListVersion)` to refetch lazily — until
@@ -293,6 +298,15 @@ final class AppEnvironment {
         )
         self.listOnThisDay = ListOnThisDayUseCase(memories: memories, clock: clock)
         self.generateYearInReview = GenerateYearInReviewUseCase(memories: memories, clock: clock)
+        self.listReadingItems = ListReadingItemsUseCase(memories: memories)
+        self.updateReadingItemStatus = UpdateReadingItemStatusUseCase(memories: memories, clock: clock)
+        self.listHabits = ListHabitsUseCase(memories: memories, clock: clock)
+        self.listReminderSuggestions = ListReminderSuggestionsUseCase(
+            memories: memories,
+            tasks: tasks,
+            clock: clock
+        )
+        self.promoteReminderToTask = PromoteReminderToTaskUseCase(tasks: tasks, clock: clock)
 
         // Notifications can't reach the modal binding directly (it lives on
         // env). Hand the service a closure that flips the binding when the
