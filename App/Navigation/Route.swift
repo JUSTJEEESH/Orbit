@@ -39,6 +39,7 @@ enum AppModal: Hashable, Identifiable {
     case askOrbit
     case letter
     case yearInReview
+    case gratitude
 
     var id: Self { self }
 }

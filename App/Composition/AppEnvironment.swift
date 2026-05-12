@@ -63,6 +63,8 @@ final class AppEnvironment {
     let listHabits: ListHabitsUseCase
     let listReminderSuggestions: ListReminderSuggestionsUseCase
     let promoteReminderToTask: PromoteReminderToTaskUseCase
+    let captureGratitude: CaptureGratitudeUseCase
+    let loadGratitudeStatus: LoadGratitudeStatusUseCase
 
     /// Bumped whenever the memory collection changes. Feature views observe
     /// it via `.task(id: env.memoryListVersion)` to refetch lazily — until
@@ -307,6 +309,8 @@ final class AppEnvironment {
             clock: clock
         )
         self.promoteReminderToTask = PromoteReminderToTaskUseCase(tasks: tasks, clock: clock)
+        self.captureGratitude = CaptureGratitudeUseCase(captureMemory: captureMemoryUseCase)
+        self.loadGratitudeStatus = LoadGratitudeStatusUseCase(memories: memories, clock: clock)
 
         // Notifications can't reach the modal binding directly (it lives on
         // env). Hand the service a closure that flips the binding when the

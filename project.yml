@@ -136,6 +136,8 @@ targets:
         product: OrbitAskFeature
       - package: OrbitWorkspace
         product: OrbitYearInReviewFeature
+      - package: OrbitWorkspace
+        product: OrbitWellnessFeature
       - target: OrbitShareExtension
         embed: true
       - target: OrbitWidgets

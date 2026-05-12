@@ -15,6 +15,7 @@ import OrbitInsightsFeature
 import OrbitTasksFeature
 import OrbitAskFeature
 import OrbitYearInReviewFeature
+import OrbitWellnessFeature
 
 struct RootView: View {
     @Environment(AppEnvironment.self) private var env
@@ -141,6 +142,17 @@ struct RootView: View {
                     }
                 )
                 .presentationDetents([.large])
+            case .gratitude:
+                GratitudeCaptureView(
+                    viewModel: GratitudeCaptureViewModel(capture: env.captureGratitude),
+                    onCompleted: { memoryID in
+                        env.memoriesDidChange()
+                        env.scheduleEnrichment(for: memoryID)
+                        env.requestedModal = nil
+                    },
+                    onCancel: { env.requestedModal = nil }
+                )
+                .presentationDetents([.large])
             }
         }
         .onAppear { Haptics.prepare() }
@@ -156,6 +168,7 @@ struct RootView: View {
                     listMemories: env.listMemories,
                     generateInsights: env.generateInsights,
                     listOnThisDay: env.listOnThisDay,
+                    loadGratitudeStatus: env.loadGratitudeStatus,
                     refreshToken: env.memoryListVersion,
                     clock: env.clock,
                     makeDetailViewModel: makeDetailViewModel,
@@ -164,6 +177,7 @@ struct RootView: View {
                     onPresentAskOrbit: { env.requestedModal = .askOrbit },
                     onPresentLetter: { env.requestedModal = .letter },
                     onPresentYearInReview: { env.requestedModal = .yearInReview },
+                    onPresentGratitude: { env.requestedModal = .gratitude },
                     shouldShowYearInReviewBanner: env.shouldOfferYearInReview()
                 )
                 .navigationTitle("")

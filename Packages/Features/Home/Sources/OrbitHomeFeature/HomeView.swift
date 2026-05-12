@@ -16,6 +16,8 @@ public struct HomeView: View {
     private let onPresentAskOrbit: @MainActor () -> Void
     private let onPresentLetter: @MainActor () -> Void
     private let onPresentYearInReview: @MainActor () -> Void
+    private let onPresentGratitude: @MainActor () -> Void
+    private let loadGratitudeStatus: LoadGratitudeStatusUseCase
     private let shouldShowYearInReviewBanner: Bool
 
     @State private var memories: [Memory] = []
@@ -23,6 +25,7 @@ public struct HomeView: View {
     @State private var primaryInsight: SmartInsight?
     @State private var onThisDay: OnThisDayContent?
     @State private var showOnThisDay: Bool = false
+    @State private var gratitudeStatus: GratitudeStatus = .empty
     @Namespace private var heroNamespace
     @Environment(\.orbitTheme) private var orbitTheme
 
@@ -34,6 +37,7 @@ public struct HomeView: View {
         listMemories: ListMemoriesUseCase,
         generateInsights: GenerateInsightsUseCase,
         listOnThisDay: ListOnThisDayUseCase,
+        loadGratitudeStatus: LoadGratitudeStatusUseCase,
         refreshToken: Int = 0,
         clock: any OrbitClock = SystemClock(),
         makeDetailViewModel: @escaping @MainActor (UUID) -> MemoryDetailViewModel,
@@ -42,11 +46,13 @@ public struct HomeView: View {
         onPresentAskOrbit: @escaping @MainActor () -> Void,
         onPresentLetter: @escaping @MainActor () -> Void,
         onPresentYearInReview: @escaping @MainActor () -> Void,
+        onPresentGratitude: @escaping @MainActor () -> Void,
         shouldShowYearInReviewBanner: Bool = false
     ) {
         self.listMemories = listMemories
         self.generateInsights = generateInsights
         self.listOnThisDay = listOnThisDay
+        self.loadGratitudeStatus = loadGratitudeStatus
         self.refreshToken = refreshToken
         self.clock = clock
         self.makeDetailViewModel = makeDetailViewModel
@@ -55,6 +61,7 @@ public struct HomeView: View {
         self.onPresentAskOrbit = onPresentAskOrbit
         self.onPresentLetter = onPresentLetter
         self.onPresentYearInReview = onPresentYearInReview
+        self.onPresentGratitude = onPresentGratitude
         self.shouldShowYearInReviewBanner = shouldShowYearInReviewBanner
     }
 
@@ -66,6 +73,7 @@ public struct HomeView: View {
                     VStack(spacing: OrbitSpacing.sm) {
                         askOrbitPill
                         letterPill
+                        gratitudePill
                     }
                     content
                     Spacer(minLength: 96)
@@ -140,6 +148,56 @@ public struct HomeView: View {
         case .failed(let message):
             errorState(message)
         }
+    }
+
+    // MARK: - Gratitude pill
+
+    /// Daily ritual entry point. Reads as "Three things you're grateful for"
+    /// when the user hasn't logged today; shifts to a streak-celebrating
+    /// "logged today · 12-day streak" pill once they have. Either way it
+    /// stays a quiet, low-pressure surface — never red badges, never
+    /// "you missed a day" guilt copy.
+    private var gratitudePill: some View {
+        let themeColor = themeAccent
+        let label: String = {
+            if gratitudeStatus.hasEntryToday {
+                if gratitudeStatus.streak >= 2 {
+                    return "Gratitude logged · \(gratitudeStatus.streak)-day streak"
+                }
+                return "Gratitude logged for today"
+            }
+            return "Three things you're grateful for"
+        }()
+        return Button {
+            Haptics.play(.tap)
+            onPresentGratitude()
+        } label: {
+            HStack(spacing: OrbitSpacing.sm) {
+                Image(systemName: gratitudeStatus.hasEntryToday ? "heart.fill" : "heart")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(gratitudeStatus.hasEntryToday ? themeColor : OrbitColor.textSecondary)
+                Text(label)
+                    .font(OrbitTypography.footnote)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(OrbitColor.textPrimary)
+                Spacer()
+                Image(systemName: "arrow.up.right")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(OrbitColor.textTertiary)
+            }
+            .padding(.horizontal, OrbitSpacing.md)
+            .padding(.vertical, OrbitSpacing.xs)
+            .background(OrbitColor.surfaceMuted, in: .capsule)
+            .overlay(
+                Capsule()
+                    .stroke(OrbitColor.separator, lineWidth: 0.5)
+            )
+        }
+        .buttonStyle(OrbitBloomButtonStyle(tint: themeAccent))
+        .accessibilityLabel(label)
+        .accessibilityHint(gratitudeStatus.hasEntryToday
+                           ? "Add another gratitude entry."
+                           : "Open today's gratitude prompt.")
     }
 
     // MARK: - Letter pill
@@ -606,10 +664,15 @@ public struct HomeView: View {
         } catch {
             loadState = .failed(String(describing: error))
         }
-        // Insights + On This Day run in parallel with the list; failures
-        // are silent because their absence is the natural fallback.
+        // Insights + On This Day + gratitude run in parallel with the list;
+        // failures are silent because their absence is the natural fallback.
         await reloadInsights()
         await reloadOnThisDay()
+        await reloadGratitudeStatus()
+    }
+
+    private func reloadGratitudeStatus() async {
+        gratitudeStatus = (try? await loadGratitudeStatus()) ?? .empty
     }
 
     private func reloadOnThisDay() async {
