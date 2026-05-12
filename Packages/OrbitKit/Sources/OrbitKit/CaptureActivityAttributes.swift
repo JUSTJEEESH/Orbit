@@ -10,7 +10,7 @@ import ActivityKit
 /// system. The dynamic state holds only what's needed to drive the live
 /// timer; we deliberately don't push amplitude updates because that would
 /// burn the activity-update budget for no real UX gain.
-public struct CaptureActivityAttributes: ActivityAttributes {
+public struct CaptureActivityAttributes: ActivityAttributes, Sendable {
     public typealias ContentState = State
 
     public struct State: Codable, Hashable, Sendable {

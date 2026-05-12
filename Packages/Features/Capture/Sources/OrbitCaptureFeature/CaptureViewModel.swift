@@ -170,9 +170,8 @@ public final class CaptureViewModel {
             let stream = try await recorder.start()
             voiceState = .recording(elapsed: 0, levels: [])
             // Surface the recording in the Dynamic Island + Lock Screen.
-            // Fire-and-forget — silent failure if Live Activities are off
-            // in iOS Settings.
-            Task { await liveActivity.start() }
+            // Silently no-ops if Live Activities are off in iOS Settings.
+            await liveActivity.start()
             recordTask = Task { @MainActor [weak self] in
                 guard let self else { return }
                 var collected: [Float] = []
