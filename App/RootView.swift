@@ -71,6 +71,7 @@ struct RootView: View {
                     remindersSyncEnabled: env.remindersSync.isEnabled,
                     remindersAuthorized: env.remindersSync.isAuthorized,
                     remindersDenied: env.remindersSync.authorizationStatus == .denied || env.remindersSync.authorizationStatus == .restricted,
+                    remindersLastError: env.remindersSync.lastError,
                     onToggleRemindersSync: { newValue in
                         if newValue {
                             _ = await env.remindersSync.enable()

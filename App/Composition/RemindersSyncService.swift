@@ -20,6 +20,12 @@ public final class RemindersSyncService {
 
     public private(set) var isEnabled: Bool
     public private(set) var authorizationStatus: EKAuthorizationStatus = .notDetermined
+    /// Human-readable description of the last sync failure, surfaced in
+    /// Settings → Reminders. Silent failures (no Reminders calendar,
+    /// permission revoked, EKEventStore save error) used to be invisible
+    /// to the user, which made misconfigured iCloud setups feel like
+    /// "Orbit is broken." This is the breadcrumb.
+    public private(set) var lastError: String?
 
     private let store = EKEventStore()
     private let tasks: any TaskRepository
@@ -40,13 +46,24 @@ public final class RemindersSyncService {
     /// reality.
     @discardableResult
     public func enable() async -> Bool {
+        lastError = nil
         if !isAuthorized {
             do {
-                _ = try await store.requestFullAccessToReminders()
+                let granted = try await store.requestFullAccessToReminders()
+                authorizationStatus = EKEventStore.authorizationStatus(for: .reminder)
+                if !granted {
+                    isEnabled = false
+                    UserDefaults.standard.set(false, forKey: Self.enabledKey)
+                    OrbitLog.app.notice("Reminders permission declined.")
+                    return false
+                }
             } catch {
                 OrbitLog.app.error("Reminders auth request failed: \(String(describing: error), privacy: .public)")
+                lastError = "Couldn't request Reminders access: \(error.localizedDescription)"
+                isEnabled = false
+                UserDefaults.standard.set(false, forKey: Self.enabledKey)
+                return false
             }
-            authorizationStatus = EKEventStore.authorizationStatus(for: .reminder)
         }
 
         guard isAuthorized else {
@@ -54,6 +71,19 @@ public final class RemindersSyncService {
             UserDefaults.standard.set(false, forKey: Self.enabledKey)
             return false
         }
+
+        // Confirm we have at least one writeable Reminders calendar before
+        // flipping the toggle on. If the user has no iCloud Reminders set
+        // up (common on simulators + fresh devices) `defaultCalendar()`
+        // would return nil and every later mirror would silently no-op.
+        guard let calendar = defaultCalendar() else {
+            lastError = "No Reminders list available. Open the Reminders app once to create one, then try again."
+            isEnabled = false
+            UserDefaults.standard.set(false, forKey: Self.enabledKey)
+            OrbitLog.app.notice("Reminders sync skipped: no available Reminders calendar.")
+            return false
+        }
+        OrbitLog.app.notice("Reminders sync ready. Calendar: \(calendar.title, privacy: .public).")
 
         isEnabled = true
         UserDefaults.standard.set(true, forKey: Self.enabledKey)
@@ -88,8 +118,16 @@ public final class RemindersSyncService {
     /// new identifier back to the task repository so the link survives a
     /// relaunch.
     public func mirror(_ task: MemoryTask) async {
-        guard isEnabled, isAuthorized else { return }
-        guard let calendar = defaultCalendar() else { return }
+        guard isEnabled else { return }
+        guard isAuthorized else {
+            lastError = "Reminders access isn't granted. Re-enable in iOS Settings."
+            return
+        }
+        guard let calendar = defaultCalendar() else {
+            lastError = "No Reminders list available. Open the Reminders app once to create one."
+            OrbitLog.app.notice("Mirror skipped: no available Reminders calendar.")
+            return
+        }
 
         let reminder: EKReminder
         if let identifier = task.remindersIdentifier,
@@ -107,6 +145,8 @@ public final class RemindersSyncService {
 
         do {
             try store.save(reminder, commit: true)
+            lastError = nil
+            OrbitLog.app.notice("Mirrored task to Reminders: \(reminder.title ?? "(untitled)", privacy: .public).")
             if task.remindersIdentifier != reminder.calendarItemIdentifier {
                 var updated = task
                 updated.remindersIdentifier = reminder.calendarItemIdentifier
@@ -114,6 +154,7 @@ public final class RemindersSyncService {
             }
         } catch {
             OrbitLog.app.error("Mirror to Reminders failed: \(String(describing: error), privacy: .public)")
+            lastError = "Save failed: \(error.localizedDescription)"
         }
     }
 
@@ -161,10 +202,16 @@ public final class RemindersSyncService {
         }
     }
 
-    /// The default Reminders calendar. May be `nil` if the user has no
-    /// Reminders calendars at all (rare, but EventKit allows it).
+    /// The Reminders calendar Orbit writes into. Tries the user's default
+    /// first; falls back to the first writeable Reminders calendar in the
+    /// store. Returns nil only when the user truly has zero Reminders
+    /// lists — a state Settings surfaces as actionable feedback.
     private func defaultCalendar() -> EKCalendar? {
-        store.defaultCalendarForNewReminders()
+        if let preferred = store.defaultCalendarForNewReminders(), preferred.allowsContentModifications {
+            return preferred
+        }
+        return store.calendars(for: .reminder)
+            .first(where: { $0.allowsContentModifications })
     }
 
     /// Converts a `Date` to the day-and-time components Reminders expects.

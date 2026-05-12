@@ -24,6 +24,7 @@ public struct SettingsView: View {
     private let remindersSyncEnabled: Bool
     private let remindersAuthorized: Bool
     private let remindersDenied: Bool
+    private let remindersLastError: String?
     private let onToggleRemindersSync: @MainActor @Sendable (Bool) async -> Void
     private let onOpenRemindersSettings: @MainActor () -> Void
 
@@ -46,6 +47,7 @@ public struct SettingsView: View {
         remindersSyncEnabled: Bool = false,
         remindersAuthorized: Bool = false,
         remindersDenied: Bool = false,
+        remindersLastError: String? = nil,
         onToggleRemindersSync: @escaping @MainActor @Sendable (Bool) async -> Void = { _ in },
         onOpenRemindersSettings: @escaping @MainActor () -> Void = {}
     ) {
@@ -63,6 +65,7 @@ public struct SettingsView: View {
         self.remindersSyncEnabled = remindersSyncEnabled
         self.remindersAuthorized = remindersAuthorized
         self.remindersDenied = remindersDenied
+        self.remindersLastError = remindersLastError
         self.onToggleRemindersSync = onToggleRemindersSync
         self.onOpenRemindersSettings = onOpenRemindersSettings
     }
@@ -366,6 +369,14 @@ public struct SettingsView: View {
                             .font(OrbitTypography.footnote)
                             .foregroundStyle(currentTheme.primary)
                         }
+                    } else if let message = remindersLastError {
+                        // Surfaces silent failures (e.g. simulator without
+                        // an iCloud Reminders list set up) instead of
+                        // letting them feel like the toggle is broken.
+                        Text(message)
+                            .font(OrbitTypography.footnote)
+                            .foregroundStyle(OrbitColor.warning)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
             }
