@@ -52,7 +52,7 @@ struct WatchRootView: View {
             .buttonStyle(.plain)
             Text(errorMessage ?? "Tap to capture")
                 .font(.footnote)
-                .foregroundStyle(errorMessage == nil ? .secondary : .orange)
+                .foregroundStyle(errorMessage == nil ? Color.secondary : Color.orange)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 8)
         }
