@@ -93,7 +93,7 @@ public final class HealthKitService {
     /// late-night sleepers and afternoon power nappers without bleeding
     /// into the next night.
     public func sleepDuration(forNightLeadingUpTo date: Date) async -> TimeInterval? {
-        guard let store else { return nil }
+        guard store != nil else { return nil }
         guard let type = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else { return nil }
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: date)
@@ -112,13 +112,13 @@ public final class HealthKitService {
 
     private static func isAsleepValue(_ raw: Int) -> Bool {
         // iOS 16+ split sleep into stages; treat any "asleep*" as time
-        // asleep. Pre-iOS-16 there's only .asleep.
+        // asleep. The pre-iOS-16 `.asleep` is now `.asleepUnspecified`
+        // and shares the same raw value, so one entry covers both.
         switch raw {
         case HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue,
              HKCategoryValueSleepAnalysis.asleepCore.rawValue,
              HKCategoryValueSleepAnalysis.asleepDeep.rawValue,
-             HKCategoryValueSleepAnalysis.asleepREM.rawValue,
-             HKCategoryValueSleepAnalysis.asleep.rawValue:
+             HKCategoryValueSleepAnalysis.asleepREM.rawValue:
             return true
         default:
             return false
@@ -154,7 +154,7 @@ public final class HealthKitService {
     /// last 7 nights and rounds to the nearest 30 minutes. nil when there
     /// aren't enough samples to be useful.
     public func typicalSleepWindow() async -> SleepWindow? {
-        guard let store else { return nil }
+        guard store != nil else { return nil }
         guard let type = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else { return nil }
         let calendar = Calendar.current
         let now = Date()

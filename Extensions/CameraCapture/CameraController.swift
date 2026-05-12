@@ -20,18 +20,21 @@ final class CameraController {
     func start() async {
         await ensureConfigured()
         // `startRunning()` blocks until the session is up — punt to a
-        // detached task so the SwiftUI tree paints first.
-        let session = session
+        // detached task so the SwiftUI tree paints first. AVCaptureSession
+        // is documented as thread-safe but isn't formally `Sendable`, so
+        // we cross the isolation boundary through an explicit unchecked
+        // box rather than letting the compiler refuse the capture.
+        let box = SessionBox(session: session)
         await Task.detached(priority: .userInitiated) {
-            if !session.isRunning { session.startRunning() }
+            if !box.session.isRunning { box.session.startRunning() }
         }.value
         isRunning = session.isRunning
     }
 
     func stop() {
-        let session = session
+        let box = SessionBox(session: session)
         Task.detached(priority: .utility) {
-            if session.isRunning { session.stopRunning() }
+            if box.session.isRunning { box.session.stopRunning() }
         }
         isRunning = false
     }
@@ -84,6 +87,14 @@ final class CameraController {
         else { return nil }
         return input
     }
+}
+
+/// Crosses `AVCaptureSession` over an isolation boundary without making
+/// it formally `Sendable`. Apple documents the session as thread-safe, so
+/// this is purely a Swift 6 plumbing concession — not a real concurrency
+/// claim about the captured reference.
+private struct SessionBox: @unchecked Sendable {
+    let session: AVCaptureSession
 }
 
 /// One-shot photo delegate. Holds itself alive via `CameraController`'s
