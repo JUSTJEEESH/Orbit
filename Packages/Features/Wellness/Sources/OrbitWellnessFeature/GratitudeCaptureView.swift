@@ -90,7 +90,7 @@ public struct GratitudeCaptureView: View {
                 .font(OrbitTypography.footnote)
                 .foregroundStyle(OrbitColor.textSecondary)
                 .italic()
-                .padding(.top, OrbitSpacing.xxxs)
+                .padding(.top, OrbitSpacing.xxs)
         }
     }
 
