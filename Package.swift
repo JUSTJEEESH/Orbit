@@ -177,6 +177,7 @@ let package = Package(
             name: "OrbitShareFeature",
             dependencies: ["OrbitDesignSystem", "OrbitDomain"],
             path: "Packages/Features/Share/Sources/OrbitShareFeature",
+            resources: [.process("Resources")],
             swiftSettings: swiftSettings
         ),
 

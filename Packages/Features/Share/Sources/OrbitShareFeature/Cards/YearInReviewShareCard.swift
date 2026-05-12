@@ -7,6 +7,7 @@ import OrbitDomain
 /// "tops" carry the design.
 public struct YearInReviewShareCard: View {
     let review: YearInReview
+    @Environment(\.orbitTheme) private var theme
 
     public init(review: YearInReview) {
         self.review = review
@@ -17,6 +18,12 @@ public struct YearInReviewShareCard: View {
             ShareCardBrandMark()
 
             Spacer(minLength: 56)
+
+            Text("Year in Review".uppercased())
+                .font(.system(size: 18, weight: .semibold, design: .rounded))
+                .tracking(1.6)
+                .foregroundStyle(theme.primary)
+                .padding(.bottom, 12)
 
             Text("\(review.year)")
                 .font(.system(size: 188, weight: .heavy, design: .rounded))

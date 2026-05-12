@@ -7,6 +7,7 @@ import OrbitDomain
 /// posted card reads like a printed page, not a screenshot.
 public struct MemoryShareCard: View {
     let memory: Memory
+    @Environment(\.orbitTheme) private var theme
 
     public init(memory: Memory) {
         self.memory = memory
@@ -83,8 +84,17 @@ public struct MemoryShareCard: View {
         }
     }
 
+    /// Semantic category tint when the memory has one (so "travel" stays
+    /// warm orange regardless of the user's theme), falling back to the
+    /// active theme's accent for uncategorized memories — that way the
+    /// user's chosen accent is always visible on the card somewhere.
     private var tint: Color {
-        OrbitCategoryPalette.tint(for: memory.ai.category)
+        if let category = memory.ai.category?
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+           !category.isEmpty {
+            return OrbitCategoryPalette.tint(for: category)
+        }
+        return theme.primary
     }
 
     /// Time-of-day on the trailing edge. Reinforces that this is a

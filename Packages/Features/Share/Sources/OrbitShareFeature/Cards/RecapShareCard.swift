@@ -7,6 +7,7 @@ import OrbitDomain
 /// scrolling sheet.
 public struct RecapShareCard: View {
     let recap: DailyRecap
+    @Environment(\.orbitTheme) private var theme
 
     public init(recap: DailyRecap) {
         self.recap = recap
@@ -21,7 +22,7 @@ public struct RecapShareCard: View {
             Text("Daily Recap".uppercased())
                 .font(.system(size: 18, weight: .semibold, design: .rounded))
                 .tracking(1.6)
-                .foregroundStyle(OrbitColor.accent)
+                .foregroundStyle(theme.primary)
                 .padding(.bottom, 18)
 
             Text(recap.date.formatted(.dateTime.weekday(.wide).month(.wide).day()))
