@@ -163,13 +163,6 @@ final class AppEnvironment {
 
         self.onboardingComplete = UserDefaults.standard.bool(forKey: Self.onboardingKey)
 
-        // Notifications can't reach the modal binding directly (it lives on
-        // env). Hand the service a closure that flips the binding when the
-        // user taps the delivered recap notification.
-        self.notifications.onOpenRecap = { [weak self] in
-            self?.requestedModal = .dailyRecap
-        }
-
         self.captureMemory = CaptureMemoryUseCase(repository: memories, clock: clock)
         self.listMemories = ListMemoriesUseCase(repository: memories)
         self.updateMemory = UpdateMemoryUseCase(repository: memories, clock: clock)
@@ -179,6 +172,14 @@ final class AppEnvironment {
         self.enrichMemory = EnrichMemoryUseCase(ai: ai, memories: memories, clock: clock)
         self.searchMemories = SearchMemoriesUseCase(search: search, memories: memories)
         self.generateDailyRecap = GenerateDailyRecapUseCase(memories: memories, ai: ai, clock: clock)
+
+        // Notifications can't reach the modal binding directly (it lives on
+        // env). Hand the service a closure that flips the binding when the
+        // user taps the delivered recap notification. Must happen after every
+        // stored property is initialized so `self` is fully formed.
+        self.notifications.onOpenRecap = { [weak self] in
+            self?.requestedModal = .dailyRecap
+        }
     }
 }
 
