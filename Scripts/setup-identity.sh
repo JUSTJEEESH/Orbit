@@ -34,10 +34,14 @@ IDENTITY_FILE="$REPO_ROOT/Config/Identity.xcconfig"
 # Read an existing value (if any) before we overwrite the file. Used so a
 # 2-arg invocation preserves a previously-written DEVELOPMENT_TEAM, and so
 # a 0-arg invocation can pull everything out together.
+#
+# `|| true` keeps `set -e` from aborting when the key isn't present in the
+# file — grep exits 1 on no match, pipefail propagates it, and the whole
+# script would otherwise die silently before doing any work.
 read_identity_value() {
     local key="$1"
     [ -f "$IDENTITY_FILE" ] || { echo ""; return; }
-    grep -E "^${key}" "$IDENTITY_FILE" | head -1 | sed 's/.*=//; s/^ *//; s/ *$//'
+    grep -E "^${key}" "$IDENTITY_FILE" 2>/dev/null | head -1 | sed 's/.*=//; s/^ *//; s/ *$//' || true
 }
 
 NEW_TEAM="$(read_identity_value DEVELOPMENT_TEAM)"
