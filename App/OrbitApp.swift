@@ -53,6 +53,12 @@ private struct ContentRoot: View {
                     onEnableReminders: {
                         await environment.remindersSync.enable()
                     },
+                    // Same pattern for Calendar — request EventKit
+                    // full access + flip Orbit's sync toggle on so
+                    // due-dated tasks start mirroring immediately.
+                    onEnableCalendar: {
+                        await environment.calendarSync.enable()
+                    },
                     // Same idea for Health — prompt HealthKit + persist
                     // the asked-once flag so subsequent visits to the
                     // permissions screen don't re-ask.

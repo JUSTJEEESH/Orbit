@@ -40,6 +40,7 @@ final class AppEnvironment {
     let watchSession: WatchSessionService
     let captureInbox: CaptureInboxService
     let remindersSync: RemindersSyncService
+    let calendarSync: CalendarSyncService
     let healthKit: HealthKitService
 
     let captureMemory: CaptureMemoryUseCase
@@ -255,6 +256,7 @@ final class AppEnvironment {
         self.iconService = iconService
         self.notifications = notifications
         self.remindersSync = RemindersSyncService(tasks: tasks)
+        self.calendarSync = CalendarSyncService(tasks: tasks)
         self.healthKit = HealthKitService()
 
         self.onboardingComplete = UserDefaults.standard.bool(forKey: Self.onboardingKey)

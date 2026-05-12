@@ -170,6 +170,7 @@ extension MemoryTaskEntity {
         self.linkedMemoryID = task.linkedMemoryID
         self.sourceHintID = task.sourceHintID
         self.remindersIdentifier = task.remindersIdentifier
+        self.calendarEventIdentifier = task.calendarEventIdentifier
         self.createdAt = task.createdAt
         self.completedAt = task.completedAt
     }
@@ -185,6 +186,7 @@ extension MemoryTaskEntity {
             linkedMemoryID: linkedMemoryID,
             sourceHintID: sourceHintID,
             remindersIdentifier: remindersIdentifier,
+            calendarEventIdentifier: calendarEventIdentifier,
             createdAt: createdAt,
             completedAt: completedAt
         )

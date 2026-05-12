@@ -121,6 +121,10 @@ public final class MemoryTaskEntity {
     public var sourceHintID: UUID?
     /// `EKReminder.calendarItemIdentifier` once mirrored to iOS Reminders.
     public var remindersIdentifier: String?
+    /// `EKEvent.eventIdentifier` once mirrored to iOS Calendar. Optional
+    /// so existing rows decode cleanly under SwiftData lightweight
+    /// migration.
+    public var calendarEventIdentifier: String?
     public var createdAt: Date = Date()
     public var completedAt: Date?
 

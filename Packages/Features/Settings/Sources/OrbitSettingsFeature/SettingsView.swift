@@ -34,6 +34,16 @@ public struct SettingsView: View {
     private let onToggleRemindersSync: @MainActor @Sendable (Bool) async -> Void
     private let onOpenRemindersSettings: @MainActor () -> Void
 
+    /// Calendar sync surface — same flattened-binding pattern as
+    /// Reminders so the package never imports EventKit. RootView
+    /// wires these to `CalendarSyncService`.
+    private let calendarSyncEnabled: Bool
+    private let calendarAuthorized: Bool
+    private let calendarDenied: Bool
+    private let calendarLastError: String?
+    private let onToggleCalendarSync: @MainActor @Sendable (Bool) async -> Void
+    private let onOpenCalendarSettings: @MainActor () -> Void
+
     @State private var showDeleteConfirmation = false
     @State private var deletionError: String?
     @State private var isReindexing = false
@@ -57,6 +67,12 @@ public struct SettingsView: View {
         remindersLastError: String? = nil,
         onToggleRemindersSync: @escaping @MainActor @Sendable (Bool) async -> Void = { _ in },
         onOpenRemindersSettings: @escaping @MainActor () -> Void = {},
+        calendarSyncEnabled: Bool = false,
+        calendarAuthorized: Bool = false,
+        calendarDenied: Bool = false,
+        calendarLastError: String? = nil,
+        onToggleCalendarSync: @escaping @MainActor @Sendable (Bool) async -> Void = { _ in },
+        onOpenCalendarSettings: @escaping @MainActor () -> Void = {},
         healthKit: HealthKitService? = nil
     ) {
         self.appConfig = appConfig
@@ -77,6 +93,12 @@ public struct SettingsView: View {
         self.remindersLastError = remindersLastError
         self.onToggleRemindersSync = onToggleRemindersSync
         self.onOpenRemindersSettings = onOpenRemindersSettings
+        self.calendarSyncEnabled = calendarSyncEnabled
+        self.calendarAuthorized = calendarAuthorized
+        self.calendarDenied = calendarDenied
+        self.calendarLastError = calendarLastError
+        self.onToggleCalendarSync = onToggleCalendarSync
+        self.onOpenCalendarSettings = onOpenCalendarSettings
         self.healthKit = healthKit
     }
 
@@ -89,6 +111,7 @@ public struct SettingsView: View {
                         appearanceSection
                         notificationsSection
                         remindersSection
+                        calendarSection
                         subscriptionSection
                         aboutSection
                         dangerSection
@@ -430,6 +453,65 @@ public struct SettingsView: View {
                     await onToggleRemindersSync(newValue)
                     if newValue, !remindersSyncEnabled {
                         // Toggle snapped back: permission denied.
+                        Haptics.play(.warning)
+                    } else if newValue {
+                        Haptics.play(.success)
+                    }
+                }
+            }
+        )
+    }
+
+    // MARK: - Calendar
+
+    private var calendarSection: some View {
+        VStack(alignment: .leading, spacing: OrbitSpacing.md) {
+            OrbitSectionHeader("Calendar", subtitle: "Mirror your due-dated tasks to iOS Calendar.")
+            OrbitCard {
+                VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+                    Toggle(isOn: calendarSyncToggleBinding) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Sync with Calendar")
+                                .font(OrbitTypography.bodyEmphasized)
+                                .foregroundStyle(OrbitColor.textPrimary)
+                            Text("Tasks with due dates land in a dedicated \u{201C}Orbit\u{201D} calendar — so they show up on the Lock Screen, Apple Watch, and CarPlay alongside your meetings.")
+                                .font(OrbitTypography.footnote)
+                                .foregroundStyle(OrbitColor.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .tint(currentTheme.primary)
+
+                    if calendarDenied {
+                        VStack(alignment: .leading, spacing: OrbitSpacing.xs) {
+                            Text("Calendar access is turned off for Orbit in iOS Settings.")
+                                .font(OrbitTypography.footnote)
+                                .foregroundStyle(OrbitColor.warning)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Button("Open iOS Settings") {
+                                onOpenCalendarSettings()
+                            }
+                            .font(OrbitTypography.footnote)
+                            .foregroundStyle(currentTheme.primary)
+                        }
+                    } else if let message = calendarLastError {
+                        Text(message)
+                            .font(OrbitTypography.footnote)
+                            .foregroundStyle(OrbitColor.warning)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+        }
+    }
+
+    private var calendarSyncToggleBinding: Binding<Bool> {
+        Binding(
+            get: { calendarSyncEnabled },
+            set: { newValue in
+                Task { @MainActor in
+                    await onToggleCalendarSync(newValue)
+                    if newValue, !calendarSyncEnabled {
                         Haptics.play(.warning)
                     } else if newValue {
                         Haptics.play(.success)

@@ -18,6 +18,10 @@ public struct MemoryTask: Identifiable, Sendable, Hashable {
     /// iOS Reminders. `nil` while Reminders sync is off or the user hasn't
     /// granted permission.
     public var remindersIdentifier: String?
+    /// The `EKEvent.eventIdentifier` once the task is mirrored to iOS
+    /// Calendar. `nil` while Calendar sync is off, the task has no due
+    /// date, or the user hasn't granted permission.
+    public var calendarEventIdentifier: String?
     public var createdAt: Date
     public var completedAt: Date?
 
@@ -31,6 +35,7 @@ public struct MemoryTask: Identifiable, Sendable, Hashable {
         linkedMemoryID: UUID? = nil,
         sourceHintID: UUID? = nil,
         remindersIdentifier: String? = nil,
+        calendarEventIdentifier: String? = nil,
         createdAt: Date,
         completedAt: Date? = nil
     ) {
@@ -43,6 +48,7 @@ public struct MemoryTask: Identifiable, Sendable, Hashable {
         self.linkedMemoryID = linkedMemoryID
         self.sourceHintID = sourceHintID
         self.remindersIdentifier = remindersIdentifier
+        self.calendarEventIdentifier = calendarEventIdentifier
         self.createdAt = createdAt
         self.completedAt = completedAt
     }

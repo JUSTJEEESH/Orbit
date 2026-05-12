@@ -24,6 +24,12 @@ struct OnboardingView: View {
     /// flips the sync toggle on) instead of just the bare permission
     /// request. ContentRoot wires this to `env.remindersSync.enable()`.
     let onEnableReminders: (@MainActor @Sendable () async -> Bool)?
+    /// Custom Calendar handler. When supplied, the Calendar row's
+    /// Allow tap routes through this closure (which both prompts
+    /// EventKit AND flips Orbit's calendar sync toggle on) instead
+    /// of just the bare permission request. ContentRoot wires this
+    /// to `env.calendarSync.enable()`.
+    let onEnableCalendar: (@MainActor @Sendable () async -> Bool)?
     /// Custom Health handler. When supplied, the Health row's Allow tap
     /// routes through this closure (which prompts HealthKit + persists
     /// the asked-once flag) instead of the bare PermissionsCoordinator
@@ -238,6 +244,13 @@ struct OnboardingView: View {
             if let onEnableReminders {
                 let granted = await onEnableReminders()
                 permissions.setStatus(granted ? .granted : .denied, for: .reminders)
+            } else {
+                _ = await permissions.request(permission)
+            }
+        case .calendar:
+            if let onEnableCalendar {
+                let granted = await onEnableCalendar()
+                permissions.setStatus(granted ? .granted : .denied, for: .calendar)
             } else {
                 _ = await permissions.request(permission)
             }

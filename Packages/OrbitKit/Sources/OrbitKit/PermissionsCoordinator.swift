@@ -34,6 +34,7 @@ public final class PermissionsCoordinator {
         case photos
         case notifications
         case reminders
+        case calendar
         case health
 
         public var title: String {
@@ -43,6 +44,7 @@ public final class PermissionsCoordinator {
             case .photos:            return "Photos"
             case .notifications:     return "Notifications"
             case .reminders:         return "Reminders"
+            case .calendar:          return "Calendar"
             case .health:            return "Health"
             }
         }
@@ -54,6 +56,7 @@ public final class PermissionsCoordinator {
             case .photos:            return "photo.fill"
             case .notifications:     return "bell.fill"
             case .reminders:         return "checklist"
+            case .calendar:          return "calendar"
             case .health:            return "heart.text.square.fill"
             }
         }
@@ -70,6 +73,8 @@ public final class PermissionsCoordinator {
                 return "A gentle nudge to revisit your day with Daily Recap."
             case .reminders:
                 return "Mirror your tasks to iOS Reminders — manage them from Siri, CarPlay, or the Reminders app."
+            case .calendar:
+                return "Mirror your due-dated tasks to iOS Calendar so they show up on the Lock Screen, Apple Watch, and CarPlay."
             case .health:
                 return "Add a quiet line of sleep + steps to your Daily Recap. Nothing is shared."
             }
@@ -96,6 +101,7 @@ public final class PermissionsCoordinator {
         statuses[.photos]            = currentPhotosStatus()
         statuses[.notifications]     = await currentNotificationsStatus()
         statuses[.reminders]         = currentRemindersStatus()
+        statuses[.calendar]          = currentCalendarStatus()
         statuses[.health]            = currentHealthStatus()
     }
 
@@ -109,6 +115,7 @@ public final class PermissionsCoordinator {
         case .photos:            return await requestPhotos()
         case .notifications:     return await requestNotifications()
         case .reminders:         return await requestReminders()
+        case .calendar:          return await requestCalendar()
         case .health:            return await requestHealth()
         }
     }
@@ -251,6 +258,35 @@ public final class PermissionsCoordinator {
             return status
         } catch {
             statuses[.reminders] = .denied
+            return .denied
+        }
+    }
+
+    // MARK: - Calendar
+
+    private func currentCalendarStatus() -> Status {
+        switch EKEventStore.authorizationStatus(for: .event) {
+        case .fullAccess:    return .granted
+        case .writeOnly:     return .granted
+        case .denied:        return .denied
+        case .restricted:    return .denied
+        case .notDetermined: return .notDetermined
+        @unknown default:    return .notDetermined
+        }
+    }
+
+    /// Default Calendar request — same pattern as Reminders. Onboarding
+    /// overrides this through a closure that *also* flips Orbit's own
+    /// sync toggle on, so it's one tap to "permission + enable."
+    private func requestCalendar() async -> Status {
+        let store = EKEventStore()
+        do {
+            let granted = try await store.requestFullAccessToEvents()
+            let status: Status = granted ? .granted : .denied
+            statuses[.calendar] = status
+            return status
+        } catch {
+            statuses[.calendar] = .denied
             return .denied
         }
     }

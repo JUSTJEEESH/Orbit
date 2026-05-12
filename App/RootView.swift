@@ -85,6 +85,18 @@ struct RootView: View {
                         }
                     },
                     onOpenRemindersSettings: { env.remindersSync.openSystemSettings() },
+                    calendarSyncEnabled: env.calendarSync.isEnabled,
+                    calendarAuthorized: env.calendarSync.isAuthorized,
+                    calendarDenied: env.calendarSync.authorizationStatus == .denied || env.calendarSync.authorizationStatus == .restricted,
+                    calendarLastError: env.calendarSync.lastError,
+                    onToggleCalendarSync: { newValue in
+                        if newValue {
+                            _ = await env.calendarSync.enable()
+                        } else {
+                            env.calendarSync.disable()
+                        }
+                    },
+                    onOpenCalendarSettings: { env.calendarSync.openSystemSettings() },
                     healthKit: env.healthKit
                 )
                 .presentationDetents([.large])
@@ -213,9 +225,11 @@ struct RootView: View {
                     clock: env.clock,
                     onTaskMutated: { task in
                         await env.remindersSync.mirror(task)
+                        await env.calendarSync.mirror(task)
                     },
                     onTaskDeleted: { task in
                         await env.remindersSync.removeMirror(for: task)
+                        await env.calendarSync.removeMirror(for: task)
                     }
                 ),
                 readingViewModel: ReadingListViewModel(
