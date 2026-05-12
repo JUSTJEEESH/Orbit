@@ -52,6 +52,7 @@ public final class CaptureViewModel {
     private let speechTranscriber: SpeechTranscriber
     private let linkFetcher: LinkPreviewFetcher
     private let drafts: DraftStore
+    private let liveActivity = CaptureLiveActivityController()
 
     private var recorder: VoiceRecorder?
     private var recordTask: Task<Void, Never>?
@@ -168,6 +169,10 @@ public final class CaptureViewModel {
         do {
             let stream = try await recorder.start()
             voiceState = .recording(elapsed: 0, levels: [])
+            // Surface the recording in the Dynamic Island + Lock Screen.
+            // Fire-and-forget — silent failure if Live Activities are off
+            // in iOS Settings.
+            Task { await liveActivity.start() }
             recordTask = Task { @MainActor [weak self] in
                 guard let self else { return }
                 var collected: [Float] = []
@@ -190,6 +195,9 @@ public final class CaptureViewModel {
         guard let recorder else { return }
         recordTask?.cancel()
         recordTask = nil
+        // End the activity as soon as the user stops capturing, regardless
+        // of what comes next (transcription, silent-clip cleanup, error).
+        await liveActivity.end()
         do {
             let result = try await recorder.stop()
             self.recorder = nil
@@ -226,6 +234,8 @@ public final class CaptureViewModel {
         if case .recorded(let file, _, _) = voiceState {
             try? await mediaStorage.delete(filename: file.filename)
         }
+        // Ensure the activity is gone if the user discards mid-recording too.
+        await liveActivity.end()
         voiceState = .idle
     }
 

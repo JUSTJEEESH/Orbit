@@ -6,5 +6,6 @@ struct OrbitWidgetsBundle: WidgetBundle {
     var body: some Widget {
         QuickCaptureWidget()
         RecentMemoryWidget()
+        CaptureLiveActivity()
     }
 }

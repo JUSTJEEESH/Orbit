@@ -67,6 +67,9 @@ targets:
         CFBundleDisplayName: Orbit
         UILaunchScreen:
           UIColorName: launch.background
+        # Enables ActivityKit Live Activities so the voice-capture session
+        # surfaces in the Dynamic Island, Lock Screen, and StandBy mode.
+        NSSupportsLiveActivities: true
         NSMicrophoneUsageDescription: Orbit uses the microphone to capture voice notes you record.
         NSSpeechRecognitionUsageDescription: Orbit transcribes your voice notes on-device so they become searchable.
         NSPhotoLibraryUsageDescription: Orbit lets you save screenshots and photos as memories.
@@ -164,6 +167,9 @@ targets:
       path: Extensions/OrbitWidgets/Info.plist
       properties:
         CFBundleDisplayName: Orbit
+        # Live Activity surfaces are vended from this widget extension, so it
+        # has to advertise support too — not just the host app.
+        NSSupportsLiveActivities: true
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:
@@ -172,6 +178,8 @@ targets:
         CODE_SIGN_ENTITLEMENTS: Extensions/OrbitWidgets/Orbit.entitlements
         SKIP_INSTALL: YES
     dependencies:
+      - package: OrbitWorkspace
+        product: OrbitKit
       - package: OrbitWorkspace
         product: OrbitDesignSystem
       - package: OrbitWorkspace
