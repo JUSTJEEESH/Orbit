@@ -67,15 +67,16 @@ final class CaptureInboxService {
     // MARK: - Lock-Screen camera
 
     private func observeLockCameraUpdates() async {
+        // The framework emits a `SessionContentUpdate.added(URL)` for each
+        // session that has fresh content — both ones already on disk at
+        // launch and ones that arrive while the app is foregrounded.
+        // Other enum cases (removals, etc.) are the system's own
+        // bookkeeping; ignore them.
         let manager = LockedCameraCaptureManager.shared
-        do {
-            for try await update in manager.sessionContentUpdates {
-                for url in update.added {
-                    await ingestLockCameraSession(at: url)
-                }
+        for await update in manager.sessionContentUpdates {
+            if case .added(let url) = update {
+                await ingestLockCameraSession(at: url)
             }
-        } catch {
-            OrbitLog.app.error("LockedCameraCaptureManager stream failed: \(String(describing: error), privacy: .public)")
         }
     }
 
