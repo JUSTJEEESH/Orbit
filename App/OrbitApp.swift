@@ -46,6 +46,7 @@ private struct ContentRoot: View {
                     account: environment.account,
                     onComplete: { environment.onboardingComplete = true }
                 )
+                .orbitTheme(environment.themeService.theme)
             }
         }
         .environment(environment)
