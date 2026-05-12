@@ -21,12 +21,19 @@ import Observation
 @Observable
 public final class NotificationService {
     public nonisolated static let recapNotificationID = "com.orbit.dailyRecap"
+    public nonisolated static let sealedDeliveryPrefix = "com.orbit.sealed."
 
     private static let enabledKey = "orbit.notifications.dailyRecap.enabled"
     private static let hourKey = "orbit.notifications.dailyRecap.hour"
     private static let minuteKey = "orbit.notifications.dailyRecap.minute"
     private static let defaultHour = 20
     private static let defaultMinute = 0
+
+    /// Per-memory notification identifier for sealed delivery. Stable so
+    /// scheduling can be re-applied / cancelled deterministically.
+    public nonisolated static func sealedDeliveryIdentifier(for memoryID: UUID) -> String {
+        sealedDeliveryPrefix + memoryID.uuidString
+    }
 
     public private(set) var isEnabled: Bool
     public private(set) var time: DateComponents
@@ -126,6 +133,66 @@ public final class NotificationService {
     public func openSystemSettings() {
         guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
         UIApplication.shared.open(url)
+    }
+
+    // MARK: - Sealed delivery (Time Capsule + Letter)
+
+    /// Schedules a one-shot local notification at `surfaceDate` for a sealed
+    /// memory. Identifier is deterministic so re-scheduling replaces any
+    /// existing request, and `cancelSealedDelivery` can find it by UUID
+    /// when the user deletes the memory.
+    ///
+    /// Best-effort: silent no-op when permission isn't granted, when the
+    /// surface date has already passed, or when the user disabled Daily
+    /// Recap (we piggyback on the same Notifications permission — there
+    /// is no separate toggle for sealed delivery in v1 because users
+    /// usually want both or neither).
+    public func scheduleSealedDelivery(
+        memoryID: UUID,
+        surfaceDate: Date,
+        isLetter: Bool,
+        previewText: String?
+    ) async {
+        await refreshAuthorizationStatus()
+        guard isAuthorized else { return }
+        guard surfaceDate > Date() else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = isLetter ? "A letter just arrived" : "A memory resurfaced"
+        if let previewText, !previewText.isEmpty {
+            content.body = String(previewText.prefix(140))
+        } else {
+            content.body = isLetter
+                ? "Your past self left this for you to read today."
+                : "Something you tucked away is back."
+        }
+        content.sound = .default
+        content.userInfo = [
+            "kind": isLetter ? "sealedLetter" : "sealedCapsule",
+            "memoryID": memoryID.uuidString
+        ]
+
+        // Calendar trigger fires once at the exact moment, surviving reboot.
+        let comps = Calendar.current.dateComponents(
+            [.year, .month, .day, .hour, .minute],
+            from: surfaceDate
+        )
+        let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
+        let identifier = Self.sealedDeliveryIdentifier(for: memoryID)
+        let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
+        do {
+            try await center.add(request)
+        } catch {
+            OrbitLog.app.error("Failed to schedule sealed delivery: \(String(describing: error), privacy: .public)")
+        }
+    }
+
+    /// Drops the pending notification for a sealed memory — used when the
+    /// user deletes a sealed memory before it surfaces.
+    public func cancelSealedDelivery(memoryID: UUID) {
+        center.removePendingNotificationRequests(
+            withIdentifiers: [Self.sealedDeliveryIdentifier(for: memoryID)]
+        )
     }
 
     private var isAuthorized: Bool {

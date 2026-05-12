@@ -43,6 +43,7 @@ struct RootView: View {
                     onCompleted: { memoryID in
                         env.memoriesDidChange()
                         env.scheduleEnrichment(for: memoryID)
+                        env.scheduleSealedDeliveryIfNeeded(for: memoryID)
                         env.requestedModal = nil
                     },
                     onCancel: { env.requestedModal = nil }
@@ -116,6 +117,18 @@ struct RootView: View {
                     onDismiss: { env.requestedModal = nil }
                 )
                 .presentationDetents([.large])
+            case .letter:
+                LetterCaptureView(
+                    captureMemory: env.captureMemory,
+                    onCompleted: { memoryID in
+                        env.memoriesDidChange()
+                        env.scheduleEnrichment(for: memoryID)
+                        env.scheduleSealedDeliveryIfNeeded(for: memoryID)
+                        env.requestedModal = nil
+                    },
+                    onCancel: { env.requestedModal = nil }
+                )
+                .presentationDetents([.large])
             }
         }
         .onAppear { Haptics.prepare() }
@@ -136,7 +149,8 @@ struct RootView: View {
                     makeDetailViewModel: makeDetailViewModel,
                     onPresentRecap: { env.requestedModal = .dailyRecap },
                     onPresentPatterns: { env.requestedModal = .patterns },
-                    onPresentAskOrbit: { env.requestedModal = .askOrbit }
+                    onPresentAskOrbit: { env.requestedModal = .askOrbit },
+                    onPresentLetter: { env.requestedModal = .letter }
                 )
                 .navigationTitle("")
                 .navigationBarTitleDisplayMode(.inline)

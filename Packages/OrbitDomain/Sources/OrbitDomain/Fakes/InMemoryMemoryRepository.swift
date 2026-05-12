@@ -42,6 +42,7 @@ public actor InMemoryMemoryRepository: MemoryRepository {
     }
 
     private func matches(_ memory: Memory, _ filter: MemoryFilter) -> Bool {
+        if !filter.includeSealed, memory.isSealed() { return false }
         if !filter.kinds.isEmpty, !filter.kinds.contains(memory.content.kind) { return false }
         if !filter.tagNames.isEmpty {
             let names = Set(memory.tags.map(\.name))

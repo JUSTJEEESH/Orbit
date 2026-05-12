@@ -14,6 +14,7 @@ public struct HomeView: View {
     private let onPresentRecap: @MainActor () -> Void
     private let onPresentPatterns: @MainActor () -> Void
     private let onPresentAskOrbit: @MainActor () -> Void
+    private let onPresentLetter: @MainActor () -> Void
 
     @State private var memories: [Memory] = []
     @State private var loadState: LoadState = .idle
@@ -36,7 +37,8 @@ public struct HomeView: View {
         makeDetailViewModel: @escaping @MainActor (UUID) -> MemoryDetailViewModel,
         onPresentRecap: @escaping @MainActor () -> Void,
         onPresentPatterns: @escaping @MainActor () -> Void,
-        onPresentAskOrbit: @escaping @MainActor () -> Void
+        onPresentAskOrbit: @escaping @MainActor () -> Void,
+        onPresentLetter: @escaping @MainActor () -> Void
     ) {
         self.listMemories = listMemories
         self.generateInsights = generateInsights
@@ -47,6 +49,7 @@ public struct HomeView: View {
         self.onPresentRecap = onPresentRecap
         self.onPresentPatterns = onPresentPatterns
         self.onPresentAskOrbit = onPresentAskOrbit
+        self.onPresentLetter = onPresentLetter
     }
 
     public var body: some View {
@@ -54,7 +57,10 @@ public struct HomeView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: OrbitSpacing.xxl) {
                     greeting
-                    askOrbitPill
+                    VStack(spacing: OrbitSpacing.sm) {
+                        askOrbitPill
+                        letterPill
+                    }
                     content
                     Spacer(minLength: 96)
                 }
@@ -128,6 +134,42 @@ public struct HomeView: View {
         case .failed(let message):
             errorState(message)
         }
+    }
+
+    // MARK: - Letter pill
+
+    /// Discrete entry point to the Letter-to-Future-Me capture flow. Sits
+    /// just below Ask Orbit because both are "compose a thought" surfaces;
+    /// quieter visual treatment so it doesn't compete for tap weight.
+    private var letterPill: some View {
+        Button {
+            Haptics.play(.tap)
+            onPresentLetter()
+        } label: {
+            HStack(spacing: OrbitSpacing.sm) {
+                Image(systemName: "envelope.fill")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(OrbitColor.textSecondary)
+                Text("Write a letter to future you")
+                    .font(OrbitTypography.footnote)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(OrbitColor.textPrimary)
+                Spacer()
+                Image(systemName: "arrow.up.right")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(OrbitColor.textTertiary)
+            }
+            .padding(.horizontal, OrbitSpacing.md)
+            .padding(.vertical, OrbitSpacing.xs)
+            .background(OrbitColor.surfaceMuted, in: .capsule)
+            .overlay(
+                Capsule()
+                    .stroke(OrbitColor.separator, lineWidth: 0.5)
+            )
+        }
+        .buttonStyle(OrbitBloomButtonStyle(tint: themeAccent))
+        .accessibilityLabel("Write a letter to future you")
+        .accessibilityHint("Open a private letter you'll receive on a date you choose.")
     }
 
     // MARK: - Ask Orbit pill

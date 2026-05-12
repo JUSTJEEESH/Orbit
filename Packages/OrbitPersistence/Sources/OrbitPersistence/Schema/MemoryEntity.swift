@@ -33,6 +33,14 @@ public final class MemoryEntity {
     /// memory. Defaulted so the v1 schema stays migration-safe.
     public var embedding: [Float] = []
 
+    /// Optional future date at which this memory should surface. When set
+    /// and still in the future, the memory is "sealed" — hidden from every
+    /// default surface until the date arrives. Powers Time Capsule + Letter.
+    public var surfaceDate: Date?
+    /// Captured through the Letter-to-Future-Me flow. Letters render with
+    /// envelope styling on the detail surface.
+    public var isLetter: Bool = false
+
     // MARK: - AI metadata
     public var aiStatus: String = "pending"
     public var aiSummary: String?

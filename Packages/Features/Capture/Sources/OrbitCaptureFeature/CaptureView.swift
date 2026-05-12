@@ -13,6 +13,9 @@ public struct CaptureView: View {
 
     @FocusState private var textFocus: Bool
     @State private var photoPickerItem: PhotosPickerItem?
+    @State private var showSchedulePicker: Bool = false
+    @State private var pendingSurfaceDate: Date = Calendar.current.date(byAdding: .month, value: 1, to: Date()) ?? Date()
+    @Environment(\.orbitTheme) private var orbitTheme
 
     public init(
         viewModel: CaptureViewModel,
@@ -42,15 +45,21 @@ public struct CaptureView: View {
 
                     Spacer()
 
+                    scheduleSection
+
                     OrbitButton(
-                        model.isSaving ? "Saving…" : "Save memory",
-                        systemImage: "checkmark",
+                        saveLabel,
+                        systemImage: model.surfaceDate == nil ? "checkmark" : "lock.fill",
                         style: .primary,
                         size: .large,
                         action: save
                     )
                     .disabled(!model.canSave)
                 }
+            }
+            .sheet(isPresented: $showSchedulePicker) {
+                schedulePickerSheet
+                    .presentationDetents([.medium])
             }
             .navigationTitle("Capture")
             .navigationBarTitleDisplayMode(.inline)
@@ -262,6 +271,134 @@ public struct CaptureView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Schedule
+
+    /// Inline "Schedule for later" surface above the save button. When no
+    /// surface date is set, it's a discrete capsule; once set, it shows
+    /// the picked date with a Clear affordance so the user can drop the
+    /// schedule without re-opening the picker.
+    @ViewBuilder
+    private var scheduleSection: some View {
+        if let surfaceDate = model.surfaceDate {
+            HStack(spacing: OrbitSpacing.sm) {
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(orbitTheme.primary)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Sealed until")
+                        .font(OrbitTypography.caption)
+                        .foregroundStyle(OrbitColor.textTertiary)
+                        .tracking(0.9)
+                    Text(surfaceDate.formatted(date: .long, time: .shortened))
+                        .font(OrbitTypography.bodyEmphasized)
+                        .foregroundStyle(OrbitColor.textPrimary)
+                }
+                Spacer()
+                Button {
+                    model.surfaceDate = nil
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 18))
+                        .foregroundStyle(OrbitColor.textTertiary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Clear schedule")
+            }
+            .padding(.horizontal, OrbitSpacing.md)
+            .padding(.vertical, OrbitSpacing.sm)
+            .background(orbitTheme.primary.opacity(0.10), in: .capsule)
+        } else {
+            Button {
+                pendingSurfaceDate = Calendar.current.date(byAdding: .month, value: 1, to: Date()) ?? Date()
+                showSchedulePicker = true
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "calendar.badge.clock")
+                        .font(.system(size: 13, weight: .semibold))
+                    Text("Schedule for later")
+                        .font(OrbitTypography.footnote)
+                        .fontWeight(.semibold)
+                }
+                .foregroundStyle(OrbitColor.textSecondary)
+                .padding(.horizontal, OrbitSpacing.md)
+                .padding(.vertical, OrbitSpacing.xs)
+                .background(OrbitColor.surfaceMuted, in: .capsule)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Schedule this memory for later")
+            .accessibilityHint("Pick a future date to seal the memory until then.")
+        }
+    }
+
+    private var schedulePickerSheet: some View {
+        NavigationStack {
+            OrbitScreen {
+                VStack(alignment: .leading, spacing: OrbitSpacing.lg) {
+                    VStack(alignment: .leading, spacing: OrbitSpacing.xs) {
+                        Text("Send to future you")
+                            .font(OrbitTypography.title2)
+                            .foregroundStyle(OrbitColor.textPrimary)
+                        Text("Orbit will surface this memory on the day you pick — and nudge you with a notification.")
+                            .font(OrbitTypography.footnote)
+                            .foregroundStyle(OrbitColor.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    DatePicker(
+                        "Surface date",
+                        selection: $pendingSurfaceDate,
+                        in: Date()...,
+                        displayedComponents: [.date, .hourAndMinute]
+                    )
+                    .datePickerStyle(.graphical)
+                    .tint(orbitTheme.primary)
+                    HStack(spacing: OrbitSpacing.sm) {
+                        quickPickButton(months: 1, label: "1 month")
+                        quickPickButton(months: 6, label: "6 months")
+                        quickPickButton(months: 12, label: "1 year")
+                    }
+                    Spacer()
+                    OrbitButton("Seal until \(pendingSurfaceDate.formatted(date: .abbreviated, time: .omitted))", style: .primary, size: .large) {
+                        model.surfaceDate = pendingSurfaceDate
+                        showSchedulePicker = false
+                        Haptics.play(.success)
+                    }
+                }
+            }
+            .navigationTitle("Schedule")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") { showSchedulePicker = false }
+                        .foregroundStyle(OrbitColor.textSecondary)
+                }
+            }
+        }
+    }
+
+    private func quickPickButton(months: Int, label: String) -> some View {
+        Button {
+            pendingSurfaceDate = Calendar.current.date(byAdding: .month, value: months, to: Date()) ?? Date()
+            Haptics.play(.selection)
+        } label: {
+            Text(label)
+                .font(OrbitTypography.footnote)
+                .fontWeight(.semibold)
+                .foregroundStyle(orbitTheme.primary)
+                .padding(.horizontal, OrbitSpacing.md)
+                .padding(.vertical, OrbitSpacing.xs)
+                .background(orbitTheme.primary.opacity(0.12), in: .capsule)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var saveLabel: String {
+        if model.isSaving { return "Saving…" }
+        if let date = model.surfaceDate {
+            return "Seal until \(date.formatted(date: .abbreviated, time: .omitted))"
+        }
+        return "Save memory"
     }
 
     // MARK: - Save action

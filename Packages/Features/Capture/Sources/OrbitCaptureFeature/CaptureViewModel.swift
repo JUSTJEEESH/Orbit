@@ -44,6 +44,13 @@ public final class CaptureViewModel {
 
     public var isSaving: Bool = false
     public var errorMessage: String?
+    /// Future surface date for Time Capsule. `nil` means surface
+    /// immediately. UI exposes this through a "Schedule for later" toggle.
+    public var surfaceDate: Date?
+    /// When true, the saved memory is flagged as a Letter to Future Me.
+    /// The LetterCaptureView entry point sets this; standard captures
+    /// don't.
+    public var isLetter: Bool = false
 
     // MARK: - Dependencies
 
@@ -102,7 +109,11 @@ public final class CaptureViewModel {
             switch mode {
             case .text:
                 let text = textDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-                memory = try await captureMemory(content: .text(text))
+                memory = try await captureMemory(
+                    content: .text(text),
+                    surfaceDate: surfaceDate,
+                    isLetter: isLetter
+                )
                 drafts.clearTextDraft()
                 textDraft = ""
 
@@ -118,7 +129,9 @@ public final class CaptureViewModel {
                 )
                 memory = try await captureMemory(
                     content: .voiceNote(transcript: transcript, duration: duration),
-                    media: [asset]
+                    media: [asset],
+                    surfaceDate: surfaceDate,
+                    isLetter: isLetter
                 )
                 voiceState = .idle
 
@@ -134,7 +147,9 @@ public final class CaptureViewModel {
                 let caption = photoCaption.trimmingCharacters(in: .whitespacesAndNewlines)
                 memory = try await captureMemory(
                     content: .image(caption: caption.isEmpty ? nil : caption),
-                    media: [asset]
+                    media: [asset],
+                    surfaceDate: surfaceDate,
+                    isLetter: isLetter
                 )
                 photoData = nil
                 photoCaption = ""
@@ -145,7 +160,9 @@ public final class CaptureViewModel {
                     throw CaptureError.invalidState
                 }
                 memory = try await captureMemory(
-                    content: .link(url: url, title: linkPreview?.title, summary: linkPreview?.summary)
+                    content: .link(url: url, title: linkPreview?.title, summary: linkPreview?.summary),
+                    surfaceDate: surfaceDate,
+                    isLetter: isLetter
                 )
                 linkText = ""
                 linkPreview = nil

@@ -26,8 +26,11 @@ public struct SearchMemoriesUseCase: Sendable {
         let hits = try await search.search(query)
         var results: [Result] = []
         results.reserveCapacity(hits.count)
+        // Search by id pulls full Memory records — including sealed ones,
+        // since memory(with:) doesn't apply the filter. Drop them here so
+        // sealed time capsules / letters stay invisible until they arrive.
         for hit in hits {
-            if let memory = try await memories.memory(with: hit.memoryID) {
+            if let memory = try await memories.memory(with: hit.memoryID), !memory.isSealed() {
                 results.append(Result(memory: memory, score: hit.score, highlight: hit.highlight))
             }
         }

@@ -37,6 +37,7 @@ enum AppModal: Hashable, Identifiable {
     case dailyRecap
     case patterns
     case askOrbit
+    case letter
 
     var id: Self { self }
 }

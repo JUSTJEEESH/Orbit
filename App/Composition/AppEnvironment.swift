@@ -100,11 +100,44 @@ final class AppEnvironment {
         }
     }
 
+    /// Inspects a freshly-saved memory and, if it has a future `surfaceDate`,
+    /// schedules a local notification for the moment it should resurface.
+    /// Idempotent: re-scheduling replaces the pending request.
+    func scheduleSealedDeliveryIfNeeded(for memoryID: UUID) {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            guard let memory = try? await self.memories.memory(with: memoryID),
+                  let surfaceDate = memory.surfaceDate,
+                  surfaceDate > Date()
+            else { return }
+            await self.notifications.scheduleSealedDelivery(
+                memoryID: memory.id,
+                surfaceDate: surfaceDate,
+                isLetter: memory.isLetter,
+                previewText: Self.previewText(for: memory)
+            )
+        }
+    }
+
+    private static func previewText(for memory: Memory) -> String? {
+        switch memory.content {
+        case .text(let s):                          return s
+        case .voiceNote(let transcript, _):         return transcript
+        case .image(let caption):                   return caption
+        case .link(_, let title, let summary):      return summary ?? title
+        case .screenshot(let ocr):                  return ocr
+        case .location(let name, _, _):             return name
+        }
+    }
+
     /// Deletes a memory and removes it from Spotlight. Use this from the UI
     /// instead of `deleteMemory` directly.
     func removeMemory(id: UUID) async throws {
         try await deleteMemory(id: id)
         await spotlight.deindex(memoryID: id)
+        // Drop any pending sealed-delivery notification too — otherwise a
+        // deleted time capsule would still chime on its surface date.
+        notifications.cancelSealedDelivery(memoryID: id)
         memoriesDidChange()
     }
 
@@ -113,7 +146,10 @@ final class AppEnvironment {
     /// new heuristic category inferrer) so existing rows pick up the new
     /// labels without the user having to delete + recapture.
     func reenrichAllMemories() async {
-        let all = (try? await memories.list(filter: .all)) ?? []
+        // Re-enrich includes sealed memories so their AI metadata is ready
+        // when they surface — otherwise a year-old time capsule would
+        // arrive with stale categorization.
+        let all = (try? await memories.list(filter: .allIncludingSealed)) ?? []
         for memory in all {
             await enrichMemory(memoryID: memory.id)
             if let updated = try? await memories.memory(with: memory.id) {

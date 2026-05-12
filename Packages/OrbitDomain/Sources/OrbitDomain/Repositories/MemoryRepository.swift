@@ -20,6 +20,12 @@ public struct MemoryFilter: Sendable, Equatable {
     public var dateRange: ClosedRange<Date>?
     public var limit: Int?
     public var sort: Sort
+    /// When false (the default), memories whose `surfaceDate` is still in
+    /// the future are filtered out — they're sealed time capsules and
+    /// shouldn't appear in lists, search, or insights until they arrive.
+    /// Set to true for maintenance flows (re-enrich, delete-all) that need
+    /// to see the full corpus.
+    public var includeSealed: Bool
 
     public enum Sort: Sendable, Equatable {
         case newestFirst
@@ -33,7 +39,8 @@ public struct MemoryFilter: Sendable, Equatable {
         tagNames: Set<String> = [],
         dateRange: ClosedRange<Date>? = nil,
         limit: Int? = nil,
-        sort: Sort = .newestFirst
+        sort: Sort = .newestFirst,
+        includeSealed: Bool = false
     ) {
         self.query = query
         self.kinds = kinds
@@ -41,7 +48,10 @@ public struct MemoryFilter: Sendable, Equatable {
         self.dateRange = dateRange
         self.limit = limit
         self.sort = sort
+        self.includeSealed = includeSealed
     }
 
     public static let all = MemoryFilter()
+    /// Convenience for maintenance callers that need to see sealed too.
+    public static let allIncludingSealed = MemoryFilter(includeSealed: true)
 }

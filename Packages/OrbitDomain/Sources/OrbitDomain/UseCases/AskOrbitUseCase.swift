@@ -43,10 +43,12 @@ public struct AskOrbitUseCase: Sendable {
 
         let hits = try await search.search(SearchQuery(text: trimmed, limit: retrievalLimit))
         // Fetch full memories in hit order; drop any that have disappeared
-        // between indexing and now (deleted but not yet de-indexed).
+        // between indexing and now (deleted but not yet de-indexed) AND any
+        // sealed time capsules — Ask Orbit must never leak a memory the
+        // user hasn't seen themselves yet.
         var retrievedMemories: [Memory] = []
         for hit in hits {
-            if let memory = try? await memories.memory(with: hit.memoryID) {
+            if let memory = try? await memories.memory(with: hit.memoryID), !memory.isSealed() {
                 retrievedMemories.append(memory)
             }
         }

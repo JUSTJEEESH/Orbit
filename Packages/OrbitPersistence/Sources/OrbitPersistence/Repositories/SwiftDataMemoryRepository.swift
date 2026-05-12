@@ -68,6 +68,13 @@ public actor SwiftDataMemoryRepository: MemoryRepository {
         // We post-filter complex predicates (kinds set, tag-name set, free text)
         // in Swift because SwiftData predicates around Set membership and
         // joined relationship attributes are still rough.
+        if !filter.includeSealed {
+            let now = Date()
+            results = results.filter { entity in
+                guard let surfaceDate = entity.surfaceDate else { return true }
+                return surfaceDate <= now
+            }
+        }
         if !filter.kinds.isEmpty {
             let kindRaw = Set(filter.kinds.map(\.rawValue))
             results = results.filter { kindRaw.contains($0.contentKind) }

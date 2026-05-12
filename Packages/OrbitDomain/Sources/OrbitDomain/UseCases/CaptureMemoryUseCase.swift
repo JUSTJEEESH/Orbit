@@ -23,16 +23,27 @@ public struct CaptureMemoryUseCase: Sendable {
     public func callAsFunction(
         content: MemoryContent,
         tags: [Tag] = [],
-        media: [MediaAsset] = []
+        media: [MediaAsset] = [],
+        surfaceDate: Date? = nil,
+        isLetter: Bool = false
     ) async throws -> Memory {
         let now = clock.now()
+        // Discard surface dates that have already passed — a "schedule"
+        // affordance with a past date should land the memory immediately
+        // rather than create an instantly-visible "sealed" record.
+        let effectiveSurfaceDate: Date? = {
+            guard let surfaceDate, surfaceDate > now else { return nil }
+            return surfaceDate
+        }()
         var memory = Memory(
             content: content,
             createdAt: now,
             updatedAt: now,
             tags: tags,
             media: media,
-            ai: .pending
+            ai: .pending,
+            surfaceDate: effectiveSurfaceDate,
+            isLetter: isLetter
         )
         memory.ai.signals = signalExtractor.extract(from: memory)
         try await repository.save(memory)

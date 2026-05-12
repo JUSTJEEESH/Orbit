@@ -15,6 +15,14 @@ public struct Memory: Identifiable, Sendable, Hashable {
     /// Sentence-level embedding (typically 512-dim) used for semantic search.
     /// Empty until the AI pipeline has indexed this memory.
     public var embedding: [Float]
+    /// When set to a future date, the memory is "sealed" — hidden from
+    /// every default surface (timeline, search, insights, recap) until the
+    /// date arrives. Powers Time Capsule + Letter to Future Me.
+    public var surfaceDate: Date?
+    /// Marks a memory captured through the Letter-to-Future-Me flow so
+    /// detail surfaces can render it with envelope styling instead of the
+    /// regular memory card.
+    public var isLetter: Bool
 
     public init(
         id: UUID = UUID(),
@@ -25,7 +33,9 @@ public struct Memory: Identifiable, Sendable, Hashable {
         media: [MediaAsset] = [],
         ai: MemoryAIMetadata = .pending,
         linkedTaskIDs: [UUID] = [],
-        embedding: [Float] = []
+        embedding: [Float] = [],
+        surfaceDate: Date? = nil,
+        isLetter: Bool = false
     ) {
         self.id = id
         self.content = content
@@ -36,6 +46,16 @@ public struct Memory: Identifiable, Sendable, Hashable {
         self.ai = ai
         self.linkedTaskIDs = linkedTaskIDs
         self.embedding = embedding
+        self.surfaceDate = surfaceDate
+        self.isLetter = isLetter
+    }
+
+    /// True when the memory is scheduled to surface in the future. Calling
+    /// code should treat sealed memories as if they don't exist until this
+    /// returns false.
+    public func isSealed(at date: Date = Date()) -> Bool {
+        guard let surfaceDate else { return false }
+        return surfaceDate > date
     }
 }
 
