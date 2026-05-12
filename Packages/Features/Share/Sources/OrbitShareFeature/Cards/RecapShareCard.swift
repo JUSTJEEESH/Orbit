@@ -55,25 +55,25 @@ public struct RecapShareCard: View {
         }
     }
 
-    /// Calendar-block hero. Day-of-week in serif at the top, the
-    /// numeric day as a giant 280pt glyph beside the month/year.
-    /// Asymmetric weight — bold left, quiet right — gives the card
-    /// the same architecture as the date stamp on a printed letter.
+    /// Calendar-block hero. The numeric day is the dominant glyph but
+    /// at a restrained scale — SF Pro Display semibold, not heavy
+    /// rounded. Weekday in serif beside it, month/year as small caps
+    /// support. Same architecture as the date stamp on a printed
+    /// letter: bold left, quiet right.
     private var dateHero: some View {
         HStack(alignment: .firstTextBaseline, spacing: 28) {
             Text(dayNumber)
-                .font(.system(size: 260, weight: .heavy, design: .rounded))
+                .font(.system(size: 168, weight: .semibold))
                 .foregroundStyle(theme.primary)
-                .baselineOffset(0)
                 .fixedSize()
 
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 10) {
                 Text(weekdayName)
-                    .font(.system(size: 56, weight: .regular, design: .serif))
+                    .font(.system(size: 52, weight: .regular, design: .serif))
                     .foregroundStyle(OrbitColor.textPrimary)
                 Text(monthYear.uppercased())
-                    .font(.system(size: 18, weight: .semibold, design: .rounded))
-                    .tracking(2.4)
+                    .font(.system(size: 16, weight: .semibold))
+                    .tracking(2.6)
                     .foregroundStyle(OrbitColor.textTertiary)
             }
             Spacer()
@@ -94,13 +94,13 @@ public struct RecapShareCard: View {
     }
 
     private func stat(value: String, label: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(value)
-                .font(.system(size: 56, weight: .semibold))
+                .font(.system(size: 52, weight: .semibold))
                 .foregroundStyle(OrbitColor.textPrimary)
             Text(label.uppercased())
-                .font(.system(size: 14, weight: .medium, design: .rounded))
-                .tracking(2.0)
+                .font(.system(size: 14, weight: .medium))
+                .tracking(2.2)
                 .foregroundStyle(OrbitColor.textTertiary)
         }
     }

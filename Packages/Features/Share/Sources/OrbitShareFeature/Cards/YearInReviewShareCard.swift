@@ -51,15 +51,15 @@ public struct YearInReviewShareCard: View {
         }
     }
 
-    /// Year as the dominant graphic. Heavy rounded numerals echo
-    /// Apple Music Replay's "20XX" treatment, with a single-line
-    /// editorial headline beneath that summarizes the volume.
+    /// Year as the dominant graphic. SF Pro Display semibold — the
+    /// Apple Journal register, not the Apple Music Replay one. Bigger
+    /// than anything else on the card by an order of magnitude, with
+    /// a serif editorial headline beneath summarizing volume.
     private var yearBlock: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 16) {
             Text("\(review.year)")
-                .font(.system(size: 320, weight: .heavy, design: .rounded))
+                .font(.system(size: 220, weight: .semibold))
                 .foregroundStyle(theme.primary)
-                .frame(height: 280, alignment: .top)
                 .fixedSize()
 
             Text(headline)

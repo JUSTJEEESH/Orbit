@@ -71,15 +71,15 @@ public struct MemoryShareCard: View {
                     .fill(tint)
                     .frame(width: 8, height: 8)
                 Text(eyebrowLabel.uppercased())
-                    .font(.system(size: 16, weight: .semibold, design: .rounded))
-                    .tracking(2.2)
+                    .font(.system(size: 14, weight: .semibold))
+                    .tracking(2.4)
                     .foregroundStyle(tint)
             }
             Text(memory.createdAt.formatted(.dateTime.weekday(.wide).month(.wide).day().year()))
-                .font(.system(size: 22, weight: .medium, design: .rounded))
+                .font(.system(size: 22, weight: .medium))
                 .foregroundStyle(OrbitColor.textSecondary)
             Text(memory.createdAt.formatted(date: .omitted, time: .shortened))
-                .font(.system(size: 18, weight: .regular, design: .rounded))
+                .font(.system(size: 18, weight: .regular))
                 .foregroundStyle(OrbitColor.textTertiary)
         }
     }

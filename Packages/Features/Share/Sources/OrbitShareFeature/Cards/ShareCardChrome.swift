@@ -7,34 +7,37 @@ import OrbitDesignSystem
 ///
 /// Logo + wordmark on the left, a small all-caps stamp on the right.
 /// The stamp is per-card (e.g., "MEMORY", "DAILY RECAP", "YEAR IN
-/// REVIEW · 2026") and replaces the in-line "Daily Recap" eyebrow that
-/// the previous draft put inside the body — moving it up here frees the
-/// hero column for one dominant idea instead of two competing labels.
+/// REVIEW") and replaces the in-line eyebrow inside the body — moving
+/// it up here frees the hero column for one dominant idea.
+///
+/// Typography is plain SF Pro Display (not rounded). Rounded reads
+/// "playful tech app"; default SF reads "editorial," which is the
+/// Apple Journal / Things 3 register we want.
 struct ShareCardTopRail: View {
     let stamp: String?
 
     @Environment(\.orbitTheme) private var theme
 
     var body: some View {
-        HStack(alignment: .center, spacing: 16) {
+        HStack(alignment: .center, spacing: 20) {
             Image("OrbitLogo", bundle: .module)
                 .renderingMode(.template)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 56, height: 56)
+                .frame(width: 76, height: 76)
                 .foregroundStyle(theme.primary)
                 .accessibilityHidden(true)
 
             Text("Orbit")
-                .font(.system(size: 30, weight: .semibold, design: .rounded))
+                .font(.system(size: 42, weight: .semibold))
                 .foregroundStyle(OrbitColor.textPrimary)
 
             Spacer()
 
             if let stamp {
                 Text(stamp.uppercased())
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
-                    .tracking(2.4)
+                    .font(.system(size: 14, weight: .semibold))
+                    .tracking(2.6)
                     .foregroundStyle(OrbitColor.textTertiary)
                     .lineLimit(1)
             }
@@ -65,8 +68,8 @@ struct ShareCardLabeledValue: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
             Text(label.uppercased())
-                .font(.system(size: 14, weight: .medium, design: .rounded))
-                .tracking(1.8)
+                .font(.system(size: 14, weight: .medium))
+                .tracking(2.0)
                 .foregroundStyle(OrbitColor.textTertiary)
                 .frame(width: 360, alignment: .leading)
             Text(value)
@@ -96,7 +99,7 @@ struct ShareCardPublisherLine: View {
                 .foregroundStyle(theme.primary)
                 .accessibilityHidden(true)
             Text("Orbit · Your second brain")
-                .font(.system(size: 16, weight: .medium, design: .rounded))
+                .font(.system(size: 16, weight: .medium))
                 .foregroundStyle(OrbitColor.textTertiary)
             Spacer()
         }
