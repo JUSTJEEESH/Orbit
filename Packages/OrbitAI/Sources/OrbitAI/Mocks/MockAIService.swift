@@ -36,6 +36,12 @@ public actor MockAIService: AIService {
     public func extractTasks(from memory: Memory) async throws -> [MemoryTask] { tasks }
     public func embed(_ text: String) async throws -> [Float] { embedding }
     public func dailyRecap(memories: [Memory], date: Date) async throws -> DailyRecapDraft { recap }
+    public func askOrbit(question: String, memories: [Memory]) async throws -> AskOrbitDraft {
+        AskOrbitDraft(
+            narrative: "Mock answer for \"\(question)\".",
+            citationIndices: Array(0..<min(3, memories.count))
+        )
+    }
 }
 
 public extension ClassificationResult {

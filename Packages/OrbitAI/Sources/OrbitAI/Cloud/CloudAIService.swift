@@ -27,4 +27,8 @@ public actor CloudAIService: AIService {
     public func dailyRecap(memories: [Memory], date: Date) async throws -> DailyRecapDraft {
         throw OrbitError.aiUnavailable
     }
+
+    public func askOrbit(question: String, memories: [Memory]) async throws -> AskOrbitDraft {
+        throw OrbitError.aiUnavailable
+    }
 }

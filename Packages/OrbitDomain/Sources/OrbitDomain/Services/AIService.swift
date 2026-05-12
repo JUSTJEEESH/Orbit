@@ -9,6 +9,26 @@ public protocol AIService: Sendable {
     func extractTasks(from memory: Memory) async throws -> [MemoryTask]
     func embed(_ text: String) async throws -> [Float]
     func dailyRecap(memories: [Memory], date: Date) async throws -> DailyRecapDraft
+    /// Answers a natural-language question using the supplied memories as
+    /// the only source of truth. The returned draft must cite memories by
+    /// their *index* in the input array — the use case resolves those to
+    /// actual `Memory.id` values for the UI.
+    func askOrbit(question: String, memories: [Memory]) async throws -> AskOrbitDraft
+}
+
+/// AI-side payload for `AskOrbit`. The use case stamps `generatedAt`,
+/// resolves citation indices into memory IDs, and wraps everything into
+/// the final domain answer.
+public struct AskOrbitDraft: Sendable, Equatable {
+    public let narrative: String
+    /// Indices into the `memories` array that the answer cites. Out-of-
+    /// bounds indices are silently dropped at the use-case layer.
+    public let citationIndices: [Int]
+
+    public init(narrative: String, citationIndices: [Int]) {
+        self.narrative = narrative
+        self.citationIndices = citationIndices
+    }
 }
 
 /// AI-side payload for `DailyRecap`. The use case is responsible for

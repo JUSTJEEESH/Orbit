@@ -31,6 +31,10 @@ public actor AIServicePipeline: AIService {
         try await firstSuccess { try await $0.dailyRecap(memories: memories, date: date) }
     }
 
+    public func askOrbit(question: String, memories: [Memory]) async throws -> AskOrbitDraft {
+        try await firstSuccess { try await $0.askOrbit(question: question, memories: memories) }
+    }
+
     private func firstSuccess<T>(
         _ run: (any AIService) async throws -> T
     ) async throws -> T {

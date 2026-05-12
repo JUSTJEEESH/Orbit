@@ -12,6 +12,7 @@ public struct HomeView: View {
     private let makeDetailViewModel: @MainActor (UUID) -> MemoryDetailViewModel
     private let onPresentRecap: @MainActor () -> Void
     private let onPresentPatterns: @MainActor () -> Void
+    private let onPresentAskOrbit: @MainActor () -> Void
 
     @State private var memories: [Memory] = []
     @State private var loadState: LoadState = .idle
@@ -30,7 +31,8 @@ public struct HomeView: View {
         clock: any OrbitClock = SystemClock(),
         makeDetailViewModel: @escaping @MainActor (UUID) -> MemoryDetailViewModel,
         onPresentRecap: @escaping @MainActor () -> Void,
-        onPresentPatterns: @escaping @MainActor () -> Void
+        onPresentPatterns: @escaping @MainActor () -> Void,
+        onPresentAskOrbit: @escaping @MainActor () -> Void
     ) {
         self.listMemories = listMemories
         self.generateInsights = generateInsights
@@ -39,6 +41,7 @@ public struct HomeView: View {
         self.makeDetailViewModel = makeDetailViewModel
         self.onPresentRecap = onPresentRecap
         self.onPresentPatterns = onPresentPatterns
+        self.onPresentAskOrbit = onPresentAskOrbit
     }
 
     public var body: some View {
@@ -46,6 +49,7 @@ public struct HomeView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: OrbitSpacing.xxl) {
                     greeting
+                    askOrbitPill
                     content
                     Spacer(minLength: 96)
                 }
@@ -109,6 +113,41 @@ public struct HomeView: View {
         case .failed(let message):
             errorState(message)
         }
+    }
+
+    // MARK: - Ask Orbit pill
+
+    /// Persistent entry point to chat with your memories. Sits above the
+    /// Today section so it's the first interactive surface after the
+    /// greeting — premium product, premium discovery.
+    private var askOrbitPill: some View {
+        Button {
+            Haptics.play(.tap)
+            onPresentAskOrbit()
+        } label: {
+            HStack(spacing: OrbitSpacing.sm) {
+                Image(systemName: "sparkle")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(themeAccent)
+                Text("Ask Orbit anything")
+                    .font(OrbitTypography.body)
+                    .foregroundStyle(OrbitColor.textPrimary)
+                Spacer()
+                Image(systemName: "arrow.up.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(OrbitColor.textTertiary)
+            }
+            .padding(.horizontal, OrbitSpacing.md)
+            .padding(.vertical, OrbitSpacing.sm)
+            .background(themeAccent.opacity(0.10), in: .capsule)
+            .overlay(
+                Capsule()
+                    .stroke(themeAccent.opacity(0.18), lineWidth: 0.5)
+            )
+        }
+        .buttonStyle(OrbitBloomButtonStyle(tint: themeAccent))
+        .accessibilityLabel("Ask Orbit anything")
+        .accessibilityHint("Opens a conversation with your memories.")
     }
 
     private var loadedContent: some View {

@@ -134,6 +134,38 @@ public actor FoundationModelsAdapter: AIService {
         return vector
     }
 
+    public func askOrbit(question: String, memories: [Memory]) async throws -> AskOrbitDraft {
+        // Build a numbered transcript the model can cite by index. Capped
+        // both per-memory (140 chars) and total (8 entries) so we don't
+        // blow context for what is, on paper, a quick lookup.
+        let lines = memories
+            .prefix(8)
+            .enumerated()
+            .map { (index, memory) in Self.askLine(index: index, memory: memory) }
+            .joined(separator: "\n")
+
+        // No on-device model? Fall back to a quietly useful summary so the
+        // feature still feels alive on older iPhones.
+        if case .unavailable = SystemLanguageModel.default.availability {
+            return Self.heuristicAskAnswer(question: question, memories: memories)
+        }
+
+        do {
+            let session = LanguageModelSession(instructions: Self.askInstructions)
+            let response = try await session.respond(
+                to: Self.askPrompt(question: question, bullets: lines),
+                generating: GeneratedAskOrbitAnswer.self
+            )
+            let generated = response.content
+            return AskOrbitDraft(
+                narrative: generated.narrative.trimmingCharacters(in: .whitespacesAndNewlines),
+                citationIndices: generated.citationIndices
+            )
+        } catch {
+            return Self.heuristicAskAnswer(question: question, memories: memories)
+        }
+    }
+
     public func dailyRecap(memories: [Memory], date: Date) async throws -> DailyRecapDraft {
         // Build a compact transcript so we don't blow the model's context.
         // Order chronologically so the recap has a sense of arc.
@@ -266,6 +298,63 @@ public actor FoundationModelsAdapter: AIService {
         }
     }
 
+    // MARK: - Ask Orbit
+
+    private static let askInstructions = """
+    You are Orbit, a calm second brain. Answer the user's question using \
+    ONLY the numbered memories provided. Write 2-3 sentences in warm, \
+    second-person voice. Reference memories by index in [brackets] like \
+    [0] [2]. If the memories don't contain the answer, say so honestly — \
+    never invent facts. Return the citation indices you actually used.
+    """
+
+    private static func askPrompt(question: String, bullets: String) -> String {
+        let safeQuestion = String(question.prefix(280))
+        return """
+        Question: \(safeQuestion)
+
+        Memories (numbered, cite by index):
+        \"\"\"
+        \(bullets)
+        \"\"\"
+
+        Answer.
+        """
+    }
+
+    private static func askLine(index: Int, memory: Memory) -> String {
+        let timeLabel = memory.createdAt.formatted(date: .abbreviated, time: .omitted)
+        let body: String = {
+            switch memory.content {
+            case .text(let s):                                   return s
+            case .voiceNote(let transcript, _):                  return transcript ?? "[voice note]"
+            case .image(let caption):                            return caption ?? "[photo]"
+            case .link(let url, let title, let summary):
+                return [title, summary, url.absoluteString].compactMap { $0 }.first ?? url.absoluteString
+            case .screenshot(let ocr):                           return ocr ?? "[screenshot]"
+            case .location(let name, _, _):                      return name ?? "[place]"
+            }
+        }()
+        return "[\(index)] \(timeLabel) — \(String(body.prefix(180)))"
+    }
+
+    /// Pre-Apple-Intelligence fallback. Builds a serviceable answer from the
+    /// retrieved memories without going through the model — better than
+    /// "Apple Intelligence isn't available" everywhere.
+    private static func heuristicAskAnswer(question: String, memories: [Memory]) -> AskOrbitDraft {
+        let count = memories.count
+        let preview = memories
+            .prefix(2)
+            .map { headline(for: $0) }
+            .joined(separator: " · ")
+        let countWord = count == 1 ? "memory" : "memories"
+        let narrative = preview.isEmpty
+            ? "I found \(count) related \(countWord). Tap any source below to revisit."
+            : "I found \(count) related \(countWord) — \(preview). Tap any source below for the full text."
+        let indices = Array(0..<min(3, memories.count))
+        return AskOrbitDraft(narrative: narrative, citationIndices: indices)
+    }
+
     /// Composed recap when Apple Intelligence isn't available. Reads
     /// naturally enough that the experience doesn't feel broken on
     /// older devices — it just doesn't sing.
@@ -309,6 +398,15 @@ struct GeneratedDailyRecap {
 
     @Guide(description: "Up to three short headline-style strings that summarize the day's most notable captures.")
     let highlights: [String]
+}
+
+@Generable
+struct GeneratedAskOrbitAnswer {
+    @Guide(description: "2-3 sentences in warm second-person voice that answer the question using only the provided memories. Cite memories inline in [brackets] like [0] [2]. If the memories don't contain an answer, say so honestly.")
+    let narrative: String
+
+    @Guide(description: "Indices of the memories that support the answer, matching the [N] numbers shown in the prompt. Maximum five.")
+    let citationIndices: [Int]
 }
 
 @Generable

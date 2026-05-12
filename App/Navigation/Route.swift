@@ -36,6 +36,7 @@ enum AppModal: Hashable, Identifiable {
     case paywall
     case dailyRecap
     case patterns
+    case askOrbit
 
     var id: Self { self }
 }
