@@ -24,11 +24,17 @@ public actor CaptureLiveActivityController {
             activity = nil
         }
 
-        let attributes = CaptureActivityAttributes()
-        let content = ActivityContent(
-            state: .init(startedAt: date),
+        // Spell the generic out: the bare `.init(startedAt:)` form lets Swift
+        // pick the `Encodable`-constrained `ActivityContent` initializer,
+        // which fails because the inferred type is `Encodable`. Naming the
+        // state type pins the right overload and the throwing
+        // `Activity.request` overload becomes reachable again.
+        let state = CaptureActivityAttributes.ContentState(startedAt: date)
+        let content = ActivityContent<CaptureActivityAttributes.ContentState>(
+            state: state,
             staleDate: nil
         )
+        let attributes = CaptureActivityAttributes()
         do {
             activity = try Activity.request(
                 attributes: attributes,
