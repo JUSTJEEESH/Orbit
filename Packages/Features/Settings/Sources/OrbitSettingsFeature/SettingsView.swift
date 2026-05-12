@@ -1,7 +1,7 @@
 import SwiftUI
+import AuthenticationServices
 import OrbitDesignSystem
 import OrbitKit
-import OrbitAI
 import OrbitAccount
 import OrbitStore
 
@@ -20,8 +20,6 @@ public struct SettingsView: View {
     private let iconError: String?
     private let onPresentPaywall: @MainActor () -> Void
     private let onDeleteAccount: @MainActor @Sendable () async throws -> Void
-    private let onReindexAll: @MainActor @Sendable () async -> Void
-    private let onPreviewYearInReview: @MainActor () -> Void
     private let onDismiss: @MainActor () -> Void
 
     /// Reminders sync state surfaced through plain values so this feature
@@ -46,7 +44,6 @@ public struct SettingsView: View {
 
     @State private var showDeleteConfirmation = false
     @State private var deletionError: String?
-    @State private var isReindexing = false
 
     public init(
         appConfig: AppConfig,
@@ -58,8 +55,6 @@ public struct SettingsView: View {
         iconError: String? = nil,
         onPresentPaywall: @escaping @MainActor () -> Void,
         onDeleteAccount: @escaping @MainActor @Sendable () async throws -> Void,
-        onReindexAll: @escaping @MainActor @Sendable () async -> Void,
-        onPreviewYearInReview: @escaping @MainActor () -> Void = {},
         onDismiss: @escaping @MainActor () -> Void,
         remindersSyncEnabled: Bool = false,
         remindersAuthorized: Bool = false,
@@ -84,8 +79,6 @@ public struct SettingsView: View {
         self.iconError = iconError
         self.onPresentPaywall = onPresentPaywall
         self.onDeleteAccount = onDeleteAccount
-        self.onReindexAll = onReindexAll
-        self.onPreviewYearInReview = onPreviewYearInReview
         self.onDismiss = onDismiss
         self.remindersSyncEnabled = remindersSyncEnabled
         self.remindersAuthorized = remindersAuthorized
@@ -115,9 +108,6 @@ public struct SettingsView: View {
                         subscriptionSection
                         aboutSection
                         dangerSection
-                        #if DEBUG
-                        developerSection
-                        #endif
                     }
                     .padding(.vertical, OrbitSpacing.lg)
                 }
@@ -168,13 +158,17 @@ public struct SettingsView: View {
     private var accountCardContent: some View {
         switch account.state {
         case .guest:
-            VStack(alignment: .leading, spacing: OrbitSpacing.xs) {
-                Text("Guest")
-                    .font(OrbitTypography.bodyEmphasized)
-                    .foregroundStyle(OrbitColor.textPrimary)
-                Text("Sign in with Apple to sync across your devices.")
-                    .font(OrbitTypography.footnote)
-                    .foregroundStyle(OrbitColor.textSecondary)
+            VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Guest")
+                        .font(OrbitTypography.bodyEmphasized)
+                        .foregroundStyle(OrbitColor.textPrimary)
+                    Text("Sign in with Apple to keep your memories yours — backed up to your iCloud, available across your devices.")
+                        .font(OrbitTypography.footnote)
+                        .foregroundStyle(OrbitColor.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                signInWithAppleButton
             }
 
         case .signedIn(let identity):
@@ -196,15 +190,37 @@ public struct SettingsView: View {
             }
 
         case .revoked:
-            VStack(alignment: .leading, spacing: OrbitSpacing.xs) {
-                Text("Apple ID changed")
-                    .font(OrbitTypography.bodyEmphasized)
-                    .foregroundStyle(OrbitColor.textPrimary)
-                Text("Your previous sign-in is no longer valid. Please sign in again from the welcome flow.")
-                    .font(OrbitTypography.footnote)
-                    .foregroundStyle(OrbitColor.textSecondary)
+            VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Apple ID changed")
+                        .font(OrbitTypography.bodyEmphasized)
+                        .foregroundStyle(OrbitColor.textPrimary)
+                    Text("Your previous sign-in is no longer valid. Tap below to sign in again.")
+                        .font(OrbitTypography.footnote)
+                        .foregroundStyle(OrbitColor.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                signInWithAppleButton
             }
         }
+    }
+
+    /// Sign in with Apple — shared by the `.guest` and `.revoked` rows.
+    /// Routes the result through `AccountService.handle(_:)`, which is
+    /// the same path Onboarding uses, so the post-sign-in state lands
+    /// identically regardless of where the user signed in from.
+    private var signInWithAppleButton: some View {
+        SignInWithAppleButton(.signIn) { request in
+            request.requestedScopes = [.fullName, .email]
+        } onCompletion: { result in
+            account.handle(result)
+            if case .signedIn = account.state {
+                Haptics.play(.success)
+            }
+        }
+        .signInWithAppleButtonStyle(.black)
+        .frame(height: 48)
+        .clipShape(.rect(cornerRadius: OrbitRadius.md))
     }
 
     // MARK: - Appearance
@@ -598,120 +614,54 @@ public struct SettingsView: View {
 
     // MARK: - About
 
+    /// Replace these with the live URLs before App Store submission.
+    /// Apple's review will fail if the privacy + terms links point at
+    /// 404s; the support address must accept incoming mail.
+    private static let privacyURL  = URL(string: "https://orbit.app/privacy")!
+    private static let termsURL    = URL(string: "https://orbit.app/terms")!
+    private static let supportURL  = URL(string: "mailto:support@orbit.app")!
+
     private var aboutSection: some View {
         VStack(alignment: .leading, spacing: OrbitSpacing.md) {
             OrbitSectionHeader("About")
             OrbitCard {
-                VStack(alignment: .leading, spacing: OrbitSpacing.xxs) {
+                VStack(alignment: .leading, spacing: OrbitSpacing.xs) {
                     keyValue("Version", "\(appConfig.marketingVersion) (\(appConfig.buildNumber))")
                     OrbitDivider()
-                    keyValue("Environment", appConfig.environment.rawValue.capitalized)
+                    linkRow(title: "Privacy Policy", systemImage: "lock.shield", url: Self.privacyURL)
+                    OrbitDivider()
+                    linkRow(title: "Terms of Use", systemImage: "doc.text", url: Self.termsURL)
+                    OrbitDivider()
+                    linkRow(title: "Contact Support", systemImage: "envelope", url: Self.supportURL)
                 }
             }
         }
     }
 
-    #if DEBUG
-    private var developerSection: some View {
-        VStack(alignment: .leading, spacing: OrbitSpacing.md) {
-            OrbitSectionHeader("Developer")
-
-            aiStatusCard
-
-            OrbitCard {
-                VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
-                    Text("Re-categorize all memories")
-                        .font(OrbitTypography.bodyEmphasized)
-                        .foregroundStyle(OrbitColor.textPrimary)
-                    Text("Re-runs the AI pipeline against every existing memory so older rows pick up the latest categorization rules.")
-                        .font(OrbitTypography.footnote)
-                        .foregroundStyle(OrbitColor.textSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                    OrbitButton(
-                        isReindexing ? "Reindexing…" : "Run now",
-                        systemImage: "arrow.triangle.2.circlepath",
-                        style: .secondary
-                    ) {
-                        isReindexing = true
-                        Task { @MainActor in
-                            await onReindexAll()
-                            isReindexing = false
-                            Haptics.play(.success)
-                        }
-                    }
-                    .disabled(isReindexing)
-                }
+    /// Tappable About row that opens an external URL. Uses a chevron
+    /// glyph to telegraph the leave-the-app affordance the way iOS
+    /// Settings does.
+    private func linkRow(title: String, systemImage: String, url: URL) -> some View {
+        Link(destination: url) {
+            HStack(spacing: OrbitSpacing.sm) {
+                Image(systemName: systemImage)
+                    .scaledFont(size: 16, weight: .semibold)
+                    .foregroundStyle(currentTheme.primary)
+                    .frame(width: 24)
+                Text(title)
+                    .font(OrbitTypography.callout)
+                    .foregroundStyle(OrbitColor.textPrimary)
+                Spacer()
+                Image(systemName: "arrow.up.right")
+                    .scaledFont(size: 13, weight: .semibold)
+                    .foregroundStyle(OrbitColor.textTertiary)
             }
-
-            Button {
-                Haptics.play(.tap)
-                onPreviewYearInReview()
-            } label: {
-                OrbitCard {
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Preview Year in Review")
-                                .font(OrbitTypography.bodyEmphasized)
-                                .foregroundStyle(OrbitColor.textPrimary)
-                            Text("Show the annual reflection surface for the most-recently-completed year, ignoring the December gate.")
-                                .font(OrbitTypography.footnote)
-                                .foregroundStyle(OrbitColor.textSecondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .foregroundStyle(OrbitColor.textTertiary)
-                    }
-                }
-            }
-            .buttonStyle(.plain)
-
-            NavigationLink {
-                DesignSystemGallery()
-            } label: {
-                OrbitCard {
-                    HStack {
-                        Text("Design System Gallery")
-                            .font(OrbitTypography.bodyEmphasized)
-                            .foregroundStyle(OrbitColor.textPrimary)
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .foregroundStyle(OrbitColor.textTertiary)
-                    }
-                }
-            }
-            .buttonStyle(.plain)
+            .padding(.vertical, OrbitSpacing.xs)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel(title)
     }
-
-    private var aiStatusCard: some View {
-        let status = SystemModelStatus.current()
-        return OrbitCard {
-            VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
-                HStack(spacing: OrbitSpacing.xs) {
-                    Image(systemName: status.isAvailable
-                          ? "checkmark.circle.fill"
-                          : "exclamationmark.triangle.fill")
-                        .scaledFont(size: 16, weight: .semibold)
-                        .foregroundStyle(status.isAvailable
-                                         ? OrbitColor.success
-                                         : OrbitColor.warning)
-                    Text("Apple Intelligence")
-                        .font(OrbitTypography.bodyEmphasized)
-                        .foregroundStyle(OrbitColor.textPrimary)
-                    Spacer()
-                    Text(status.summary)
-                        .font(OrbitTypography.footnote)
-                        .foregroundStyle(OrbitColor.textSecondary)
-                }
-                Text(status.detail)
-                    .font(OrbitTypography.footnote)
-                    .foregroundStyle(OrbitColor.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-    }
-    #endif
 
     private func keyValue(_ key: String, _ value: String) -> some View {
         HStack {

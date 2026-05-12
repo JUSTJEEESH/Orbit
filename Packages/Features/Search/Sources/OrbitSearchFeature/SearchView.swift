@@ -14,10 +14,6 @@ public struct SearchView: View {
     public var body: some View {
         OrbitScreen {
             VStack(alignment: .leading, spacing: OrbitSpacing.md) {
-                Text("Search")
-                    .font(OrbitTypography.largeTitle)
-                    .padding(.top, OrbitSpacing.lg)
-
                 OrbitTextField(
                     "Ask anything",
                     text: Binding(
@@ -37,6 +33,8 @@ public struct SearchView: View {
                 content
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .frame(maxHeight: .infinity, alignment: .top)
+            .padding(.top, OrbitSpacing.md)
             .padding(.bottom, 96)
         }
         .onAppear { fieldFocus = true }

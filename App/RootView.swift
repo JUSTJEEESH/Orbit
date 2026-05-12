@@ -70,8 +70,6 @@ struct RootView: View {
                     iconError: env.iconService.lastError,
                     onPresentPaywall: { env.requestedModal = .paywall },
                     onDeleteAccount: { try await env.wipeAccountAndData() },
-                    onReindexAll: { await env.reenrichAllMemories() },
-                    onPreviewYearInReview: { env.requestedModal = .yearInReview },
                     onDismiss: { env.requestedModal = nil },
                     remindersSyncEnabled: env.remindersSync.isEnabled,
                     remindersAuthorized: env.remindersSync.isAuthorized,
@@ -246,8 +244,7 @@ struct RootView: View {
 
             NavigationStack {
                 SearchView(viewModel: SearchViewModel(searchMemories: env.searchMemories))
-                    .navigationTitle("")
-                    .navigationBarTitleDisplayMode(.inline)
+                    .navigationTitle("Search")
                     .toolbar { profileToolbar }
             }
             .tag(AppTab.search)
