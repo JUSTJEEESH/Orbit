@@ -208,12 +208,7 @@ struct RootView: View {
                 ),
                 habitsViewModel: HabitsViewModel(listHabits: env.listHabits),
                 refreshToken: env.memoryListVersion,
-                onOpenMemory: { _ in
-                    // Reading-list rows would jump into MemoryDetail here, but
-                    // the Tasks tab doesn't host a NavigationStack
-                    // destination for memories yet — surface as a no-op so the
-                    // segmented switch stays focused on read-status changes.
-                }
+                makeDetailViewModel: makeDetailViewModel
             )
                 .tag(AppTab.tasks)
                 .tabItem { Label(AppTab.tasks.title, systemImage: AppTab.tasks.systemImage) }

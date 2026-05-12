@@ -2,6 +2,7 @@ import SwiftUI
 import OrbitDesignSystem
 import OrbitDomain
 import OrbitKit
+import OrbitMemoryDetailFeature
 
 public struct TasksView: View {
     public enum Section: Hashable {
@@ -22,8 +23,9 @@ public struct TasksView: View {
     @State private var editing: MemoryTask?
     @State private var showingCompleted: Bool = false
     @State private var section: Section = .tasks
+    @State private var sheetMemory: MemoryIDBox?
     private let refreshToken: Int
-    private let onOpenMemory: @MainActor (UUID) -> Void
+    private let makeDetailViewModel: @MainActor (UUID) -> MemoryDetailViewModel
 
     @Environment(\.orbitTheme) private var orbitTheme
 
@@ -32,13 +34,13 @@ public struct TasksView: View {
         readingViewModel: ReadingListViewModel,
         habitsViewModel: HabitsViewModel,
         refreshToken: Int = 0,
-        onOpenMemory: @escaping @MainActor (UUID) -> Void = { _ in }
+        makeDetailViewModel: @escaping @MainActor (UUID) -> MemoryDetailViewModel
     ) {
         self._model = State(initialValue: viewModel)
         self._readingModel = State(initialValue: readingViewModel)
         self._habitsModel = State(initialValue: habitsViewModel)
         self.refreshToken = refreshToken
-        self.onOpenMemory = onOpenMemory
+        self.makeDetailViewModel = makeDetailViewModel
     }
 
     public var body: some View {
@@ -51,7 +53,10 @@ public struct TasksView: View {
                     Group {
                         switch section {
                         case .tasks:   tasksBody
-                        case .reading: ReadingListView(model: readingModel, onOpenMemory: onOpenMemory)
+                        case .reading: ReadingListView(
+                            model: readingModel,
+                            onOpenMemory: { id in sheetMemory = MemoryIDBox(id: id) }
+                        )
                         case .habits:  HabitsView(model: habitsModel)
                         }
                     }
@@ -84,6 +89,26 @@ public struct TasksView: View {
             )
             .presentationDetents([.large])
         }
+        .sheet(item: $sheetMemory) { box in
+            NavigationStack {
+                MemoryDetailView(
+                    viewModel: makeDetailViewModel(box.id),
+                    onDeleted: { sheetMemory = nil }
+                )
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Close") { sheetMemory = nil }
+                    }
+                }
+            }
+        }
+    }
+
+    /// `sheet(item:)` requires an Identifiable; wrap the bare UUID so we
+    /// can drive the memory-detail sheet from a single state value when
+    /// the user taps a Reading-list row.
+    private struct MemoryIDBox: Identifiable {
+        let id: UUID
     }
 
     private var sectionPicker: some View {
