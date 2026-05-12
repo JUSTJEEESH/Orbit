@@ -45,7 +45,14 @@ private struct ContentRoot: View {
             } else {
                 OnboardingView(
                     account: environment.account,
-                    onComplete: { environment.onboardingComplete = true }
+                    onComplete: { environment.onboardingComplete = true },
+                    // Wire the Reminders permission row to enable the full
+                    // sync flow (request EventKit + flip the toggle on) so
+                    // users discover it during onboarding, not buried in
+                    // Settings.
+                    onEnableReminders: {
+                        await environment.remindersSync.enable()
+                    }
                 )
                 .orbitTheme(environment.themeService.theme)
             }

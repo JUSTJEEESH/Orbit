@@ -1,5 +1,6 @@
 import Foundation
 import AVFoundation
+import EventKit
 import Speech
 import Photos
 import UserNotifications
@@ -31,6 +32,7 @@ public final class PermissionsCoordinator {
         case speechRecognition
         case photos
         case notifications
+        case reminders
 
         public var title: String {
             switch self {
@@ -38,6 +40,7 @@ public final class PermissionsCoordinator {
             case .speechRecognition: return "Speech Recognition"
             case .photos:            return "Photos"
             case .notifications:     return "Notifications"
+            case .reminders:         return "Reminders"
             }
         }
 
@@ -47,6 +50,7 @@ public final class PermissionsCoordinator {
             case .speechRecognition: return "waveform"
             case .photos:            return "photo.fill"
             case .notifications:     return "bell.fill"
+            case .reminders:         return "checklist"
             }
         }
 
@@ -60,6 +64,8 @@ public final class PermissionsCoordinator {
                 return "Save screenshots and photos as memories."
             case .notifications:
                 return "A gentle nudge to revisit your day with Daily Recap."
+            case .reminders:
+                return "Mirror your tasks to iOS Reminders — manage them from Siri, CarPlay, or the Reminders app."
             }
         }
     }
@@ -83,6 +89,7 @@ public final class PermissionsCoordinator {
         statuses[.speechRecognition] = currentSpeechStatus()
         statuses[.photos]            = currentPhotosStatus()
         statuses[.notifications]     = await currentNotificationsStatus()
+        statuses[.reminders]         = currentRemindersStatus()
     }
 
     /// Triggers the system prompt for a single permission and updates the
@@ -94,7 +101,16 @@ public final class PermissionsCoordinator {
         case .speechRecognition: return await requestSpeech()
         case .photos:            return await requestPhotos()
         case .notifications:     return await requestNotifications()
+        case .reminders:         return await requestReminders()
         }
+    }
+
+    /// Lets callers update the cached status without rerunning the system
+    /// prompt. Useful when a downstream service (e.g. RemindersSyncService)
+    /// has already invoked the EventKit dialog and we want the coordinator's
+    /// UI to reflect the outcome.
+    public func setStatus(_ status: Status, for permission: Permission) {
+        statuses[permission] = status
     }
 
     // MARK: - Microphone
@@ -197,6 +213,36 @@ public final class PermissionsCoordinator {
             return status
         } catch {
             statuses[.notifications] = .denied
+            return .denied
+        }
+    }
+
+    // MARK: - Reminders
+
+    private func currentRemindersStatus() -> Status {
+        switch EKEventStore.authorizationStatus(for: .reminder) {
+        case .fullAccess:    return .granted
+        case .writeOnly:     return .granted
+        case .denied:        return .denied
+        case .restricted:    return .denied
+        case .notDetermined: return .notDetermined
+        @unknown default:    return .notDetermined
+        }
+    }
+
+    /// Default Reminders request — purely an EventKit permission prompt.
+    /// Onboarding overrides this path through a closure that *also*
+    /// flips Orbit's own sync toggle on, so the user gets one-tap
+    /// "permission + enable" instead of two separate steps.
+    private func requestReminders() async -> Status {
+        let store = EKEventStore()
+        do {
+            let granted = try await store.requestFullAccessToReminders()
+            let status: Status = granted ? .granted : .denied
+            statuses[.reminders] = status
+            return status
+        } catch {
+            statuses[.reminders] = .denied
             return .denied
         }
     }

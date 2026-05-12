@@ -19,6 +19,11 @@ struct OnboardingView: View {
     @State private var permissions = PermissionsCoordinator()
     @Bindable var account: AccountService
     let onComplete: @MainActor () -> Void
+    /// Custom Reminders handler. When supplied, the Reminders row's Allow
+    /// tap routes through this closure (which both prompts EventKit AND
+    /// flips the sync toggle on) instead of just the bare permission
+    /// request. ContentRoot wires this to `env.remindersSync.enable()`.
+    let onEnableReminders: (@MainActor @Sendable () async -> Bool)?
 
     @Environment(\.orbitTheme) private var orbitTheme
 
@@ -201,7 +206,7 @@ struct OnboardingView: View {
         case .notDetermined:
             Button {
                 Haptics.play(.tap)
-                Task { _ = await permissions.request(permission) }
+                Task { await handleRequest(for: permission) }
             } label: {
                 Text("Allow")
                     .font(OrbitTypography.footnote)
@@ -213,6 +218,19 @@ struct OnboardingView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Allow \(permission.title)")
+        }
+    }
+
+    /// Routes the Reminders permission through the host-supplied handler
+    /// so a single "Allow" tap both grants EventKit access and turns Orbit
+    /// sync on. Other permissions use the coordinator's built-in request.
+    @MainActor
+    private func handleRequest(for permission: PermissionsCoordinator.Permission) async {
+        if permission == .reminders, let onEnableReminders {
+            let granted = await onEnableReminders()
+            permissions.setStatus(granted ? .granted : .denied, for: .reminders)
+        } else {
+            _ = await permissions.request(permission)
         }
     }
 
