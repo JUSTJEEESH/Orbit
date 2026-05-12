@@ -37,6 +37,16 @@ public final class PermissionsCoordinator {
         case calendar
         case health
 
+        /// Permissions worth asking during first-launch onboarding —
+        /// the ones that gate core features (capture, transcription,
+        /// the Daily Recap chime). Everything else is an opt-in
+        /// integration the user enables from Settings when they
+        /// discover the feature, which is kinder than confronting
+        /// them with seven Allow buttons on day one.
+        public static let onboardingEssentials: [Permission] = [
+            .notifications, .microphone, .speechRecognition, .photos
+        ]
+
         public var title: String {
             switch self {
             case .microphone:        return "Microphone"

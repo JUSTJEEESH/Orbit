@@ -150,28 +150,45 @@ struct OnboardingView: View {
     // MARK: - 4. Permissions
 
     private var permissionsScene: some View {
-        VStack(alignment: .leading, spacing: OrbitSpacing.xl) {
+        // ScrollView is the safety net — small iPhones (especially in
+        // Larger Text accessibility sizes) would otherwise clip the
+        // Continue button off the bottom. The slim list below means
+        // it almost never has to actually scroll on stock text size.
+        VStack(spacing: 0) {
             Spacer().frame(height: OrbitSpacing.xxxl + 8)
-            VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
-                Text("A few things to enable")
-                    .font(OrbitTypography.largeTitle)
-                    .foregroundStyle(OrbitColor.textPrimary)
-                Text("Tap to allow each. You can change these later in Settings.")
-                    .font(OrbitTypography.body)
-                    .foregroundStyle(OrbitColor.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            VStack(spacing: OrbitSpacing.sm) {
-                ForEach(PermissionsCoordinator.Permission.allCases, id: \.self) { permission in
-                    permissionRow(for: permission)
+            ScrollView {
+                VStack(alignment: .leading, spacing: OrbitSpacing.xl) {
+                    VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+                        Text("A few things to enable")
+                            .font(OrbitTypography.largeTitle)
+                            .foregroundStyle(OrbitColor.textPrimary)
+                        Text("These power voice notes and your Daily Recap. You can change them anytime in Settings.")
+                            .font(OrbitTypography.body)
+                            .foregroundStyle(OrbitColor.textSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    VStack(spacing: OrbitSpacing.sm) {
+                        ForEach(PermissionsCoordinator.Permission.onboardingEssentials, id: \.self) { permission in
+                            permissionRow(for: permission)
+                        }
+                    }
+                    // Quiet signpost for the integrations we deliberately
+                    // *don't* surface up front (Reminders, Calendar,
+                    // Health). Discoverable, not demanded.
+                    Text("Want sync with Reminders, Calendar, or Health? Enable any of them from Settings whenever you're ready.")
+                        .font(OrbitTypography.footnote)
+                        .foregroundStyle(OrbitColor.textTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
+                .padding(.horizontal, OrbitSpacing.pageHorizontal)
+                .padding(.bottom, OrbitSpacing.lg)
             }
-            Spacer(minLength: OrbitSpacing.md)
+            .scrollIndicators(.hidden)
+
             primaryButton("Continue") { goNext() }
-                .padding(.horizontal, 0)
+                .padding(.horizontal, OrbitSpacing.pageHorizontal)
+                .padding(.bottom, OrbitSpacing.xxxl)
         }
-        .padding(.horizontal, OrbitSpacing.pageHorizontal)
-        .padding(.bottom, OrbitSpacing.xxxl)
     }
 
     private func permissionRow(for permission: PermissionsCoordinator.Permission) -> some View {
@@ -239,31 +256,39 @@ struct OnboardingView: View {
     /// permissions use the coordinator's built-in request.
     @MainActor
     private func handleRequest(for permission: PermissionsCoordinator.Permission) async {
+        // For Reminders/Calendar/Health we route through the host
+        // closure so a single Allow tap both grants the OS permission
+        // AND flips Orbit's downstream sync on. The closure's return
+        // value isn't authoritative for the row's checkmark, though —
+        // it can return false for non-permission reasons (no
+        // Reminders list available on a fresh device, no writeable
+        // Calendar source, etc.). Always refresh from the system
+        // source of truth after running, so the green check / orange
+        // X reflects the actual EventKit / HealthKit auth state, not
+        // Orbit's sync result.
         switch permission {
         case .reminders:
             if let onEnableReminders {
-                let granted = await onEnableReminders()
-                permissions.setStatus(granted ? .granted : .denied, for: .reminders)
+                _ = await onEnableReminders()
             } else {
                 _ = await permissions.request(permission)
             }
         case .calendar:
             if let onEnableCalendar {
-                let granted = await onEnableCalendar()
-                permissions.setStatus(granted ? .granted : .denied, for: .calendar)
+                _ = await onEnableCalendar()
             } else {
                 _ = await permissions.request(permission)
             }
         case .health:
             if let onEnableHealth {
-                let granted = await onEnableHealth()
-                permissions.setStatus(granted ? .granted : .denied, for: .health)
+                _ = await onEnableHealth()
             } else {
                 _ = await permissions.request(permission)
             }
         default:
             _ = await permissions.request(permission)
         }
+        await permissions.refreshAll()
     }
 
     // MARK: - 5. Sign in
