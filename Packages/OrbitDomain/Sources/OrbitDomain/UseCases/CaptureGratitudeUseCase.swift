@@ -25,9 +25,12 @@ public struct CaptureGratitudeUseCase: Sendable {
             .map { (index, text) in "\(index + 1). \(text)" }
             .joined(separator: "\n")
 
+        // `Tag.Origin.ai` is the non-user-typed origin we have today —
+        // good enough to mark gratitude as system-generated alongside the
+        // category tags the AI pipeline applies.
         return try await captureMemory(
             content: .text(body),
-            tags: [Tag(name: GratitudeTag.name, origin: .system)]
+            tags: [Tag(name: GratitudeTag.name, origin: .ai)]
         )
     }
 }
