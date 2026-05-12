@@ -171,7 +171,7 @@ public final class CaptureViewModel {
             voiceState = .recording(elapsed: 0, levels: [])
             // Surface the recording in the Dynamic Island + Lock Screen.
             // Silently no-ops if Live Activities are off in iOS Settings.
-            await liveActivity.start()
+            liveActivity.start()
             recordTask = Task { @MainActor [weak self] in
                 guard let self else { return }
                 var collected: [Float] = []
@@ -196,7 +196,7 @@ public final class CaptureViewModel {
         recordTask = nil
         // End the activity as soon as the user stops capturing, regardless
         // of what comes next (transcription, silent-clip cleanup, error).
-        await liveActivity.end()
+        liveActivity.end()
         do {
             let result = try await recorder.stop()
             self.recorder = nil
@@ -234,7 +234,7 @@ public final class CaptureViewModel {
             try? await mediaStorage.delete(filename: file.filename)
         }
         // Ensure the activity is gone if the user discards mid-recording too.
-        await liveActivity.end()
+        liveActivity.end()
         voiceState = .idle
     }
 
