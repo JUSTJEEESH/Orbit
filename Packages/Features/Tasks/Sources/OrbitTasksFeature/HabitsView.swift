@@ -111,16 +111,11 @@ struct HabitsView: View {
     }
 
     private var emptyState: some View {
-        VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
-            Text("No habits yet")
-                .font(OrbitTypography.title2)
-                .foregroundStyle(OrbitColor.textPrimary)
-            Text("Write \"ran 5k\" or \"meditated\" in a capture — Orbit will track the cadence here over time.")
-                .font(OrbitTypography.body)
-                .foregroundStyle(OrbitColor.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(.horizontal, OrbitSpacing.pageHorizontal)
+        OrbitEmptyState(
+            systemImage: "repeat",
+            title: "No habits yet",
+            message: "Write \"ran 5k\" or \"meditated\" in a capture — Orbit will track the cadence here over time."
+        )
         .padding(.top, OrbitSpacing.xxl)
     }
 }

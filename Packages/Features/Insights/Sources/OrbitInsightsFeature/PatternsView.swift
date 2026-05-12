@@ -107,15 +107,12 @@ public struct PatternsView: View {
     }
 
     private var emptyState: some View {
-        VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
-            Text("Not enough yet")
-                .font(OrbitTypography.title2)
-                .foregroundStyle(OrbitColor.textPrimary)
-            Text("Orbit needs a few weeks of captures before patterns become meaningful. Keep going — quiet shapes emerge as you do.")
-                .font(OrbitTypography.body)
-                .foregroundStyle(OrbitColor.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
+        OrbitEmptyState(
+            systemImage: "chart.line.uptrend.xyaxis",
+            title: "Not enough yet",
+            message: "Orbit needs a few weeks of captures before patterns become meaningful. Keep going — quiet shapes emerge as you do."
+        )
+        .padding(.top, OrbitSpacing.xxl)
     }
 }
 

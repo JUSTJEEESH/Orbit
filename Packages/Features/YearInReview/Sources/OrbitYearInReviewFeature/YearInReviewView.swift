@@ -316,15 +316,11 @@ public struct YearInReviewView: View {
     }
 
     private func failedState(_ message: String) -> some View {
-        VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
-            Text("Couldn't build your year")
-                .font(OrbitTypography.title3)
-            Text(message)
-                .font(OrbitTypography.footnote)
-                .foregroundStyle(OrbitColor.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(.horizontal, OrbitSpacing.pageHorizontal)
+        OrbitErrorState(
+            title: "Couldn't build your year",
+            message: message,
+            onRetry: { Task { await model.load() } }
+        )
         .padding(.top, OrbitSpacing.xxxl)
     }
 

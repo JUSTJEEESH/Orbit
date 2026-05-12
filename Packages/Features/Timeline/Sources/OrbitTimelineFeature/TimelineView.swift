@@ -119,29 +119,20 @@ public struct TimelineView: View {
     }
 
     private var emptyState: some View {
-        VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
-            Text("This is where your memory lives")
-                .font(OrbitTypography.title2)
-                .foregroundStyle(OrbitColor.textPrimary)
-            Text("Tap the round button to save your first thought. Orbit organizes the rest.")
-                .font(OrbitTypography.body)
-                .foregroundStyle(OrbitColor.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(.horizontal, OrbitSpacing.pageHorizontal)
+        OrbitEmptyState(
+            systemImage: "tray",
+            title: "This is where your memory lives",
+            message: "Tap the round button to save your first thought. Orbit organizes the rest."
+        )
         .padding(.vertical, OrbitSpacing.xxxl)
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func errorState(_ message: String) -> some View {
-        VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
-            Text("Couldn't load timeline")
-                .font(OrbitTypography.title3)
-            Text(message)
-                .font(OrbitTypography.callout)
-                .foregroundStyle(OrbitColor.textSecondary)
-        }
-        .padding(.horizontal, OrbitSpacing.pageHorizontal)
+        OrbitErrorState(
+            title: "Couldn't load timeline",
+            message: message
+        )
+        .padding(.top, OrbitSpacing.xxl)
     }
 
     private var sections: [TimelineSection] {

@@ -83,18 +83,19 @@ public struct MemoryDetailView: View {
                 .padding(.top, OrbitSpacing.xxxl)
                 .frame(maxWidth: .infinity)
         case .missing:
-            Text("Memory not found")
-                .font(OrbitTypography.title3)
-                .foregroundStyle(OrbitColor.textSecondary)
-                .padding(.top, OrbitSpacing.xxxl)
+            OrbitEmptyState(
+                systemImage: "questionmark.circle",
+                title: "Memory not found",
+                message: "It may have been deleted from another device, or never finished syncing."
+            )
+            .padding(.top, OrbitSpacing.xxxl)
         case .failed(let message):
-            VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
-                Text("Couldn't load memory")
-                    .font(OrbitTypography.title3)
-                Text(message)
-                    .font(OrbitTypography.footnote)
-                    .foregroundStyle(OrbitColor.textSecondary)
-            }
+            OrbitErrorState(
+                title: "Couldn't load memory",
+                message: message,
+                onRetry: { Task { await model.load() } }
+            )
+            .padding(.top, OrbitSpacing.xxxl)
         case .loaded:
             if let memory = model.memory {
                 loadedContent(memory)

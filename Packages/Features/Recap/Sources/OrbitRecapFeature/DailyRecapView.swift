@@ -70,25 +70,21 @@ public struct DailyRecapView: View {
     }
 
     private var emptyState: some View {
-        VStack(alignment: .leading, spacing: OrbitSpacing.md) {
-            Text("Nothing to recap yet")
-                .font(OrbitTypography.title2)
-                .foregroundStyle(OrbitColor.textPrimary)
-            Text("Capture a few moments today and Orbit will reflect the day back to you.")
-                .font(OrbitTypography.body)
-                .foregroundStyle(OrbitColor.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
+        OrbitEmptyState(
+            systemImage: "sun.horizon",
+            title: "Nothing to recap yet",
+            message: "Capture a few moments today and Orbit will reflect the day back to you."
+        )
+        .padding(.top, OrbitSpacing.xxl)
     }
 
     private func errorState(_ message: String) -> some View {
-        VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
-            Text("Couldn't generate recap")
-                .font(OrbitTypography.title3)
-            Text(message)
-                .font(OrbitTypography.footnote)
-                .foregroundStyle(OrbitColor.textSecondary)
-        }
+        OrbitErrorState(
+            title: "Couldn't generate recap",
+            message: message,
+            onRetry: { Task { await model.load() } }
+        )
+        .padding(.top, OrbitSpacing.xxl)
     }
 
     private func loaded(_ recap: DailyRecap) -> some View {

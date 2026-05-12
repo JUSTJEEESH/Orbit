@@ -301,15 +301,11 @@ public struct TasksView: View {
     }
 
     private var emptyState: some View {
-        VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
-            Text("Nothing on your plate")
-                .font(OrbitTypography.title2)
-                .foregroundStyle(OrbitColor.textPrimary)
-            Text("Tasks land here when you write \"I should…\" or \"remind me to…\" in a memory. We'll suggest them — you decide what becomes real.")
-                .font(OrbitTypography.body)
-                .foregroundStyle(OrbitColor.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
+        OrbitEmptyState(
+            systemImage: "checkmark.circle",
+            title: "Nothing on your plate",
+            message: "Tasks land here when you write \"I should…\" or \"remind me to…\" in a memory. We'll suggest them — you decide what becomes real."
+        )
         .padding(.top, OrbitSpacing.xxl)
     }
 }

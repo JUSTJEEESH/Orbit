@@ -148,16 +148,11 @@ struct ReadingListView: View {
     }
 
     private var emptyState: some View {
-        VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
-            Text("Nothing on the shelf yet")
-                .font(OrbitTypography.title2)
-                .foregroundStyle(OrbitColor.textPrimary)
-            Text("Save a link or write \"I want to read…\" in a memory. Orbit will surface it here.")
-                .font(OrbitTypography.body)
-                .foregroundStyle(OrbitColor.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(.horizontal, OrbitSpacing.pageHorizontal)
+        OrbitEmptyState(
+            systemImage: "book.closed",
+            title: "Nothing on the shelf yet",
+            message: "Save a link or write \"I want to read…\" in a memory. Orbit will surface it here."
+        )
         .padding(.top, OrbitSpacing.xxl)
     }
 }

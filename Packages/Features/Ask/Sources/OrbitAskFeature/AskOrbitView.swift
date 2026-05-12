@@ -260,17 +260,12 @@ public struct AskOrbitView: View {
     }
 
     private func failureView(_ message: String) -> some View {
-        VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
-            Text("Couldn't answer")
-                .font(OrbitTypography.title3)
-                .foregroundStyle(OrbitColor.textPrimary)
-            Text(message)
-                .font(OrbitTypography.callout)
-                .foregroundStyle(OrbitColor.textSecondary)
-            Button("Try again") { model.submit() }
-                .font(OrbitTypography.bodyEmphasized)
-                .foregroundStyle(orbitTheme.primary)
-        }
+        OrbitErrorState(
+            title: "Couldn't answer",
+            message: message,
+            onRetry: { model.submit() }
+        )
+        .padding(.top, OrbitSpacing.xl)
     }
 
     /// Binding helper so the conditional sheet stays clean inside the body

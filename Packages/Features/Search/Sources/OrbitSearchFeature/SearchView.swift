@@ -107,26 +107,20 @@ public struct SearchView: View {
     }
 
     private var emptyState: some View {
-        VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
-            Text("No matches yet")
-                .font(OrbitTypography.title3)
-            Text("Try different words, or capture this thought as a new memory.")
-                .font(OrbitTypography.callout)
-                .foregroundStyle(OrbitColor.textSecondary)
-        }
-        .padding(.top, OrbitSpacing.lg)
+        OrbitEmptyState(
+            systemImage: "magnifyingglass",
+            title: "No matches yet",
+            message: "Try different words, or capture this thought as a new memory."
+        )
+        .padding(.top, OrbitSpacing.xxl)
     }
 
     private func errorState(_ message: String) -> some View {
-        VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
-            Text("Search failed")
-                .font(OrbitTypography.title3)
-            Text(message)
-                .font(OrbitTypography.footnote)
-                .foregroundStyle(OrbitColor.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(.top, OrbitSpacing.lg)
+        OrbitErrorState(
+            title: "Search failed",
+            message: message
+        )
+        .padding(.top, OrbitSpacing.xxl)
     }
 
     private var resultList: some View {

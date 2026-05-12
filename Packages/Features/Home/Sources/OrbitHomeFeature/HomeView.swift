@@ -585,33 +585,20 @@ public struct HomeView: View {
     // MARK: - Empty / error
 
     private var emptyState: some View {
-        VStack(alignment: .leading, spacing: OrbitSpacing.md) {
-            Text("A calm place to land")
-                .font(OrbitTypography.title2)
-                .foregroundStyle(OrbitColor.textPrimary)
-            Text("Tap the circle below to add your first thought. Orbit organizes the rest — quietly.")
-                .font(OrbitTypography.body)
-                .foregroundStyle(OrbitColor.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
-            HStack(spacing: OrbitSpacing.xs) {
-                Image(systemName: "arrow.down")
-                    .font(.system(size: 14, weight: .semibold))
-                Text("Capture")
-                    .font(OrbitTypography.caption)
-            }
-            .foregroundStyle(OrbitColor.textTertiary)
-            .padding(.top, OrbitSpacing.sm)
-        }
+        OrbitEmptyState(
+            systemImage: "sparkles",
+            title: "A calm place to land",
+            message: "Tap the circle below to add your first thought. Orbit organizes the rest — quietly."
+        )
+        .padding(.top, OrbitSpacing.xxxl)
     }
 
     private func errorState(_ message: String) -> some View {
-        VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
-            Text("Couldn't load home")
-                .font(OrbitTypography.title3)
-            Text(message)
-                .font(OrbitTypography.footnote)
-                .foregroundStyle(OrbitColor.textSecondary)
-        }
+        OrbitErrorState(
+            title: "Couldn't load home",
+            message: message
+        )
+        .padding(.top, OrbitSpacing.xxl)
     }
 
     // MARK: - Helpers
