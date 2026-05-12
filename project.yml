@@ -46,6 +46,8 @@ schemes:
         OrbitShareExtension: [run, test, profile, analyze, archive]
         OrbitWidgets: [run, test, profile, analyze, archive]
         OrbitWatch: [run, test, profile, analyze, archive]
+        OrbitCameraCapture: [run, test, profile, analyze, archive]
+        OrbitSafariExtension: [run, test, profile, analyze, archive]
     run:
       config: Debug
       storeKitConfiguration: Configuration.storekit
@@ -143,6 +145,10 @@ targets:
         embed: true
       - target: OrbitWidgets
         embed: true
+      - target: OrbitCameraCapture
+        embed: true
+      - target: OrbitSafariExtension
+        embed: true
 
   OrbitShareExtension:
     type: app-extension
@@ -202,6 +208,58 @@ targets:
         product: OrbitDomain
       - package: OrbitWorkspace
         product: OrbitPersistence
+
+  # Lock Screen + Action Button + Control Center camera capture. Built
+  # against the iOS 18+ LockedCameraCapture framework so users can fire a
+  # photo into Orbit without unlocking. Captures land in a per-session App
+  # Group directory; the host app's CaptureInboxService drains them on the
+  # next foreground.
+  OrbitCameraCapture:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: Extensions/CameraCapture
+    info:
+      path: Extensions/CameraCapture/Info.plist
+      properties:
+        CFBundleDisplayName: Orbit
+        NSCameraUsageDescription: Capture moments straight to your Orbit timeline without unlocking.
+        EXAppExtensionAttributes:
+          EXExtensionPointIdentifier: com.apple.lockedcamera.capture
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app.camera
+        CODE_SIGN_ENTITLEMENTS: Extensions/CameraCapture/Orbit.entitlements
+        SKIP_INSTALL: YES
+        # The system instantiates this extension directly from its bundle
+        # so there's no objc symbol to look up — but we still need to make
+        # sure the launch identifier matches what Apple's launch services
+        # expect.
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.photography
+
+  # Safari Web Extension. JS side (toolbar action + context menu + popup)
+  # sends a "clip" message via `browser.runtime.sendNativeMessage` to the
+  # SafariWebExtensionHandler, which writes a JSON envelope into the App
+  # Group inbox. Host drains on next foreground.
+  OrbitSafariExtension:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: Extensions/SafariExtension
+    info:
+      path: Extensions/SafariExtension/Info.plist
+      properties:
+        CFBundleDisplayName: Orbit
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.Safari.web-extension
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).SafariWebExtensionHandler
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app.safari
+        CODE_SIGN_ENTITLEMENTS: Extensions/SafariExtension/Orbit.entitlements
+        SKIP_INSTALL: YES
 
   # watchOS companion. Capture-only app: records voice memos on the wrist,
   # transfers them via WatchConnectivity to the iPhone, which persists +

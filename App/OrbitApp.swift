@@ -75,11 +75,17 @@ private struct ContentRoot: View {
             // Pull any task completions the user toggled in iOS Reminders
             // while Orbit was suspended.
             await environment.remindersSync.pullCompletionUpdates()
+            // Begin listening for Lock-Screen camera content + drain any
+            // Safari clips that arrived while we were off-screen.
+            environment.captureInbox.start()
+            await environment.captureInbox.drain()
         }
         .onChange(of: scenePhase) { _, newPhase in
-            // Re-pull on every foreground so completions surface promptly.
+            // Re-pull on every foreground so completions + clips surface
+            // promptly.
             if newPhase == .active {
                 Task { await environment.remindersSync.pullCompletionUpdates() }
+                Task { await environment.captureInbox.drain() }
             }
         }
         .onOpenURL { url in

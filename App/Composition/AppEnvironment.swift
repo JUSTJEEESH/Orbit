@@ -38,6 +38,7 @@ final class AppEnvironment {
     let iconService: IconService
     let notifications: NotificationService
     let watchSession: WatchSessionService
+    let captureInbox: CaptureInboxService
     let remindersSync: RemindersSyncService
     let healthKit: HealthKitService
 
@@ -270,6 +271,12 @@ final class AppEnvironment {
             captureMemory: captureMemoryUseCase,
             speechTranscriber: speechTranscriber
         )
+        self.captureInbox = CaptureInboxService(
+            appGroupIdentifier: appConfig.appGroupIdentifier,
+            mediaStorage: mediaStorage,
+            captureMemory: captureMemoryUseCase,
+            clock: clock
+        )
         self.listMemories = ListMemoriesUseCase(repository: memories)
         self.updateMemory = UpdateMemoryUseCase(repository: memories, clock: clock)
         self.deleteMemory = DeleteMemoryUseCase(repository: memories)
@@ -325,6 +332,15 @@ final class AppEnvironment {
         // Same pattern for the watch session — the receiver needs to nudge
         // the timeline + schedule enrichment after each watch capture.
         self.watchSession.onCapture = { [weak self] memoryID in
+            guard let self else { return }
+            self.memoriesDidChange()
+            self.scheduleEnrichment(for: memoryID)
+        }
+
+        // Lock-Screen camera + Safari Web Extension drop captures into
+        // shared inboxes while Orbit is off-screen. Same downstream as a
+        // watch capture: bump the timeline, run enrichment + Spotlight.
+        self.captureInbox.onCapture = { [weak self] memoryID in
             guard let self else { return }
             self.memoriesDidChange()
             self.scheduleEnrichment(for: memoryID)

@@ -1,0 +1,89 @@
+/* Mirrors the host app's calm, solid-color aesthetic.
+ * No gradients, no glow — just bold contrast on a single surface.
+ */
+
+:root {
+  color-scheme: light dark;
+  --bg: #FBFAF7;
+  --fg: #1A1A1A;
+  --muted: #6B6B6B;
+  --accent: #1A1A1A;
+  --accent-fg: #FFFFFF;
+  --hairline: rgba(0, 0, 0, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111111;
+    --fg: #F4F1EB;
+    --muted: #9A9A9A;
+    --accent: #F4F1EB;
+    --accent-fg: #111111;
+    --hairline: rgba(255, 255, 255, 0.10);
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.popup {
+  width: 260px;
+  padding: 18px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.popup__mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--muted);
+}
+
+.popup__dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.popup__primary {
+  appearance: none;
+  border: 0;
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: var(--accent-fg);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 80ms ease, opacity 120ms ease;
+}
+
+.popup__primary:active { transform: scale(0.98); }
+.popup__primary:disabled { opacity: 0.5; cursor: default; }
+
+.popup__status {
+  margin: 0;
+  min-height: 1.2em;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.popup__status[data-state="ok"] { color: var(--fg); }
+.popup__status[data-state="err"] { color: #C04A2C; }

@@ -1,0 +1,22 @@
+{
+  "extension_name": {
+    "message": "Orbit",
+    "description": "The display name of the extension."
+  },
+  "extension_description": {
+    "message": "Send the current page or a highlight to your Orbit timeline.",
+    "description": "Shown in Safari's extension preferences."
+  },
+  "action_title": {
+    "message": "Save to Orbit",
+    "description": "Tooltip on the Safari toolbar button."
+  },
+  "context_save_selection": {
+    "message": "Save selection to Orbit",
+    "description": "Context menu shown when text is selected."
+  },
+  "context_save_page": {
+    "message": "Save page to Orbit",
+    "description": "Context menu shown when no selection is active."
+  }
+}
