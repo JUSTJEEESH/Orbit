@@ -1,66 +1,112 @@
 import SwiftUI
 import OrbitDesignSystem
 
-/// Shared brand chrome used at the top of every share card.
+// MARK: - Top rail
+
+/// Asymmetric brand chrome at the top of every card.
 ///
-/// Three vertically-stacked elements give every card the same opening
-/// move: the real Orbit glyph (tinted with the active theme's accent),
-/// the wordmark in SF Rounded, and a single-line tagline that tells
-/// anyone who sees the shared image what Orbit actually is. The logo
-/// asset is a vector SVG with template-rendering enabled, so theme
-/// color always paints through.
-struct ShareCardBrandMark: View {
+/// Logo + wordmark on the left, a small all-caps stamp on the right.
+/// The stamp is per-card (e.g., "MEMORY", "DAILY RECAP", "YEAR IN
+/// REVIEW · 2026") and replaces the in-line "Daily Recap" eyebrow that
+/// the previous draft put inside the body — moving it up here frees the
+/// hero column for one dominant idea instead of two competing labels.
+struct ShareCardTopRail: View {
+    let stamp: String?
+
     @Environment(\.orbitTheme) private var theme
 
     var body: some View {
-        HStack(alignment: .center, spacing: 18) {
+        HStack(alignment: .center, spacing: 16) {
             Image("OrbitLogo", bundle: .module)
                 .renderingMode(.template)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 68, height: 68)
+                .frame(width: 56, height: 56)
                 .foregroundStyle(theme.primary)
                 .accessibilityHidden(true)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Orbit")
-                    .font(.system(size: 34, weight: .semibold, design: .rounded))
-                    .foregroundStyle(OrbitColor.textPrimary)
-                Text("Your second brain")
-                    .font(.system(size: 18, weight: .medium, design: .rounded))
-                    .foregroundStyle(OrbitColor.textTertiary)
-            }
+            Text("Orbit")
+                .font(.system(size: 30, weight: .semibold, design: .rounded))
+                .foregroundStyle(OrbitColor.textPrimary)
+
             Spacer()
+
+            if let stamp {
+                Text(stamp.uppercased())
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .tracking(2.4)
+                    .foregroundStyle(OrbitColor.textTertiary)
+                    .lineLimit(1)
+            }
         }
     }
 }
 
-/// Bottom-of-card meta line. Subtle, all-caps, generous tracking — the
-/// kind of footer Apple Music / Things 3 share cards use to ground the
-/// composition.
-struct ShareCardFooterLine: View {
-    let leading: String
-    let trailing: String?
+// MARK: - Hairlines and dividers
+
+/// Hairline rule — the kind Apple Journal uses to separate sections
+/// without screaming for attention. 1pt at the rendered scale, which
+/// at 1080-wide produces a visually crisp ~3px line on retina exports.
+struct ShareCardHairline: View {
+    var body: some View {
+        Rectangle()
+            .fill(OrbitColor.separator)
+            .frame(height: 1)
+    }
+}
+
+/// Small all-caps eyebrow paired with a value. Used for stat rows on
+/// the Year-in-Review card; the long fixed label column lines them up
+/// vertically the way a magazine masthead does.
+struct ShareCardLabeledValue: View {
+    let label: String
+    let value: String
 
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
-            Text(leading.uppercased())
+            Text(label.uppercased())
                 .font(.system(size: 14, weight: .medium, design: .rounded))
-                .tracking(1.4)
+                .tracking(1.8)
                 .foregroundStyle(OrbitColor.textTertiary)
+                .frame(width: 360, alignment: .leading)
+            Text(value)
+                .font(.system(size: 36, weight: .semibold))
+                .foregroundStyle(OrbitColor.textPrimary)
+                .lineLimit(1)
             Spacer()
-            if let trailing {
-                Text(trailing.uppercased())
-                    .font(.system(size: 14, weight: .medium, design: .rounded))
-                    .tracking(1.4)
-                    .foregroundStyle(OrbitColor.textTertiary)
-            }
         }
     }
 }
 
+// MARK: - Bottom publisher line
+
+/// "Publisher" line at the very bottom of every card. Reads like the
+/// imprint on a printed page. Repeats the logo at small size + tagline
+/// so a card shared in isolation always explains what Orbit is.
+struct ShareCardPublisherLine: View {
+    @Environment(\.orbitTheme) private var theme
+
+    var body: some View {
+        HStack(alignment: .center, spacing: 10) {
+            Image("OrbitLogo", bundle: .module)
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 22, height: 22)
+                .foregroundStyle(theme.primary)
+                .accessibilityHidden(true)
+            Text("Orbit · Your second brain")
+                .font(.system(size: 16, weight: .medium, design: .rounded))
+                .foregroundStyle(OrbitColor.textTertiary)
+            Spacer()
+        }
+    }
+}
+
+// MARK: - Surface
+
 /// Outer container used by every card — fixed 1080×1350 pixel canvas,
-/// solid background, edge padding. The background resolves to
+/// solid background, generous padding. The background resolves to
 /// `OrbitColor.background` which is itself a dynamic light/dark color,
 /// so the card respects whatever `colorScheme` the renderer is told to
 /// use. Renders an opaque rect (no rounded corners) because share
@@ -79,8 +125,8 @@ struct ShareCardSurface<Content: View>: View {
             VStack(alignment: .leading, spacing: 0) {
                 content()
             }
-            .padding(.horizontal, 64)
-            .padding(.vertical, 72)
+            .padding(.horizontal, 72)
+            .padding(.vertical, 80)
         }
         .frame(width: 1080, height: 1350)
     }
