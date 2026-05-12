@@ -1,0 +1,56 @@
+# Netlify build & runtime configuration for the Orbit marketing site.
+
+[build]
+  publish = "."
+  # Static HTML — no build step. Netlify serves files as-is.
+
+[build.processing]
+  skip_processing = false
+
+[build.processing.html]
+  pretty_urls = true   # /privacy → privacy.html, /terms → terms.html, etc.
+
+[build.processing.css]
+  bundle = true
+  minify = true
+
+[build.processing.js]
+  bundle = true
+  minify = true
+
+# ---------------------------------------------------------------------
+# Security headers — sane defaults for a static marketing site.
+# ---------------------------------------------------------------------
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options          = "DENY"
+    X-Content-Type-Options   = "nosniff"
+    Referrer-Policy          = "strict-origin-when-cross-origin"
+    Permissions-Policy       = "interest-cohort=(), camera=(), microphone=(), geolocation=()"
+    Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
+
+# ---------------------------------------------------------------------
+# Cache: long for static assets, short for HTML so updates ship fast.
+# ---------------------------------------------------------------------
+
+[[headers]]
+  for = "/styles.css"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, must-revalidate"
+
+[[headers]]
+  for = "/script.js"
+  [headers.values]
+    Cache-Control = "public, max-age=86400, must-revalidate"
+
+[[headers]]
+  for = "/*.svg"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "/*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
