@@ -46,10 +46,10 @@ public struct AskOrbitView: View {
                         .font(OrbitTypography.bodyEmphasized)
                 }
             }
-            .sheet(item: detailBinding) { id in
+            .sheet(item: detailBinding) { box in
                 NavigationStack {
                     MemoryDetailView(
-                        viewModel: makeDetailViewModel(id),
+                        viewModel: makeDetailViewModel(box.id),
                         onDeleted: { sheetOnMemory = nil }
                     )
                     .toolbar {
