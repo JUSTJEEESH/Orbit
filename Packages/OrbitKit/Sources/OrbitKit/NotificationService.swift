@@ -20,7 +20,7 @@ import Observation
 @MainActor
 @Observable
 public final class NotificationService {
-    public static let recapNotificationID = "com.orbit.dailyRecap"
+    public nonisolated static let recapNotificationID = "com.orbit.dailyRecap"
 
     private static let enabledKey = "orbit.notifications.dailyRecap.enabled"
     private static let hourKey = "orbit.notifications.dailyRecap.hour"
