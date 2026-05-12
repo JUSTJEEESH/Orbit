@@ -36,6 +36,7 @@ final class AppEnvironment {
     let entitlements: EntitlementService
     let themeService: ThemeService
     let iconService: IconService
+    let notifications: NotificationService
 
     let captureMemory: CaptureMemoryUseCase
     let listMemories: ListMemoriesUseCase
@@ -139,7 +140,8 @@ final class AppEnvironment {
         account: AccountService,
         entitlements: EntitlementService,
         themeService: ThemeService = ThemeService(),
-        iconService: IconService = IconService()
+        iconService: IconService = IconService(),
+        notifications: NotificationService = NotificationService()
     ) {
         self.appConfig = appConfig
         self.clock = clock
@@ -157,8 +159,16 @@ final class AppEnvironment {
         self.entitlements = entitlements
         self.themeService = themeService
         self.iconService = iconService
+        self.notifications = notifications
 
         self.onboardingComplete = UserDefaults.standard.bool(forKey: Self.onboardingKey)
+
+        // Notifications can't reach the modal binding directly (it lives on
+        // env). Hand the service a closure that flips the binding when the
+        // user taps the delivered recap notification.
+        self.notifications.onOpenRecap = { [weak self] in
+            self?.requestedModal = .dailyRecap
+        }
 
         self.captureMemory = CaptureMemoryUseCase(repository: memories, clock: clock)
         self.listMemories = ListMemoriesUseCase(repository: memories)

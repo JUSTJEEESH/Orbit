@@ -50,7 +50,10 @@ private struct ContentRoot: View {
         }
         .environment(environment)
         .tint(OrbitColor.textPrimary)
-        .task { await environment.account.refreshCredentialState() }
+        .task {
+            await environment.account.refreshCredentialState()
+            await environment.notifications.bootstrap()
+        }
         .onOpenURL { url in
             guard let link = DeepLink(url: url) else {
                 OrbitLog.app.info("Ignored unrecognized URL: \(url.absoluteString, privacy: .public)")

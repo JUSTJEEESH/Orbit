@@ -9,6 +9,7 @@ public struct SettingsView: View {
     private let appConfig: AppConfig
     @Bindable private var account: AccountService
     @Bindable private var entitlements: EntitlementService
+    @Bindable private var notifications: NotificationService
     private let currentTheme: OrbitTheme
     private let onSelectTheme: @MainActor @Sendable (OrbitTheme) async -> Void
     private let iconError: String?
@@ -25,6 +26,7 @@ public struct SettingsView: View {
         appConfig: AppConfig,
         account: AccountService,
         entitlements: EntitlementService,
+        notifications: NotificationService,
         currentTheme: OrbitTheme,
         onSelectTheme: @escaping @MainActor @Sendable (OrbitTheme) async -> Void,
         iconError: String? = nil,
@@ -36,6 +38,7 @@ public struct SettingsView: View {
         self.appConfig = appConfig
         self.account = account
         self.entitlements = entitlements
+        self.notifications = notifications
         self.currentTheme = currentTheme
         self.onSelectTheme = onSelectTheme
         self.iconError = iconError
@@ -52,6 +55,7 @@ public struct SettingsView: View {
                     VStack(alignment: .leading, spacing: OrbitSpacing.xl) {
                         accountSection
                         appearanceSection
+                        notificationsSection
                         subscriptionSection
                         aboutSection
                         dangerSection
@@ -213,6 +217,96 @@ public struct SettingsView: View {
             )
         }
         .buttonStyle(.plain)
+    }
+
+    // MARK: - Notifications
+
+    private var notificationsSection: some View {
+        VStack(alignment: .leading, spacing: OrbitSpacing.md) {
+            OrbitSectionHeader("Notifications", subtitle: "A gentle nudge to revisit your day.")
+            OrbitCard {
+                VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+                    Toggle(isOn: dailyRecapToggleBinding) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Daily Recap")
+                                .font(OrbitTypography.bodyEmphasized)
+                                .foregroundStyle(OrbitColor.textPrimary)
+                            Text("A quiet reminder each evening to reflect.")
+                                .font(OrbitTypography.footnote)
+                                .foregroundStyle(OrbitColor.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .tint(currentTheme.primary)
+
+                    if notifications.isEnabled {
+                        OrbitDivider()
+                        HStack {
+                            Text("Time")
+                                .font(OrbitTypography.callout)
+                                .foregroundStyle(OrbitColor.textSecondary)
+                            Spacer()
+                            DatePicker(
+                                "Time",
+                                selection: recapTimeBinding,
+                                displayedComponents: .hourAndMinute
+                            )
+                            .labelsHidden()
+                        }
+                    }
+
+                    if notifications.authorizationStatus == .denied {
+                        VStack(alignment: .leading, spacing: OrbitSpacing.xs) {
+                            Text("Notifications are turned off for Orbit in iOS Settings.")
+                                .font(OrbitTypography.footnote)
+                                .foregroundStyle(OrbitColor.warning)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Button("Open iOS Settings") {
+                                notifications.openSystemSettings()
+                            }
+                            .font(OrbitTypography.footnote)
+                            .foregroundStyle(currentTheme.primary)
+                        }
+                    }
+                }
+            }
+        }
+        .task { await notifications.refreshAuthorizationStatus() }
+    }
+
+    private var dailyRecapToggleBinding: Binding<Bool> {
+        Binding(
+            get: { notifications.isEnabled },
+            set: { newValue in
+                Task { @MainActor in
+                    await notifications.setEnabled(newValue)
+                    if newValue, notifications.isEnabled {
+                        Haptics.play(.success)
+                    } else if newValue, !notifications.isEnabled {
+                        // Permission was denied; surface a soft failure.
+                        Haptics.play(.warning)
+                    }
+                }
+            }
+        )
+    }
+
+    private var recapTimeBinding: Binding<Date> {
+        Binding(
+            get: {
+                Calendar.current.date(from: notifications.time)
+                    ?? Calendar.current.startOfDay(for: Date())
+            },
+            set: { newDate in
+                let comps = Calendar.current.dateComponents([.hour, .minute], from: newDate)
+                Task { @MainActor in
+                    await notifications.setTime(
+                        hour: comps.hour ?? 20,
+                        minute: comps.minute ?? 0
+                    )
+                }
+            }
+        )
     }
 
     // MARK: - Subscription

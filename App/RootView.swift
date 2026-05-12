@@ -51,6 +51,7 @@ struct RootView: View {
                     appConfig: env.appConfig,
                     account: env.account,
                     entitlements: env.entitlements,
+                    notifications: env.notifications,
                     currentTheme: env.themeService.theme,
                     onSelectTheme: { theme in
                         env.themeService.select(theme)
