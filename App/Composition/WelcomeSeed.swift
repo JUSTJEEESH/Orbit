@@ -47,7 +47,7 @@ extension AppEnvironment {
             Tap the + to add. Open Home for today's recap. Ask Orbit a question to find \
             what you've forgotten.
 
-            When you're ready, swipe left to delete this. The rest is yours.
+            When you've added a few of your own, you can delete this one. The rest is yours.
             """)
 
         await seedWelcomeText("""

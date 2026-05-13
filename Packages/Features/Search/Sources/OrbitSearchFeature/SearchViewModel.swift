@@ -43,10 +43,15 @@ public final class SearchViewModel {
     public private(set) var state: LoadState = .idle
 
     private let searchMemories: SearchMemoriesUseCase
+    private let removeMemory: @MainActor @Sendable (UUID) async throws -> Void
     private var pendingSearch: Task<Void, Never>?
 
-    public init(searchMemories: SearchMemoriesUseCase) {
+    public init(
+        searchMemories: SearchMemoriesUseCase,
+        removeMemory: @escaping @MainActor @Sendable (UUID) async throws -> Void
+    ) {
         self.searchMemories = searchMemories
+        self.removeMemory = removeMemory
     }
 
     /// Debounced search. Cancels the previous in-flight query each time the
@@ -80,6 +85,28 @@ public final class SearchViewModel {
             state = hits.isEmpty ? .empty : .results
         } catch {
             state = .failed(String(describing: error))
+        }
+    }
+
+    /// Optimistically drops the result row, then calls the injected
+    /// remove use case. On failure restores the snapshot — the row
+    /// snaps back into place rather than leaving the user with a stale
+    /// "deleted" UI while the memory is still on disk.
+    public func delete(id: UUID) {
+        let snapshot = results
+        let snapshotState = state
+        results.removeAll { $0.memory.id == id }
+        if results.isEmpty && state == .results {
+            state = .empty
+        }
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                try await self.removeMemory(id)
+            } catch {
+                self.results = snapshot
+                self.state = snapshotState
+            }
         }
     }
 }

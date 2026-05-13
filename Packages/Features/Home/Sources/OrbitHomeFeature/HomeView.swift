@@ -8,6 +8,7 @@ public struct HomeView: View {
     private let listMemories: ListMemoriesUseCase
     private let generateInsights: GenerateInsightsUseCase
     private let listOnThisDay: ListOnThisDayUseCase
+    private let removeMemory: @MainActor @Sendable (UUID) async throws -> Void
     private let refreshToken: Int
     private let clock: any OrbitClock
     private let makeDetailViewModel: @MainActor (UUID) -> MemoryDetailViewModel
@@ -38,6 +39,7 @@ public struct HomeView: View {
         generateInsights: GenerateInsightsUseCase,
         listOnThisDay: ListOnThisDayUseCase,
         loadGratitudeStatus: LoadGratitudeStatusUseCase,
+        removeMemory: @escaping @MainActor @Sendable (UUID) async throws -> Void,
         refreshToken: Int = 0,
         clock: any OrbitClock = SystemClock(),
         makeDetailViewModel: @escaping @MainActor (UUID) -> MemoryDetailViewModel,
@@ -53,6 +55,7 @@ public struct HomeView: View {
         self.generateInsights = generateInsights
         self.listOnThisDay = listOnThisDay
         self.loadGratitudeStatus = loadGratitudeStatus
+        self.removeMemory = removeMemory
         self.refreshToken = refreshToken
         self.clock = clock
         self.makeDetailViewModel = makeDetailViewModel
@@ -95,6 +98,7 @@ public struct HomeView: View {
                 OnThisDayView(
                     content: onThisDay,
                     makeDetailViewModel: makeDetailViewModel,
+                    removeMemory: removeMemory,
                     onDismiss: { showOnThisDay = false }
                 )
                 .presentationDetents([.large])
@@ -570,6 +574,33 @@ public struct HomeView: View {
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel("\(eyebrowLabel(for: memory)). \(headlineText(for: memory)). \(memory.createdAt.formatted(.relative(presentation: .named)))")
                 .accessibilityHint("Double-tap to open.")
+                // Native long-press → contextMenu. Cards can't host
+                // List swipeActions, so this is the parallel
+                // destructive affordance for the Recent feed.
+                .contextMenu {
+                    Button(role: .destructive) {
+                        deleteMemory(memory)
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                }
+                .accessibilityAction(named: "Delete memory") {
+                    deleteMemory(memory)
+                }
+            }
+        }
+    }
+
+    private func deleteMemory(_ memory: Memory) {
+        Haptics.play(.warning)
+        // Optimistic remove so the card animates out immediately. If
+        // the underlying delete fails, the next reload restores it.
+        memories.removeAll { $0.id == memory.id }
+        Task { @MainActor in
+            do {
+                try await removeMemory(memory.id)
+            } catch {
+                await reload()
             }
         }
     }

@@ -255,6 +255,7 @@ struct RootView: View {
                     generateInsights: env.generateInsights,
                     listOnThisDay: env.listOnThisDay,
                     loadGratitudeStatus: env.loadGratitudeStatus,
+                    removeMemory: { id in try await env.removeMemory(id: id) },
                     refreshToken: env.memoryListVersion,
                     clock: env.clock,
                     makeDetailViewModel: makeDetailViewModel,
@@ -318,7 +319,10 @@ struct RootView: View {
 
             NavigationStack {
                 SearchView(
-                    viewModel: SearchViewModel(searchMemories: env.searchMemories),
+                    viewModel: SearchViewModel(
+                        searchMemories: env.searchMemories,
+                        removeMemory: { id in try await env.removeMemory(id: id) }
+                    ),
                     makeDetailViewModel: makeDetailViewModel
                 )
                     .navigationTitle("Search")

@@ -11,18 +11,26 @@ import OrbitMemoryDetailFeature
 public struct OnThisDayView: View {
     private let content: OnThisDayContent
     private let makeDetailViewModel: @MainActor (UUID) -> MemoryDetailViewModel
+    private let removeMemory: @MainActor @Sendable (UUID) async throws -> Void
     private let onDismiss: @MainActor () -> Void
 
+    /// Locally-hidden IDs for optimistic deletes. The sheet doesn't
+    /// own its content (Home passes an immutable snapshot in), so
+    /// rather than mutate that we just filter it on render. The next
+    /// time Home reopens the sheet it pulls a fresh snapshot.
+    @State private var hiddenIDs: Set<UUID> = []
     @Namespace private var heroNamespace
     @Environment(\.orbitTheme) private var orbitTheme
 
     public init(
         content: OnThisDayContent,
         makeDetailViewModel: @escaping @MainActor (UUID) -> MemoryDetailViewModel,
+        removeMemory: @escaping @MainActor @Sendable (UUID) async throws -> Void,
         onDismiss: @escaping @MainActor () -> Void
     ) {
         self.content = content
         self.makeDetailViewModel = makeDetailViewModel
+        self.removeMemory = removeMemory
         self.onDismiss = onDismiss
     }
 
@@ -97,7 +105,7 @@ public struct OnThisDayView: View {
             .accessibilityAddTraits(.isHeader)
 
             VStack(spacing: OrbitSpacing.sm) {
-                ForEach(group.memories) { memory in
+                ForEach(group.memories.filter { !hiddenIDs.contains($0.id) }) { memory in
                     memoryCard(memory)
                 }
             }
@@ -129,6 +137,30 @@ public struct OnThisDayView: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(eyebrowLabel(for: memory)). \(headlineText(for: memory)).")
         .accessibilityHint("Double-tap to open.")
+        .contextMenu {
+            Button(role: .destructive) {
+                deleteMemory(memory)
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        }
+        .accessibilityAction(named: "Delete memory") {
+            deleteMemory(memory)
+        }
+    }
+
+    private func deleteMemory(_ memory: Memory) {
+        Haptics.play(.warning)
+        // Optimistic hide. If the underlying remove fails we surface
+        // the memory again so the user doesn't see a phantom delete.
+        hiddenIDs.insert(memory.id)
+        Task { @MainActor in
+            do {
+                try await removeMemory(memory.id)
+            } catch {
+                hiddenIDs.remove(memory.id)
+            }
+        }
     }
 
     // MARK: - Helpers

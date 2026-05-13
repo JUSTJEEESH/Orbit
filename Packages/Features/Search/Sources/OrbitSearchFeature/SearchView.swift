@@ -165,6 +165,23 @@ public struct SearchView: View {
                         Haptics.play(.selection)
                         fieldFocus = false
                     })
+                    // Native long-press → contextMenu pattern (matches
+                    // Apple Notes' gallery view, Photos, etc.). Cards
+                    // can't host swipeActions the way List rows can,
+                    // so this is the parallel destructive affordance
+                    // for non-Timeline surfaces.
+                    .contextMenu {
+                        Button(role: .destructive) {
+                            Haptics.play(.warning)
+                            model.delete(id: result.memory.id)
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
+                    .accessibilityAction(named: "Delete memory") {
+                        Haptics.play(.warning)
+                        model.delete(id: result.memory.id)
+                    }
                 }
             }
         }
