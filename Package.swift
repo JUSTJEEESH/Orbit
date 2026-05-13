@@ -115,7 +115,7 @@ let package = Package(
         ),
         .target(
             name: "OrbitSearchFeature",
-            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain"],
+            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitMemoryDetailFeature"],
             path: "Packages/Features/Search/Sources/OrbitSearchFeature",
             swiftSettings: swiftSettings
         ),

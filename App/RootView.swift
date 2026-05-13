@@ -248,7 +248,10 @@ struct RootView: View {
                 .toolbar { profileToolbar }
 
             NavigationStack {
-                SearchView(viewModel: SearchViewModel(searchMemories: env.searchMemories))
+                SearchView(
+                    viewModel: SearchViewModel(searchMemories: env.searchMemories),
+                    makeDetailViewModel: makeDetailViewModel
+                )
                     .navigationTitle("Search")
                     .toolbar { profileToolbar }
             }

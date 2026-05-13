@@ -2,13 +2,21 @@ import SwiftUI
 import OrbitDesignSystem
 import OrbitDomain
 import OrbitKit
+import OrbitMemoryDetailFeature
 
 public struct SearchView: View {
     @State private var model: SearchViewModel
     @FocusState private var fieldFocus: Bool
+    @Namespace private var heroNamespace
 
-    public init(viewModel: SearchViewModel) {
+    private let makeDetailViewModel: @MainActor (UUID) -> MemoryDetailViewModel
+
+    public init(
+        viewModel: SearchViewModel,
+        makeDetailViewModel: @escaping @MainActor (UUID) -> MemoryDetailViewModel
+    ) {
         self._model = State(initialValue: viewModel)
+        self.makeDetailViewModel = makeDetailViewModel
     }
 
     public var body: some View {
@@ -37,7 +45,22 @@ public struct SearchView: View {
             .padding(.top, OrbitSpacing.md)
             .padding(.bottom, 96)
         }
-        .onAppear { fieldFocus = true }
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") {
+                    fieldFocus = false
+                }
+                .foregroundStyle(OrbitColor.textPrimary)
+            }
+        }
+        .navigationDestination(for: MemoryDetailRoute.self) { route in
+            MemoryDetailView(
+                viewModel: makeDetailViewModel(route.memoryID),
+                onDeleted: {}
+            )
+            .navigationTransition(.zoom(sourceID: route.memoryID, in: heroNamespace))
+        }
     }
 
     private var scopeChips: some View {
@@ -125,11 +148,22 @@ public struct SearchView: View {
         ScrollView {
             LazyVStack(spacing: OrbitSpacing.sm) {
                 ForEach(model.results) { result in
-                    SearchResultRow(result: result)
+                    NavigationLink(value: MemoryDetailRoute(memoryID: result.memory.id)) {
+                        SearchResultRow(result: result)
+                    }
+                    .buttonStyle(OrbitBloomButtonStyle(
+                        tint: OrbitCategoryPalette.tint(for: result.memory.ai.category)
+                    ))
+                    .matchedTransitionSource(id: result.memory.id, in: heroNamespace)
+                    .simultaneousGesture(TapGesture().onEnded {
+                        Haptics.play(.selection)
+                        fieldFocus = false
+                    })
                 }
             }
         }
         .scrollIndicators(.hidden)
+        .scrollDismissesKeyboard(.interactively)
     }
 }
 
@@ -186,11 +220,13 @@ private struct SearchResultRow: View {
                             .font(OrbitTypography.body)
                             .foregroundStyle(OrbitColor.textPrimary)
                             .lineLimit(3)
+                            .multilineTextAlignment(.leading)
                         if let snippet = result.highlight, snippet != headline {
                             Text(snippet)
                                 .font(OrbitTypography.footnote)
                                 .foregroundStyle(OrbitColor.textSecondary)
                                 .lineLimit(2)
+                                .multilineTextAlignment(.leading)
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -199,6 +235,7 @@ private struct SearchResultRow: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(eyebrowLabel). \(headline). \(timestamp)")
+        .accessibilityHint("Double-tap to open.")
     }
 
     private var eyebrowLabel: String {
