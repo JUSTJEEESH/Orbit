@@ -3,13 +3,23 @@ import OrbitDesignSystem
 import OrbitDomain
 import OrbitKit
 import OrbitMemoryDetailFeature
+import OrbitStore
 
 public struct AskOrbitView: View {
     @State private var model: AskOrbitViewModel
     @State private var sheetOnMemory: UUID?
+    @State private var lockedGate: ProGate?
     @FocusState private var fieldFocus: Bool
 
     private let makeDetailViewModel: @MainActor (UUID) -> MemoryDetailViewModel
+    /// Returns the gate that's currently blocking the user, or nil when
+    /// submission is allowed. The check side-effects: it also records
+    /// usage when allowed, so this is one atomic step instead of a
+    /// check-then-record race.
+    private let proGateCheck: @MainActor () -> ProGate?
+    /// Hand-off to the global paywall. Called when the user taps "See
+    /// Orbit Pro" inside the in-place gate sheet.
+    private let onPresentPaywall: @MainActor () -> Void
     private let onDismiss: @MainActor () -> Void
 
     @Environment(\.orbitTheme) private var orbitTheme
@@ -17,11 +27,27 @@ public struct AskOrbitView: View {
     public init(
         viewModel: AskOrbitViewModel,
         makeDetailViewModel: @escaping @MainActor (UUID) -> MemoryDetailViewModel,
+        proGateCheck: @escaping @MainActor () -> ProGate? = { nil },
+        onPresentPaywall: @escaping @MainActor () -> Void = {},
         onDismiss: @escaping @MainActor () -> Void
     ) {
         self._model = State(initialValue: viewModel)
         self.makeDetailViewModel = makeDetailViewModel
+        self.proGateCheck = proGateCheck
+        self.onPresentPaywall = onPresentPaywall
         self.onDismiss = onDismiss
+    }
+
+    /// Single chokepoint for submission. Every "Ask" affordance — the
+    /// arrow button, on-submit from the keyboard, and the starter
+    /// prompts — calls this so the gate check is consistent and
+    /// impossible to bypass.
+    private func attemptSubmit() {
+        if let gate = proGateCheck() {
+            lockedGate = gate
+        } else {
+            model.submit()
+        }
     }
 
     public var body: some View {
@@ -58,6 +84,20 @@ public struct AskOrbitView: View {
                         }
                     }
                 }
+            }
+            // In-place gate sheet. We deliberately present this as a
+            // child of AskOrbitView (rather than swapping the parent
+            // modal) so the user's typed question stays in the field
+            // — they get to keep their context after dismissing.
+            .sheet(item: $lockedGate) { gate in
+                ProGateSheet(
+                    gate: gate,
+                    onSeeProDetails: {
+                        lockedGate = nil
+                        onPresentPaywall()
+                    },
+                    onDismiss: { lockedGate = nil }
+                )
             }
         }
         .onAppear { fieldFocus = true }
@@ -97,10 +137,10 @@ public struct AskOrbitView: View {
             )
             .focused($fieldFocus)
             .submitLabel(.search)
-            .onSubmit { model.submit() }
+            .onSubmit { attemptSubmit() }
 
             Button {
-                model.submit()
+                attemptSubmit()
             } label: {
                 Image(systemName: "arrow.up")
                     .scaledFont(size: 16, weight: .bold)
@@ -145,7 +185,7 @@ public struct AskOrbitView: View {
                 ForEach(Self.starterPrompts, id: \.self) { prompt in
                     Button {
                         model.question = prompt
-                        model.submit()
+                        attemptSubmit()
                     } label: {
                         HStack {
                             Text(prompt)
@@ -263,7 +303,7 @@ public struct AskOrbitView: View {
         OrbitErrorState(
             title: "Couldn't answer",
             message: message,
-            onRetry: { model.submit() }
+            onRetry: { attemptSubmit() }
         )
         .padding(.top, OrbitSpacing.xl)
     }

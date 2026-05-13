@@ -134,6 +134,27 @@ struct RootView: View {
                         memories: env.memories
                     ),
                     makeDetailViewModel: makeDetailViewModel,
+                    // Atomic check-and-record so we never miss a usage
+                    // event when a question slips through, and so the
+                    // view can't accidentally check twice for one
+                    // submission.
+                    proGateCheck: {
+                        if env.proGates.canAccess(.askOrbit) {
+                            env.proGates.recordUsage(.askOrbit)
+                            return nil
+                        }
+                        return .askOrbit
+                    },
+                    // Match the .proGate(...) pattern: dismiss askOrbit
+                    // first so SwiftUI's item-based sheet can re-present
+                    // cleanly with the new identifier (.paywall).
+                    onPresentPaywall: {
+                        env.requestedModal = nil
+                        Task { @MainActor in
+                            try? await Task.sleep(for: .milliseconds(280))
+                            env.requestedModal = .paywall
+                        }
+                    },
                     onDismiss: { env.requestedModal = nil }
                 )
                 .presentationDetents([.large])

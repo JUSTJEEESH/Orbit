@@ -157,7 +157,7 @@ let package = Package(
         ),
         .target(
             name: "OrbitAskFeature",
-            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitMemoryDetailFeature"],
+            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitMemoryDetailFeature", "OrbitStore"],
             path: "Packages/Features/Ask/Sources/OrbitAskFeature",
             swiftSettings: swiftSettings
         ),
