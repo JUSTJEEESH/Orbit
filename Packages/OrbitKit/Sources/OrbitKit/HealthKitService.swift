@@ -40,6 +40,11 @@ public final class HealthKitService {
     // surfaces. Constructing HKHealthStore() is ~10-20ms on real
     // hardware; the static isHealthDataAvailable() above stays eager
     // because it's effectively free.
+    //
+    // @ObservationIgnored because `lazy var` is incompatible with the
+    // @Observable macro's auto-generated change-tracking accessors,
+    // and there's nothing to observe here — `store` is private state.
+    @ObservationIgnored
     private lazy var store: HKHealthStore? = {
         Self.isHealthDataAvailable ? HKHealthStore() : nil
     }()

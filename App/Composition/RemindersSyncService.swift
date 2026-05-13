@@ -31,6 +31,11 @@ public final class RemindersSyncService {
     // hop for users who never enable Reminders sync. The static
     // authorizationStatus(for:) below is a cheap entitlement check
     // and stays eager so the Settings toggle renders correctly.
+    //
+    // @ObservationIgnored because `lazy var` is incompatible with the
+    // @Observable macro's auto-generated change-tracking accessors,
+    // and `store` is private state that views never observe.
+    @ObservationIgnored
     private lazy var store = EKEventStore()
     private let tasks: any TaskRepository
 
