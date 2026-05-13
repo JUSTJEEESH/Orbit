@@ -163,7 +163,7 @@ let package = Package(
         ),
         .target(
             name: "OrbitYearInReviewFeature",
-            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitMemoryDetailFeature", "OrbitShareFeature"],
+            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitMemoryDetailFeature", "OrbitShareFeature", "OrbitStore"],
             path: "Packages/Features/YearInReview/Sources/OrbitYearInReviewFeature",
             swiftSettings: swiftSettings
         ),

@@ -65,23 +65,48 @@ public struct PaywallView: View {
             Text("ORBIT PRO")
                 .font(OrbitTypography.caption)
                 .foregroundStyle(OrbitColor.textTertiary)
-            Text("Unlimited memory, on every device")
+            Text("Orbit, in full")
                 .font(OrbitTypography.largeTitle)
                 .foregroundStyle(OrbitColor.textPrimary)
-            Text("Capture everything. Search anything. Let Orbit organize it all.")
+            Text("Five upgrades that make Orbit feel like a daily companion — not an occasional one.")
                 .font(OrbitTypography.body)
                 .foregroundStyle(OrbitColor.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
 
+    /// Benefit bullets are kept in lock-step with the gates that
+    /// ProGateService enforces, so what we promise on the paywall is
+    /// exactly what users get when they upgrade. Anything that's
+    /// already free for everyone (captures, search, sync, widgets,
+    /// HealthKit) deliberately stays off this list.
     private var benefits: some View {
         VStack(alignment: .leading, spacing: OrbitSpacing.md) {
-            benefit(icon: "infinity", title: "Unlimited captures", detail: "No daily limits on text, voice, or photos.")
-            benefit(icon: "sparkles", title: "Unlimited AI organization", detail: "Every capture summarized, categorized, and tagged.")
-            benefit(icon: "icloud", title: "Cross-device sync", detail: "Memories follow you across iPhone, iPad, and Mac.")
-            benefit(icon: "waveform", title: "Long-form voice transcription", detail: "Up to an hour per note, all on-device.")
-            benefit(icon: "calendar.badge.clock", title: "Daily AI recap", detail: "An evening digest of what mattered.")
+            benefit(
+                icon: "calendar.badge.clock",
+                title: "Daily Recap, every day",
+                detail: "Not just three a week. A fresh AI recap of your day, on demand."
+            )
+            benefit(
+                icon: "sparkle",
+                title: "Unlimited Ask Orbit",
+                detail: "No weekly cap on the questions you ask your own memories."
+            )
+            benefit(
+                icon: "waveform",
+                title: "Long-form voice notes",
+                detail: "Up to an hour per note instead of one minute."
+            )
+            benefit(
+                icon: "calendar",
+                title: "Year in Review, in full",
+                detail: "Monthly chart, top moments and people, and your memory rain finale."
+            )
+            benefit(
+                icon: "paintpalette",
+                title: "Themes & app icons",
+                detail: "Sunset, Cosmic, and Forest — with matching home-screen icons."
+            )
         }
     }
 

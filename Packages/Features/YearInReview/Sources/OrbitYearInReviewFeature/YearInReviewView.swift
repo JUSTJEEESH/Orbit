@@ -6,13 +6,22 @@ import OrbitDomain
 import OrbitKit
 import OrbitMemoryDetailFeature
 import OrbitShareFeature
+import OrbitStore
 
 public struct YearInReviewView: View {
     @State private var model: YearInReviewViewModel
     private let makeDetailViewModel: @MainActor (UUID) -> MemoryDetailViewModel
+    /// When false, the loaded surface renders the editorial preview
+    /// (hero + total only) and a single "See Orbit Pro" CTA. True
+    /// renders the full experience.
+    private let isPro: Bool
+    /// Hand-off to the global paywall when the user taps the CTA on
+    /// the locked preview or inside the soft paywall sheet.
+    private let onPresentPaywall: @MainActor () -> Void
     private let onDismiss: @MainActor () -> Void
 
     @State private var sheetMemory: MemoryIDBox?
+    @State private var lockedGate: ProGate?
     @Environment(\.orbitTheme) private var orbitTheme
     @Environment(\.requestReview) private var requestReview
     @Environment(\.reviewPrompts) private var reviewPrompts
@@ -20,10 +29,14 @@ public struct YearInReviewView: View {
     public init(
         viewModel: YearInReviewViewModel,
         makeDetailViewModel: @escaping @MainActor (UUID) -> MemoryDetailViewModel,
+        isPro: Bool = true,
+        onPresentPaywall: @escaping @MainActor () -> Void = {},
         onDismiss: @escaping @MainActor () -> Void
     ) {
         self._model = State(initialValue: viewModel)
         self.makeDetailViewModel = makeDetailViewModel
+        self.isPro = isPro
+        self.onPresentPaywall = onPresentPaywall
         self.onDismiss = onDismiss
     }
 
@@ -59,6 +72,16 @@ public struct YearInReviewView: View {
                         }
                     }
                 }
+            }
+            .sheet(item: $lockedGate) { gate in
+                ProGateSheet(
+                    gate: gate,
+                    onSeeProDetails: {
+                        lockedGate = nil
+                        onPresentPaywall()
+                    },
+                    onDismiss: { lockedGate = nil }
+                )
             }
         }
         .task { await model.load() }
@@ -109,23 +132,77 @@ public struct YearInReviewView: View {
 
     // MARK: - Loaded
 
+    @ViewBuilder
     private func loadedScroll(_ review: YearInReview) -> some View {
+        if isPro {
+            ScrollView {
+                VStack(alignment: .leading, spacing: OrbitSpacing.xxl) {
+                    hero(review)
+                    statsGrid(review)
+                    if !review.monthlyCounts.isEmpty {
+                        monthlySection(review)
+                    }
+                    if !review.highlights.isEmpty {
+                        highlightsSection(review)
+                    }
+                    memoryRainFinale(review)
+                    Spacer(minLength: OrbitSpacing.xxxl)
+                }
+                .padding(.top, OrbitSpacing.lg)
+            }
+            .scrollIndicators(.hidden)
+        } else {
+            previewScroll(review)
+        }
+    }
+
+    /// The free-tier preview. Renders the editorial hero (year +
+    /// total captures + intro sentence) so the user feels a real
+    /// payoff just for opening this, then a single Pro CTA. The
+    /// stats grid, monthly chart, highlights, and memory rain are
+    /// the Pro reward.
+    private func previewScroll(_ review: YearInReview) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: OrbitSpacing.xxl) {
                 hero(review)
-                statsGrid(review)
-                if !review.monthlyCounts.isEmpty {
-                    monthlySection(review)
-                }
-                if !review.highlights.isEmpty {
-                    highlightsSection(review)
-                }
-                memoryRainFinale(review)
+                lockedPreviewPanel
                 Spacer(minLength: OrbitSpacing.xxxl)
             }
             .padding(.top, OrbitSpacing.lg)
         }
         .scrollIndicators(.hidden)
+    }
+
+    private var lockedPreviewPanel: some View {
+        OrbitCard(elevation: .lifted) {
+            VStack(alignment: .leading, spacing: OrbitSpacing.md) {
+                HStack(spacing: OrbitSpacing.xs) {
+                    Image(systemName: "sparkles")
+                        .scaledFont(size: 14, weight: .semibold)
+                        .foregroundStyle(orbitTheme.primary)
+                    Text("ORBIT PRO")
+                        .font(OrbitTypography.caption)
+                        .tracking(1.3)
+                        .foregroundStyle(OrbitColor.textTertiary)
+                }
+                Text("There's more to your year.")
+                    .scaledFont(size: 24, weight: .semibold, design: .serif)
+                    .foregroundStyle(OrbitColor.textPrimary)
+                Text("Pro unlocks the full editorial Year in Review — a monthly chart, your top moments and people, and every memory you captured drifting in a closing scene.")
+                    .font(OrbitTypography.body)
+                    .foregroundStyle(OrbitColor.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                OrbitButton(
+                    "See Orbit Pro",
+                    systemImage: "sparkles",
+                    style: .primary,
+                    size: .large
+                ) {
+                    Haptics.play(.tap)
+                    lockedGate = .yearInReview
+                }
+            }
+        }
     }
 
     private func hero(_ review: YearInReview) -> some View {

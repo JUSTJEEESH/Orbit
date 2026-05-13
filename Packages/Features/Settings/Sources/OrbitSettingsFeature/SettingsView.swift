@@ -51,6 +51,10 @@ public struct SettingsView: View {
 
     @State private var showDeleteConfirmation = false
     @State private var deletionError: String?
+    /// Drives the in-place soft paywall when a free user taps a
+    /// Pro-only theme tile. Routed back out to `onPresentPaywall`
+    /// when they tap "See Orbit Pro".
+    @State private var lockedGate: ProGate?
 
     public init(
         appConfig: AppConfig,
@@ -131,6 +135,16 @@ public struct SettingsView: View {
                     Button("Done") { onDismiss() }
                         .font(OrbitTypography.bodyEmphasized)
                 }
+            }
+            .sheet(item: $lockedGate) { gate in
+                ProGateSheet(
+                    gate: gate,
+                    onSeeProDetails: {
+                        lockedGate = nil
+                        onPresentPaywall()
+                    },
+                    onDismiss: { lockedGate = nil }
+                )
             }
             .confirmationDialog(
                 "Delete account?",
@@ -263,9 +277,20 @@ public struct SettingsView: View {
 
     private func themeTile(_ theme: OrbitTheme) -> some View {
         let isSelected = theme == currentTheme
+        // Aurora is the free baseline theme; the others (Sunset,
+        // Cosmic, Forest) are Pro. A user who downgraded after picking
+        // a non-Aurora theme keeps it as their selected theme — we
+        // don't kick them back to Aurora — but the lock badge stays
+        // hidden when they're on it (the checkmark wins).
+        let isLocked = theme.id != "aurora" && !entitlements.state.isPro
         return Button {
-            Haptics.play(.selection)
-            Task { @MainActor in await onSelectTheme(theme) }
+            if isLocked {
+                Haptics.play(.warning)
+                lockedGate = .themes
+            } else {
+                Haptics.play(.selection)
+                Task { @MainActor in await onSelectTheme(theme) }
+            }
         } label: {
             VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
                 ZStack(alignment: .topTrailing) {
@@ -276,6 +301,13 @@ public struct SettingsView: View {
                         Image(systemName: "checkmark.circle.fill")
                             .scaledFont(size: 18, weight: .semibold)
                             .foregroundStyle(OrbitColor.textInverted, theme.primary)
+                            .offset(x: 6, y: -6)
+                    } else if isLocked {
+                        Image(systemName: "lock.fill")
+                            .scaledFont(size: 10, weight: .bold)
+                            .foregroundStyle(OrbitColor.textInverted)
+                            .padding(5)
+                            .background(OrbitColor.textPrimary, in: .circle)
                             .offset(x: 6, y: -6)
                     }
                 }
@@ -301,12 +333,17 @@ public struct SettingsView: View {
                         lineWidth: isSelected ? 2 : 0.5
                     )
             )
+            .opacity(isLocked ? 0.85 : 1)
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(theme.name) theme. \(theme.promotionalCopy)")
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
-        .accessibilityHint(isSelected ? "Currently selected." : "Double-tap to switch to this theme.")
+        .accessibilityHint(
+            isSelected
+                ? "Currently selected."
+                : (isLocked ? "Orbit Pro theme. Double-tap to learn more." : "Double-tap to switch to this theme.")
+        )
     }
 
     // MARK: - Notifications

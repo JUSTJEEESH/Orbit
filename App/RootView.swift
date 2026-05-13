@@ -82,7 +82,16 @@ struct RootView: View {
                         }
                     },
                     iconError: env.iconService.lastError,
-                    onPresentPaywall: { env.requestedModal = .paywall },
+                    onPresentPaywall: {
+                        // Match the pattern used elsewhere: dismiss the
+                        // current modal first so SwiftUI's sheet(item:)
+                        // can re-present cleanly with the new identifier.
+                        env.requestedModal = nil
+                        Task { @MainActor in
+                            try? await Task.sleep(for: .milliseconds(280))
+                            env.requestedModal = .paywall
+                        }
+                    },
                     onDeleteAccount: { try await env.wipeAccountAndData() },
                     onDismiss: { env.requestedModal = nil },
                     remindersSyncEnabled: env.remindersSync.isEnabled,
@@ -188,6 +197,14 @@ struct RootView: View {
                 YearInReviewView(
                     viewModel: YearInReviewViewModel(generate: env.generateYearInReview),
                     makeDetailViewModel: makeDetailViewModel,
+                    isPro: env.entitlements.state.isPro,
+                    onPresentPaywall: {
+                        env.requestedModal = nil
+                        Task { @MainActor in
+                            try? await Task.sleep(for: .milliseconds(280))
+                            env.requestedModal = .paywall
+                        }
+                    },
                     onDismiss: {
                         env.requestedModal = nil
                         env.markYearInReviewSeen()
