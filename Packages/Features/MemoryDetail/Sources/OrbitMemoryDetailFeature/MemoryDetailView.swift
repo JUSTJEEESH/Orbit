@@ -141,7 +141,11 @@ public struct MemoryDetailView: View {
     }
 
     private func connectedCard(for memory: Memory) -> some View {
-        OrbitCard(elevation: .resting) {
+        let reason = model.connectionReasons[memory.id]?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let hasReason = (reason?.isEmpty == false)
+
+        return OrbitCard(elevation: .resting) {
             VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
                 OrbitEyebrow(
                     label: connectedEyebrow(for: memory),
@@ -153,7 +157,20 @@ public struct MemoryDetailView: View {
                     .foregroundStyle(OrbitColor.textPrimary)
                     .lineLimit(3)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                if hasReason, let reason {
+                    Text(reason)
+                        .font(OrbitTypography.footnote)
+                        .foregroundStyle(OrbitColor.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, OrbitSpacing.xxs)
+                        // Subtle progressive reveal so the subhead doesn't
+                        // pop in. The fade lasts ~250ms; SwiftUI handles
+                        // the transition because `hasReason` flips when
+                        // the AI follow-up returns.
+                        .transition(.opacity)
+                }
             }
+            .animation(.easeOut(duration: 0.25), value: hasReason)
         }
     }
 

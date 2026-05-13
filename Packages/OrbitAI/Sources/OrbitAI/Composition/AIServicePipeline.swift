@@ -35,6 +35,10 @@ public actor AIServicePipeline: AIService {
         try await firstSuccess { try await $0.askOrbit(question: question, memories: memories) }
     }
 
+    public func explainConnections(anchor: Memory, related: [Memory]) async throws -> [UUID: String] {
+        try await firstSuccess { try await $0.explainConnections(anchor: anchor, related: related) }
+    }
+
     private func firstSuccess<T>(
         _ run: (any AIService) async throws -> T
     ) async throws -> T {

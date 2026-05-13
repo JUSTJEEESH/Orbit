@@ -57,6 +57,7 @@ final class AppEnvironment {
     let generateInsights: GenerateInsightsUseCase
     let listMemorySuggestions: ListSuggestionsUseCase
     let listConnectedMemories: ListConnectedMemoriesUseCase
+    let explainConnections: ExplainConnectionsUseCase
     let listTasks: ListTasksUseCase
     let listTaskSuggestions: ListTaskSuggestionsUseCase
     let promoteHintToTask: PromoteHintToTaskUseCase
@@ -336,6 +337,7 @@ final class AppEnvironment {
             generator: suggestionEngine,
             clock: clock
         )
+        self.explainConnections = ExplainConnectionsUseCase(memories: memories, ai: ai)
         self.listTasks = ListTasksUseCase(repository: tasks)
         self.listTaskSuggestions = ListTaskSuggestionsUseCase(memories: memories, tasks: tasks)
         self.promoteHintToTask = PromoteHintToTaskUseCase(tasks: tasks, clock: clock)

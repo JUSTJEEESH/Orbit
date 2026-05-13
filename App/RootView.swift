@@ -379,6 +379,7 @@ struct RootView: View {
             mediaStorage: env.mediaStorage,
             speechTranscriber: env.speechTranscriber,
             listConnectedMemories: env.listConnectedMemories,
+            explainConnections: env.explainConnections,
             removeMemory: { id in try await env.removeMemory(id: id) }
         )
     }

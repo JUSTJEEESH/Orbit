@@ -201,6 +201,120 @@ public actor FoundationModelsAdapter: AIService {
         }
     }
 
+    // MARK: - Explain connections
+
+    public func explainConnections(anchor: Memory, related: [Memory]) async throws -> [UUID: String] {
+        guard !related.isEmpty else { return [:] }
+        let capped = Array(related.prefix(3))
+
+        // Older devices / regions without Apple Intelligence: build a
+        // small heuristic reason from shared entities + category. Real
+        // signal, never invented.
+        if case .unavailable = SystemLanguageModel.default.availability {
+            return Self.heuristicConnectionReasons(anchor: anchor, related: capped)
+        }
+
+        let anchorBlock = Self.connectionAnchorBlock(for: anchor)
+        let bulletLines = capped.enumerated()
+            .map { Self.connectionLine(index: $0.offset + 1, memory: $0.element) }
+            .joined(separator: "\n")
+
+        do {
+            let session = LanguageModelSession(instructions: Self.explainInstructions)
+            let response = try await session.respond(
+                to: Self.explainPrompt(anchor: anchorBlock, bullets: bulletLines),
+                generating: GeneratedConnections.self
+            )
+            // The model returns sentences aligned with the [1..N] order
+            // we sent in. Pair them back to UUIDs via the input order;
+            // if the model returned fewer than expected, the missing
+            // entries silently fall back to heuristic.
+            var result: [UUID: String] = [:]
+            for (index, memory) in capped.enumerated() {
+                let sentence = (index < response.content.reasons.count
+                                ? response.content.reasons[index]
+                                : "").trimmingCharacters(in: .whitespacesAndNewlines)
+                if !sentence.isEmpty {
+                    result[memory.id] = sentence
+                }
+            }
+            // Backfill any blanks with the heuristic so the UI never
+            // shows half-populated subheads.
+            if result.count < capped.count {
+                let fallback = Self.heuristicConnectionReasons(anchor: anchor, related: capped)
+                for memory in capped where result[memory.id] == nil {
+                    if let phrase = fallback[memory.id] { result[memory.id] = phrase }
+                }
+            }
+            return result
+        } catch {
+            return Self.heuristicConnectionReasons(anchor: anchor, related: capped)
+        }
+    }
+
+    private static let explainInstructions = """
+    You are Orbit, a calm second brain. The user is looking at one journal \
+    entry (the anchor) and a few related entries from their own memory. \
+    For each related entry, write ONE short sentence (max 14 words) that \
+    names what specifically connects it to the anchor — a shared person, \
+    place, theme, idea, or thread. Be precise; never invent. Don't \
+    summarize the entry — explain the connection in second person, like a \
+    quiet aside. If you can't find an honest connection, return an empty \
+    string for that entry rather than guessing.
+    """
+
+    private static func explainPrompt(anchor: String, bullets: String) -> String {
+        """
+        Anchor entry:
+        \"\"\"
+        \(anchor)
+        \"\"\"
+
+        Related entries (numbered, same order required in your answer):
+        \"\"\"
+        \(bullets)
+        \"\"\"
+
+        Write the connection for each.
+        """
+    }
+
+    private static func connectionAnchorBlock(for memory: Memory) -> String {
+        String(headline(for: memory).prefix(400))
+    }
+
+    private static func connectionLine(index: Int, memory: Memory) -> String {
+        "[\(index)] \(String(headline(for: memory).prefix(220)))"
+    }
+
+    /// Heuristic backstop when Apple Intelligence isn't available or the
+    /// model fails to produce a sentence. Uses already-extracted entities
+    /// and the AI category — so the phrase is grounded in real signal,
+    /// never invented.
+    private static func heuristicConnectionReasons(anchor: Memory, related: [Memory]) -> [UUID: String] {
+        let anchorPeople = Set(anchor.ai.extractedPeople.map(\.localizedLowercase))
+        let anchorPlaces = Set(anchor.ai.extractedLocations.map(\.localizedLowercase))
+        let anchorCategory = anchor.ai.category?.lowercased() ?? ""
+
+        var output: [UUID: String] = [:]
+        for memory in related {
+            let people = Set(memory.ai.extractedPeople.map(\.localizedLowercase))
+            let places = Set(memory.ai.extractedLocations.map(\.localizedLowercase))
+            let category = memory.ai.category?.lowercased() ?? ""
+
+            if let person = anchorPeople.intersection(people).sorted().first, !person.isEmpty {
+                output[memory.id] = "Both about \(person.capitalized)."
+            } else if let place = anchorPlaces.intersection(places).sorted().first, !place.isEmpty {
+                output[memory.id] = "Connected by \(place.capitalized)."
+            } else if !anchorCategory.isEmpty, anchorCategory == category {
+                output[memory.id] = "Same theme: \(anchorCategory)."
+            }
+            // No shared signal → no reason. The card renders without a
+            // subhead, which is honest and quiet.
+        }
+        return output
+    }
+
     // MARK: - Prompting
 
     private static let systemInstructions = """
@@ -408,6 +522,12 @@ struct GeneratedAskOrbitAnswer {
 
     @Guide(description: "Indices of the memories that support the answer, matching the [N] numbers shown in the prompt. Maximum five.")
     let citationIndices: [Int]
+}
+
+@Generable
+struct GeneratedConnections {
+    @Guide(description: "One sentence per related entry, in the exact order they were numbered in the prompt. Each sentence (max 14 words) names what specifically connects that entry to the anchor — shared person, place, theme, idea, or thread. Never invent. If no honest connection exists for an entry, return an empty string for it.")
+    let reasons: [String]
 }
 
 @Generable

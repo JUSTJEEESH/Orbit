@@ -14,6 +14,14 @@ public protocol AIService: Sendable {
     /// their *index* in the input array — the use case resolves those to
     /// actual `Memory.id` values for the UI.
     func askOrbit(question: String, memories: [Memory]) async throws -> AskOrbitDraft
+    /// Returns a one-sentence "why these connect" reason for each related
+    /// memory, keyed by the related memory's `id`. Used by the Connected
+    /// section on Memory Detail to give each card a subtle subhead.
+    /// An empty dictionary is a valid result: it means the model couldn't
+    /// land an honest reason and the UI should render the cards without a
+    /// subhead. Implementations should never invent details — silence is
+    /// better than a wrong answer.
+    func explainConnections(anchor: Memory, related: [Memory]) async throws -> [UUID: String]
 }
 
 /// AI-side payload for `AskOrbit`. The use case stamps `generatedAt`,

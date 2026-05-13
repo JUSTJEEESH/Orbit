@@ -30,12 +30,19 @@ public final class MemoryDetailViewModel {
     /// Loaded lazily after the primary memory loads so it never blocks
     /// the first paint.
     public private(set) var connected: [MemorySuggestionFeed.Related] = []
+    /// One-sentence "why these connect" reason per related memory,
+    /// keyed by `Memory.id`. Loaded async AFTER `connected` populates,
+    /// so the cards render immediately and the subheads fill in when
+    /// the model returns. Missing entries → card renders without a
+    /// subhead.
+    public private(set) var connectionReasons: [UUID: String] = [:]
 
     private let memoryID: UUID
     private let repository: any MemoryRepository
     private let mediaStorage: MediaStorage
     private let speechTranscriber: SpeechTranscriber?
     private let listConnectedMemories: ListConnectedMemoriesUseCase?
+    private let explainConnections: ExplainConnectionsUseCase?
     private let removeMemory: @MainActor @Sendable (UUID) async throws -> Void
 
     public init(
@@ -44,6 +51,7 @@ public final class MemoryDetailViewModel {
         mediaStorage: MediaStorage,
         speechTranscriber: SpeechTranscriber? = nil,
         listConnectedMemories: ListConnectedMemoriesUseCase? = nil,
+        explainConnections: ExplainConnectionsUseCase? = nil,
         removeMemory: @escaping @MainActor @Sendable (UUID) async throws -> Void
     ) {
         self.memoryID = memoryID
@@ -51,6 +59,7 @@ public final class MemoryDetailViewModel {
         self.mediaStorage = mediaStorage
         self.speechTranscriber = speechTranscriber
         self.listConnectedMemories = listConnectedMemories
+        self.explainConnections = explainConnections
         self.removeMemory = removeMemory
     }
 
@@ -75,6 +84,13 @@ public final class MemoryDetailViewModel {
     /// Runs after the primary memory + media have loaded so the
     /// Connected section doesn't block the first paint. Silent failure
     /// — `connected` just stays empty and the section hides.
+    ///
+    /// Two-stage on purpose: `connected` is set first so the cards
+    /// render right away; the `connectionReasons` follow-up fetches
+    /// AI-generated subheads behind a second `await`, which gives
+    /// SwiftUI a chance to repaint between the two states. Result:
+    /// cards visible in milliseconds, subheads fill in when the
+    /// model returns.
     private func loadConnectedIfNeeded() async {
         guard let listConnectedMemories else { return }
         do {
@@ -82,6 +98,17 @@ public final class MemoryDetailViewModel {
         } catch {
             OrbitLog.persistence.error("Connected memories load failed: \(String(describing: error), privacy: .public)")
             connected = []
+            return
+        }
+        guard let explainConnections, !connected.isEmpty else { return }
+        do {
+            connectionReasons = try await explainConnections(
+                anchorID: memoryID,
+                relatedIDs: connected.map(\.memory.id)
+            )
+        } catch {
+            OrbitLog.persistence.error("Connection reasons load failed: \(String(describing: error), privacy: .public)")
+            connectionReasons = [:]
         }
     }
 

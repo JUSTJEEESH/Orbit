@@ -80,4 +80,10 @@ private actor StubAIService: AIService {
     func dailyRecap(memories: [Memory], date: Date) async throws -> DailyRecapDraft {
         DailyRecapDraft(narrative: "", mood: nil, highlightIDs: [])
     }
+    func askOrbit(question: String, memories: [Memory]) async throws -> AskOrbitDraft {
+        AskOrbitDraft(narrative: "", citationIndices: [])
+    }
+    func explainConnections(anchor: Memory, related: [Memory]) async throws -> [UUID: String] {
+        [:]
+    }
 }
