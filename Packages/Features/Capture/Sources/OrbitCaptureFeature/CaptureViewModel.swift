@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import UIKit
 import OrbitDomain
 import OrbitMedia
 import OrbitKit
@@ -44,6 +45,10 @@ public final class CaptureViewModel {
 
     public var isSaving: Bool = false
     public var errorMessage: String?
+    /// True when `errorMessage` was set because the user denied a system
+    /// permission Orbit needs (mic or speech). The view uses this to
+    /// surface an "Open Settings" button alongside the message.
+    public var errorOffersSettings: Bool = false
     /// Future surface date for Time Capsule. `nil` means surface
     /// immediately. UI exposes this through a "Schedule for later" toggle.
     public var surfaceDate: Date?
@@ -181,6 +186,12 @@ public final class CaptureViewModel {
     // MARK: - Voice recording
 
     public func startRecording() async {
+        // Pre-flight both mic and speech permissions before we open the
+        // audio session. Catching denials up-front means the user can't
+        // talk into a recording that will never transcribe — they get
+        // a clear "open Settings" path instead.
+        guard await ensureVoicePermissions() else { return }
+
         let recorder = VoiceRecorder(storage: mediaStorage)
         self.recorder = recorder
         do {
@@ -234,10 +245,16 @@ public final class CaptureViewModel {
             do {
                 let transcript = try await speechTranscriber.transcribe(fileAt: result.file.url)
                 voiceState = .recorded(file: result.file, duration: result.duration, transcript: transcript)
+                Haptics.play(.success)
             } catch {
+                // Audio is preserved on disk — the user can save the
+                // memory without a transcript and retry later, or hit
+                // Retry now while the capture sheet is still open.
                 voiceState = .recorded(file: result.file, duration: result.duration, transcript: nil)
+                errorMessage = "Couldn't transcribe. Your recording is saved — tap Retry to try again."
+                errorOffersSettings = false
+                Haptics.play(.warning)
             }
-            Haptics.play(.success)
         } catch {
             self.recorder = nil
             errorMessage = error.localizedDescription
@@ -253,6 +270,65 @@ public final class CaptureViewModel {
         // Ensure the activity is gone if the user discards mid-recording too.
         liveActivity.end()
         voiceState = .idle
+    }
+
+    /// Re-runs transcription against the already-recorded audio file.
+    /// Used by the in-session Retry button when the first attempt fails.
+    /// The audio is never re-captured — only the transcription pass is
+    /// repeated, so the user doesn't lose what they said.
+    public func retryTranscription() async {
+        guard case .recorded(let file, let duration, _) = voiceState else { return }
+        errorMessage = nil
+        errorOffersSettings = false
+        voiceState = .transcribing(file: file, duration: duration, levels: [])
+        do {
+            let transcript = try await speechTranscriber.transcribe(fileAt: file.url)
+            voiceState = .recorded(file: file, duration: duration, transcript: transcript)
+            Haptics.play(.success)
+        } catch {
+            voiceState = .recorded(file: file, duration: duration, transcript: nil)
+            errorMessage = "Still couldn't transcribe. Your recording is saved — try again in a moment."
+            Haptics.play(.warning)
+        }
+    }
+
+    /// Opens iOS Settings so the user can grant mic / speech access when
+    /// they've previously denied it. Called from the error banner.
+    public func openSystemSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
+    }
+
+    /// Returns true when both mic and speech recognition are granted and
+    /// recording can proceed. On a denial, sets a user-facing
+    /// `errorMessage` + flips `errorOffersSettings` so the view can
+    /// surface an Open Settings affordance.
+    private func ensureVoicePermissions() async -> Bool {
+        // Microphone.
+        if AudioPermission.current == .undetermined {
+            _ = await AudioPermission.request()
+        }
+        if AudioPermission.current != .granted {
+            errorMessage = "Microphone access is off. Turn it on in Settings to record voice notes."
+            errorOffersSettings = true
+            Haptics.play(.warning)
+            return false
+        }
+
+        // Speech recognition.
+        if SpeechPermission.current == .undetermined {
+            _ = await SpeechPermission.request()
+        }
+        if SpeechPermission.current != .granted {
+            errorMessage = "Speech recognition is off. Turn it on in Settings so Orbit can transcribe voice notes."
+            errorOffersSettings = true
+            Haptics.play(.warning)
+            return false
+        }
+
+        errorMessage = nil
+        errorOffersSettings = false
+        return true
     }
 
     // MARK: - Link preview

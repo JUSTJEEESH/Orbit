@@ -160,6 +160,7 @@ public struct MemoryDetailView: View {
                             ? OrbitColor.textPrimary
                             : OrbitColor.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
+                    retranscribeAffordance(currentTranscript: transcript)
                 }
             }
         case .image(let caption):
@@ -224,6 +225,52 @@ public struct MemoryDetailView: View {
                     Text(caption)
                         .font(OrbitTypography.body)
                         .foregroundStyle(OrbitColor.textPrimary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+    }
+
+    /// Renders a quiet "Try transcript again" affordance whenever a
+    /// voice memo is saved without a transcript and the source audio
+    /// file is still on disk. The audio is the user's data — we never
+    /// throw it away, even when transcription fails — so the recovery
+    /// path is one tap, not "re-record everything."
+    @ViewBuilder
+    private func retranscribeAffordance(currentTranscript: String?) -> some View {
+        let hasTranscript = (currentTranscript?.isEmpty == false)
+        let canRetry = !hasTranscript && model.voiceFileURL != nil
+
+        if canRetry {
+            VStack(alignment: .leading, spacing: OrbitSpacing.xxs) {
+                if model.isRetranscribing {
+                    HStack(spacing: OrbitSpacing.xs) {
+                        ProgressView()
+                        Text("Transcribing…")
+                            .font(OrbitTypography.footnote)
+                            .foregroundStyle(OrbitColor.textSecondary)
+                    }
+                } else {
+                    Button {
+                        Task {
+                            let ok = await model.retranscribe()
+                            Haptics.play(ok ? .success : .warning)
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "waveform.path.ecg")
+                                .scaledFont(size: 13, weight: .semibold)
+                            Text("Try transcript again")
+                                .font(OrbitTypography.footnote)
+                        }
+                        .foregroundStyle(OrbitColor.accent)
+                    }
+                    .buttonStyle(.plain)
+                }
+                if let message = model.retranscribeError {
+                    Text(message)
+                        .font(OrbitTypography.footnote)
+                        .foregroundStyle(OrbitColor.warning)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }

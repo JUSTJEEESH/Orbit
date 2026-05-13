@@ -37,10 +37,20 @@ public struct CaptureView: View {
                     activeMode
 
                     if let message = model.errorMessage {
-                        Text(message)
-                            .font(OrbitTypography.footnote)
-                            .foregroundStyle(OrbitColor.danger)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                        VStack(alignment: .leading, spacing: OrbitSpacing.xxs) {
+                            Text(message)
+                                .font(OrbitTypography.footnote)
+                                .foregroundStyle(OrbitColor.danger)
+                                .fixedSize(horizontal: false, vertical: true)
+                            if model.errorOffersSettings {
+                                Button("Open Settings") {
+                                    model.openSystemSettings()
+                                }
+                                .font(OrbitTypography.footnote)
+                                .foregroundStyle(OrbitColor.accent)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
 
                     Spacer()
@@ -188,15 +198,30 @@ public struct CaptureView: View {
         case .transcribing:
             OrbitButton("Transcribing…", style: .secondary, size: .large) {}
                 .disabled(true)
-        case .recorded:
-            HStack(spacing: OrbitSpacing.sm) {
-                OrbitButton("Discard", style: .secondary) {
-                    Task { await model.discardRecording() }
+        case .recorded(_, _, let transcript):
+            VStack(spacing: OrbitSpacing.sm) {
+                if transcript == nil {
+                    // Audio is preserved on disk; only the transcription
+                    // pass is re-run. Lets the user recover from a flaky
+                    // network or a transient Speech failure without
+                    // losing what they just said.
+                    OrbitButton(
+                        "Retry transcription",
+                        systemImage: "waveform.path.ecg",
+                        style: .primary
+                    ) {
+                        Task { await model.retryTranscription() }
+                    }
                 }
-                OrbitButton("Re-record", systemImage: "arrow.counterclockwise", style: .ghost) {
-                    Task {
-                        await model.discardRecording()
-                        await model.startRecording()
+                HStack(spacing: OrbitSpacing.sm) {
+                    OrbitButton("Discard", style: .secondary) {
+                        Task { await model.discardRecording() }
+                    }
+                    OrbitButton("Re-record", systemImage: "arrow.counterclockwise", style: .ghost) {
+                        Task {
+                            await model.discardRecording()
+                            await model.startRecording()
+                        }
                     }
                 }
             }

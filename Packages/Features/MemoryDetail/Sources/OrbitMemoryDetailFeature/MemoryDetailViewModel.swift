@@ -18,21 +18,30 @@ public final class MemoryDetailViewModel {
     public private(set) var memory: Memory?
     public private(set) var image: UIImage?
     public private(set) var voiceFileURL: URL?
+    /// True while a re-transcription pass is in flight. The view uses
+    /// this to disable the Retry button and show an inline progress
+    /// indicator so a stalled network doesn't look like nothing's
+    /// happening.
+    public private(set) var isRetranscribing: Bool = false
+    public private(set) var retranscribeError: String?
 
     private let memoryID: UUID
     private let repository: any MemoryRepository
     private let mediaStorage: MediaStorage
+    private let speechTranscriber: SpeechTranscriber?
     private let removeMemory: @MainActor @Sendable (UUID) async throws -> Void
 
     public init(
         memoryID: UUID,
         repository: any MemoryRepository,
         mediaStorage: MediaStorage,
+        speechTranscriber: SpeechTranscriber? = nil,
         removeMemory: @escaping @MainActor @Sendable (UUID) async throws -> Void
     ) {
         self.memoryID = memoryID
         self.repository = repository
         self.mediaStorage = mediaStorage
+        self.speechTranscriber = speechTranscriber
         self.removeMemory = removeMemory
     }
 
@@ -60,6 +69,41 @@ public final class MemoryDetailViewModel {
             try await removeMemory(memoryID)
             return true
         } catch {
+            return false
+        }
+    }
+
+    /// Re-runs transcription against the saved voice memo's audio file
+    /// and writes the new transcript back into the memory record. This
+    /// is the recovery path for voice notes that were saved with a nil
+    /// transcript (Speech framework hiccup, no offline model installed,
+    /// transient network failure routing through Apple's servers).
+    /// Returns true on a successful update so the caller can play a
+    /// haptic.
+    @discardableResult
+    public func retranscribe() async -> Bool {
+        guard !isRetranscribing else { return false }
+        guard let speechTranscriber, let memory else { return false }
+        guard case .voiceNote(_, let duration) = memory.content else { return false }
+        guard let url = voiceFileURL else {
+            retranscribeError = "The audio file is missing for this memory."
+            return false
+        }
+
+        isRetranscribing = true
+        retranscribeError = nil
+        defer { isRetranscribing = false }
+
+        do {
+            let transcript = try await speechTranscriber.transcribe(fileAt: url)
+            var updated = memory
+            updated.content = .voiceNote(transcript: transcript, duration: duration)
+            updated.updatedAt = Date()
+            try await repository.update(updated)
+            self.memory = updated
+            return true
+        } catch {
+            retranscribeError = "Couldn't transcribe — try again in a moment."
             return false
         }
     }

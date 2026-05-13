@@ -290,6 +290,7 @@ struct RootView: View {
             memoryID: memoryID,
             repository: env.memories,
             mediaStorage: env.mediaStorage,
+            speechTranscriber: env.speechTranscriber,
             removeMemory: { id in try await env.removeMemory(id: id) }
         )
     }
