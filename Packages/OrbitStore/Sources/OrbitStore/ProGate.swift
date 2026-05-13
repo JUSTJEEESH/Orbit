@@ -69,7 +69,7 @@ public enum ProGate: String, Sendable, CaseIterable, Identifiable {
         case .askOrbit:
             return "Orbit Pro lifts the weekly cap — ask anything, anytime."
         case .voiceLength:
-            return "Free voice notes are up to 60 seconds. Pro records up to 30 minutes per note."
+            return "Free voice notes are up to 60 seconds. Pro records up to an hour per note."
         case .yearInReview:
             return "Pro unlocks the full editorial Year in Review: monthly chart, highlights, memory rain."
         case .themes:
