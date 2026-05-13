@@ -18,6 +18,7 @@ public struct HomeView: View {
     private let onPresentLetter: @MainActor () -> Void
     private let onPresentYearInReview: @MainActor () -> Void
     private let onPresentGratitude: @MainActor () -> Void
+    private let onPresentCapture: @MainActor () -> Void
     private let loadGratitudeStatus: LoadGratitudeStatusUseCase
     private let shouldShowYearInReviewBanner: Bool
 
@@ -49,6 +50,7 @@ public struct HomeView: View {
         onPresentLetter: @escaping @MainActor () -> Void,
         onPresentYearInReview: @escaping @MainActor () -> Void,
         onPresentGratitude: @escaping @MainActor () -> Void,
+        onPresentCapture: @escaping @MainActor () -> Void,
         shouldShowYearInReviewBanner: Bool = false
     ) {
         self.listMemories = listMemories
@@ -65,6 +67,7 @@ public struct HomeView: View {
         self.onPresentLetter = onPresentLetter
         self.onPresentYearInReview = onPresentYearInReview
         self.onPresentGratitude = onPresentGratitude
+        self.onPresentCapture = onPresentCapture
         self.shouldShowYearInReviewBanner = shouldShowYearInReviewBanner
     }
 
@@ -619,7 +622,11 @@ public struct HomeView: View {
         OrbitEmptyState(
             systemImage: "sparkles",
             title: "A calm place to land",
-            message: "Tap the circle below to add your first thought. Orbit organizes the rest — quietly."
+            message: "Add your first thought. Orbit organizes the rest — quietly.",
+            action: .init(title: "Capture your first thought") {
+                Haptics.play(.tap)
+                onPresentCapture()
+            }
         )
         .padding(.top, OrbitSpacing.xxxl)
     }

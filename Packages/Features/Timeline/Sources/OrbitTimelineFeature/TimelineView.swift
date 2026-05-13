@@ -9,6 +9,7 @@ public struct TimelineView: View {
     private let removeMemory: @MainActor @Sendable (UUID) async throws -> Void
     private let refreshToken: Int
     private let makeDetailViewModel: @MainActor (UUID) -> MemoryDetailViewModel
+    private let onPresentCapture: @MainActor () -> Void
 
     @State private var memories: [Memory] = []
     @State private var loadState: LoadState = .idle
@@ -21,12 +22,14 @@ public struct TimelineView: View {
         listMemories: ListMemoriesUseCase,
         removeMemory: @escaping @MainActor @Sendable (UUID) async throws -> Void,
         refreshToken: Int = 0,
-        makeDetailViewModel: @escaping @MainActor (UUID) -> MemoryDetailViewModel
+        makeDetailViewModel: @escaping @MainActor (UUID) -> MemoryDetailViewModel,
+        onPresentCapture: @escaping @MainActor () -> Void
     ) {
         self.listMemories = listMemories
         self.removeMemory = removeMemory
         self.refreshToken = refreshToken
         self.makeDetailViewModel = makeDetailViewModel
+        self.onPresentCapture = onPresentCapture
     }
 
     public var body: some View {
@@ -122,7 +125,11 @@ public struct TimelineView: View {
         OrbitEmptyState(
             systemImage: "tray",
             title: "This is where your memory lives",
-            message: "Tap the round button to save your first thought. Orbit organizes the rest."
+            message: "Save your first thought and Orbit will organize the rest.",
+            action: .init(title: "Capture a thought") {
+                Haptics.play(.tap)
+                onPresentCapture()
+            }
         )
         .padding(.vertical, OrbitSpacing.xxxl)
     }

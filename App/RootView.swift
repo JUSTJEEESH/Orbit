@@ -139,7 +139,17 @@ struct RootView: View {
                         memories: env.memories,
                         healthKit: env.healthKit
                     ),
-                    onDismiss: { env.requestedModal = nil }
+                    onDismiss: { env.requestedModal = nil },
+                    // Recap is itself a sheet, so going to capture has
+                    // to dismiss first and then re-present — same
+                    // pattern Capture uses for the paywall hand-off.
+                    onPresentCapture: {
+                        env.requestedModal = nil
+                        Task { @MainActor in
+                            try? await Task.sleep(for: .milliseconds(280))
+                            env.requestedModal = .capture
+                        }
+                    }
                 )
                 .presentationDetents([.large])
             case .patterns:
@@ -265,6 +275,7 @@ struct RootView: View {
                     onPresentLetter: { env.requestedModal = .letter },
                     onPresentYearInReview: { env.requestedModal = .yearInReview },
                     onPresentGratitude: { env.requestedModal = .gratitude },
+                    onPresentCapture: { env.requestedModal = .capture },
                     shouldShowYearInReviewBanner: env.shouldOfferYearInReview()
                 )
                 .navigationTitle("")
@@ -278,7 +289,8 @@ struct RootView: View {
                 listMemories: env.listMemories,
                 removeMemory: { id in try await env.removeMemory(id: id) },
                 refreshToken: env.memoryListVersion,
-                makeDetailViewModel: makeDetailViewModel
+                makeDetailViewModel: makeDetailViewModel,
+                onPresentCapture: { env.requestedModal = .capture }
             )
                 .tag(AppTab.timeline)
                 .tabItem { Label(AppTab.timeline.title, systemImage: AppTab.timeline.systemImage) }
@@ -323,7 +335,8 @@ struct RootView: View {
                         searchMemories: env.searchMemories,
                         removeMemory: { id in try await env.removeMemory(id: id) }
                     ),
-                    makeDetailViewModel: makeDetailViewModel
+                    makeDetailViewModel: makeDetailViewModel,
+                    onPresentCapture: { env.requestedModal = .capture }
                 )
                     .navigationTitle("Search")
                     .toolbar { profileToolbar }

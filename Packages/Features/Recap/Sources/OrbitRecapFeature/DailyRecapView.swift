@@ -14,13 +14,16 @@ public struct DailyRecapView: View {
     @Environment(\.requestReview) private var requestReview
     @Environment(\.reviewPrompts) private var reviewPrompts
     private let onDismiss: @MainActor () -> Void
+    private let onPresentCapture: @MainActor () -> Void
 
     public init(
         viewModel: DailyRecapViewModel,
-        onDismiss: @escaping @MainActor () -> Void
+        onDismiss: @escaping @MainActor () -> Void,
+        onPresentCapture: @escaping @MainActor () -> Void
     ) {
         self._model = State(initialValue: viewModel)
         self.onDismiss = onDismiss
+        self.onPresentCapture = onPresentCapture
     }
 
     public var body: some View {
@@ -99,7 +102,11 @@ public struct DailyRecapView: View {
         OrbitEmptyState(
             systemImage: "sun.horizon",
             title: "Nothing to recap yet",
-            message: "Capture a few moments today and Orbit will reflect the day back to you."
+            message: "Capture a few moments today and Orbit will reflect the day back to you.",
+            action: .init(title: "Capture a moment") {
+                Haptics.play(.tap)
+                onPresentCapture()
+            }
         )
         .padding(.top, OrbitSpacing.xxl)
     }

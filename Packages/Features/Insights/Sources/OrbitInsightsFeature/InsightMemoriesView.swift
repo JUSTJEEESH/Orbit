@@ -26,9 +26,12 @@ struct InsightMemoriesView: View {
                             .frame(maxWidth: .infinity, alignment: .center)
                             .padding(.top, OrbitSpacing.xxl)
                     } else if memories.isEmpty {
-                        Text("These memories aren't available anymore.")
-                            .font(OrbitTypography.callout)
-                            .foregroundStyle(OrbitColor.textSecondary)
+                        OrbitEmptyState(
+                            systemImage: "questionmark.folder",
+                            title: "Memories aren't around",
+                            message: "The captures behind this insight have been deleted or aren't available right now."
+                        )
+                        .padding(.top, OrbitSpacing.xl)
                     } else {
                         memoryList
                     }

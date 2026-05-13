@@ -10,13 +10,16 @@ public struct SearchView: View {
     @Namespace private var heroNamespace
 
     private let makeDetailViewModel: @MainActor (UUID) -> MemoryDetailViewModel
+    private let onPresentCapture: @MainActor () -> Void
 
     public init(
         viewModel: SearchViewModel,
-        makeDetailViewModel: @escaping @MainActor (UUID) -> MemoryDetailViewModel
+        makeDetailViewModel: @escaping @MainActor (UUID) -> MemoryDetailViewModel,
+        onPresentCapture: @escaping @MainActor () -> Void
     ) {
         self._model = State(initialValue: viewModel)
         self.makeDetailViewModel = makeDetailViewModel
+        self.onPresentCapture = onPresentCapture
     }
 
     public var body: some View {
@@ -137,7 +140,12 @@ public struct SearchView: View {
         OrbitEmptyState(
             systemImage: "magnifyingglass",
             title: "No matches yet",
-            message: "Try different words, or capture this thought as a new memory."
+            message: "Try different words — or capture this thought as a new memory.",
+            action: .init(title: "Capture this thought") {
+                Haptics.play(.tap)
+                fieldFocus = false
+                onPresentCapture()
+            }
         )
         .padding(.top, OrbitSpacing.xxl)
     }
