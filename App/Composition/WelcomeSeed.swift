@@ -19,10 +19,13 @@ import OrbitKit
 extension AppEnvironment {
     private static let welcomeSeededKey = "orbit.welcome.seeded"
 
-    /// True once `seedWelcomeMemoriesIfNeeded` has run. Exposed so the
-    /// account-wipe flow can clear it and let a re-onboarded user see
-    /// the welcome memories again.
-    static var welcomeSeededDefaultsKey: String { welcomeSeededKey }
+    /// Resets the seeded flag so the next onboarding completion
+    /// re-plants the welcome memories. Called from the account-wipe
+    /// flow — a re-onboarded user deserves the same first-launch
+    /// experience as a brand-new install.
+    func clearWelcomeSeededFlag() {
+        UserDefaults.standard.removeObject(forKey: Self.welcomeSeededKey)
+    }
 
     /// Idempotent. Sets the seeded flag BEFORE writing the first
     /// memory so a crash mid-seed can't repeat the whole seed on the

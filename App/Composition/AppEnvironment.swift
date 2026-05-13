@@ -234,7 +234,7 @@ final class AppEnvironment {
         // Re-onboarding after a wipe deserves the same welcome
         // experience as a brand-new install — otherwise the user
         // lands on an empty shell.
-        UserDefaults.standard.removeObject(forKey: Self.welcomeSeededDefaultsKey)
+        clearWelcomeSeededFlag()
         memoriesDidChange()
     }
 

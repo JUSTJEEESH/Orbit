@@ -77,9 +77,9 @@ targets:
           UIColorName: launch.background
         # Orbit is a phone-only premium experience for v1, locked to
         # portrait the same way Apple Journal, Day One, and Things do.
-        # UIRequiresFullScreen also silences the App Store validation
-        # warning about iPad needing all four orientations.
-        UIRequiresFullScreen: true
+        # TARGETED_DEVICE_FAMILY=1 in build settings keeps the iPad
+        # validation warning away on its own — UIRequiresFullScreen is
+        # deprecated as of iOS 26 and was redundant here.
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         # Enables ActivityKit Live Activities so the voice-capture session
