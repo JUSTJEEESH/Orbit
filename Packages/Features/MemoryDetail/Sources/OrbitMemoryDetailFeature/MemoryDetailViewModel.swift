@@ -25,11 +25,17 @@ public final class MemoryDetailViewModel {
     /// happening.
     public private(set) var isRetranscribing: Bool = false
     public private(set) var retranscribeError: String?
+    /// Up to 3 memories the SuggestionEngine has ranked as related to
+    /// this one. Empty array → the "Connected" section is hidden.
+    /// Loaded lazily after the primary memory loads so it never blocks
+    /// the first paint.
+    public private(set) var connected: [MemorySuggestionFeed.Related] = []
 
     private let memoryID: UUID
     private let repository: any MemoryRepository
     private let mediaStorage: MediaStorage
     private let speechTranscriber: SpeechTranscriber?
+    private let listConnectedMemories: ListConnectedMemoriesUseCase?
     private let removeMemory: @MainActor @Sendable (UUID) async throws -> Void
 
     public init(
@@ -37,12 +43,14 @@ public final class MemoryDetailViewModel {
         repository: any MemoryRepository,
         mediaStorage: MediaStorage,
         speechTranscriber: SpeechTranscriber? = nil,
+        listConnectedMemories: ListConnectedMemoriesUseCase? = nil,
         removeMemory: @escaping @MainActor @Sendable (UUID) async throws -> Void
     ) {
         self.memoryID = memoryID
         self.repository = repository
         self.mediaStorage = mediaStorage
         self.speechTranscriber = speechTranscriber
+        self.listConnectedMemories = listConnectedMemories
         self.removeMemory = removeMemory
     }
 
@@ -57,9 +65,23 @@ public final class MemoryDetailViewModel {
             self.state = .loaded
             await loadAttachedImageIfNeeded(for: memory)
             await loadAttachedAudioIfNeeded(for: memory)
+            await loadConnectedIfNeeded()
         } catch {
             OrbitLog.persistence.error("Memory load failed: \(String(describing: error), privacy: .public)")
             self.state = .failed("Couldn't load this memory. It may have been deleted.")
+        }
+    }
+
+    /// Runs after the primary memory + media have loaded so the
+    /// Connected section doesn't block the first paint. Silent failure
+    /// — `connected` just stays empty and the section hides.
+    private func loadConnectedIfNeeded() async {
+        guard let listConnectedMemories else { return }
+        do {
+            connected = try await listConnectedMemories(anchorID: memoryID)
+        } catch {
+            OrbitLog.persistence.error("Connected memories load failed: \(String(describing: error), privacy: .public)")
+            connected = []
         }
     }
 

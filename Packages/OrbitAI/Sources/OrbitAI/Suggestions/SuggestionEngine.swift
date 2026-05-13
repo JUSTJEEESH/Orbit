@@ -23,9 +23,12 @@ public actor SuggestionEngine: SuggestionGenerator {
     /// Anchor must be no older than this. Older memories are still findable
     /// via Timeline / Search; the Home surface should feel current-ish.
     private let anchorMaxAgeDays: Int = 60
-    /// We don't surface related memories captured within this window of the
-    /// anchor — too close together usually means same thought, same evening.
-    private let relatedMinSeparationDays: Int = 7
+    /// On Home, we don't surface related memories captured within this
+    /// window of the anchor — too close together usually means same
+    /// thought, same evening. On Memory Detail (explicit anchor), the
+    /// caller passes 0 because same-day connections are meaningful when
+    /// the user is staring at a specific memory.
+    private let homeMinSeparationDays: Int = 7
     /// Max related memories to return. Three keeps the surface calm.
     private let maxRelated: Int = 3
     /// Floor below which a candidate doesn't qualify. Empirical — anything
@@ -36,17 +39,33 @@ public actor SuggestionEngine: SuggestionGenerator {
         self.calendar = calendar
     }
 
-    // MARK: - Public
+    // MARK: - Public — Home surface (auto-picked anchor)
 
     public func suggestions(from memories: [Memory], now: Date) async -> MemorySuggestionFeed? {
         let pool = memories.filter { !$0.isSealed(at: now) }
         guard pool.count >= 5 else { return nil }
 
         guard let anchor = pickAnchor(from: pool, now: now) else { return nil }
-        let related = rank(candidates: pool, anchor: anchor, now: now)
+        let related = rank(candidates: pool, anchor: anchor, now: now, minSeparationDays: homeMinSeparationDays)
         guard !related.isEmpty else { return nil }
 
         return MemorySuggestionFeed(anchor: anchor, related: related, generatedAt: now)
+    }
+
+    // MARK: - Public — Memory Detail surface (explicit anchor)
+
+    /// Caller passes the memory the user is viewing; we return the
+    /// top-ranked related memories from the wider corpus. No day-window
+    /// gate on the anchor (it's whatever the user tapped); no day-gap
+    /// requirement on candidates (same-day captures can legitimately
+    /// connect to the one being viewed).
+    public func relatedMemories(
+        anchor: Memory,
+        from memories: [Memory],
+        now: Date
+    ) async -> [MemorySuggestionFeed.Related] {
+        let pool = memories.filter { !$0.isSealed(at: now) }
+        return rank(candidates: pool, anchor: anchor, now: now, minSeparationDays: 0)
     }
 
     // MARK: - Anchor selection (option c — deterministic memory-of-the-day)
@@ -94,14 +113,18 @@ public actor SuggestionEngine: SuggestionGenerator {
 
     // MARK: - Ranking
 
-    private func rank(candidates: [Memory], anchor: Memory, now: Date) -> [MemorySuggestionFeed.Related] {
+    private func rank(
+        candidates: [Memory],
+        anchor: Memory,
+        now: Date,
+        minSeparationDays: Int
+    ) -> [MemorySuggestionFeed.Related] {
         let anchorEntities = entitySet(for: anchor)
 
         let scored: [MemorySuggestionFeed.Related] = candidates.compactMap { candidate in
             guard candidate.id != anchor.id else { return nil }
-            // Same-day captures are usually the same thought continued.
             let daysApart = abs(daysBetween(candidate.createdAt, anchor.createdAt))
-            guard daysApart >= relatedMinSeparationDays else { return nil }
+            guard daysApart >= minSeparationDays else { return nil }
 
             let semantic = cosineSimilarity(anchor.embedding, candidate.embedding)
             let entity = jaccard(anchorEntities, entitySet(for: candidate))

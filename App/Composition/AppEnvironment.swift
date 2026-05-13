@@ -56,6 +56,7 @@ final class AppEnvironment {
     let generateDailyRecap: GenerateDailyRecapUseCase
     let generateInsights: GenerateInsightsUseCase
     let listMemorySuggestions: ListSuggestionsUseCase
+    let listConnectedMemories: ListConnectedMemoriesUseCase
     let listTasks: ListTasksUseCase
     let listTaskSuggestions: ListTaskSuggestionsUseCase
     let promoteHintToTask: PromoteHintToTaskUseCase
@@ -321,9 +322,18 @@ final class AppEnvironment {
             dismissals: UserDefaultsInsightDismissalStore(),
             clock: clock
         )
+        // Shared engine instance — both surfaces (Home suggestions feed,
+        // Memory-Detail connected strip) call through the same actor so
+        // any future caching state stays consistent across them.
+        let suggestionEngine = SuggestionEngine()
         self.listMemorySuggestions = ListSuggestionsUseCase(
             memories: memories,
-            generator: SuggestionEngine(),
+            generator: suggestionEngine,
+            clock: clock
+        )
+        self.listConnectedMemories = ListConnectedMemoriesUseCase(
+            memories: memories,
+            generator: suggestionEngine,
             clock: clock
         )
         self.listTasks = ListTasksUseCase(repository: tasks)

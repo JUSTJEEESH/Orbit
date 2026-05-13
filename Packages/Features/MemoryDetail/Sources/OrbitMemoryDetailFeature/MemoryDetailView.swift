@@ -113,6 +113,67 @@ public struct MemoryDetailView: View {
             if !memory.tags.isEmpty {
                 tagsSection(memory)
             }
+            if !model.connected.isEmpty {
+                connectedSection
+            }
+        }
+    }
+
+    /// "Connected memories" — backlinks surface. Renders 1-3 memory cards
+    /// the SuggestionEngine has scored as related to the one on screen.
+    /// Hidden when the engine returns nothing (empty corpus, no entity
+    /// overlap, nothing above the relevance floor).
+    private var connectedSection: some View {
+        VStack(alignment: .leading, spacing: OrbitSpacing.md) {
+            OrbitSectionHeader("Connected memories")
+            ForEach(model.connected) { related in
+                NavigationLink(value: MemoryDetailRoute(memoryID: related.memory.id)) {
+                    connectedCard(for: related.memory)
+                }
+                .buttonStyle(OrbitBloomButtonStyle(
+                    tint: OrbitCategoryPalette.tint(for: related.memory.ai.category)
+                ))
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Connected memory. \(connectedEyebrow(for: related.memory)). \(connectedHeadline(for: related.memory)).")
+                .accessibilityHint("Double-tap to open.")
+            }
+        }
+    }
+
+    private func connectedCard(for memory: Memory) -> some View {
+        OrbitCard(elevation: .resting) {
+            VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+                OrbitEyebrow(
+                    label: connectedEyebrow(for: memory),
+                    suffix: memory.createdAt.formatted(.relative(presentation: .named)),
+                    tint: OrbitCategoryPalette.tint(for: memory.ai.category)
+                )
+                Text(connectedHeadline(for: memory))
+                    .font(OrbitTypography.body)
+                    .foregroundStyle(OrbitColor.textPrimary)
+                    .lineLimit(3)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
+    private func connectedEyebrow(for memory: Memory) -> String {
+        if let category = memory.ai.category?.trimmingCharacters(in: .whitespacesAndNewlines),
+           !category.isEmpty {
+            return category
+        }
+        return kindLabel(memory)
+    }
+
+    private func connectedHeadline(for memory: Memory) -> String {
+        if let summary = memory.ai.summary, !summary.isEmpty { return summary }
+        switch memory.content {
+        case .text(let s):                          return s
+        case .voiceNote(let transcript, _):         return transcript ?? "Voice note"
+        case .image(let caption):                   return caption ?? "Photo"
+        case .link(_, let title, let summary):      return summary ?? title ?? "Link"
+        case .screenshot(let ocr):                  return ocr ?? "Screenshot"
+        case .location(let name, _, _):             return name ?? "Location"
         }
     }
 
