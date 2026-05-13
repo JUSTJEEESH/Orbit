@@ -114,9 +114,15 @@ public final class ProGateService {
         if entitlements.state.isPro { return true }
         switch gate {
         case .dailyRecap:
-            return weeklyUsage(.dailyRecap) < Self.freeRecapsPerWeek
+            // Distinct-day semantics: re-opening today's recap stays
+            // free, since it's the same recap. Only viewing recaps on
+            // N different days in a week burns the quota — that's what
+            // "3 per week" reads as in plain English.
+            let days = recapDays()
+            if days.contains(todayKey()) { return true }
+            return days.count < Self.freeRecapsPerWeek
         case .askOrbit:
-            return weeklyUsage(.askOrbit) < Self.freeAsksPerWeek
+            return askCounter() < Self.freeAsksPerWeek
         case .voiceLength, .yearInReview, .themes:
             // Pure boolean gates — free users see a preview / shortened
             // experience instead of "you've used X of Y."
@@ -124,13 +130,21 @@ public final class ProGateService {
         }
     }
 
-    /// Bumps the weekly counter for counted gates. No-op for Pro users
-    /// and for boolean gates. Safe to call every time the feature runs.
+    /// Records a usage of a counted gate. No-op for Pro users and for
+    /// boolean gates. Safe to call every time the feature runs.
     public func recordUsage(_ gate: ProGate) {
         guard !entitlements.state.isPro else { return }
-        guard Self.countedGates.contains(gate) else { return }
-        let key = weekKey(for: gate)
-        defaults.set(defaults.integer(forKey: key) + 1, forKey: key)
+        switch gate {
+        case .dailyRecap:
+            var days = recapDays()
+            days.insert(todayKey())
+            defaults.set(Array(days), forKey: recapDaysKey())
+        case .askOrbit:
+            let key = askWeekKey()
+            defaults.set(defaults.integer(forKey: key) + 1, forKey: key)
+        case .voiceLength, .yearInReview, .themes:
+            break
+        }
     }
 
     /// Remaining uses this ISO week for counted gates. nil for boolean
@@ -139,9 +153,11 @@ public final class ProGateService {
         guard !entitlements.state.isPro else { return nil }
         switch gate {
         case .dailyRecap:
-            return max(0, Self.freeRecapsPerWeek - weeklyUsage(.dailyRecap))
+            // Days already viewed count against the quota; today only
+            // counts once if it's already been opened.
+            return max(0, Self.freeRecapsPerWeek - recapDays().count)
         case .askOrbit:
-            return max(0, Self.freeAsksPerWeek - weeklyUsage(.askOrbit))
+            return max(0, Self.freeAsksPerWeek - askCounter())
         case .voiceLength, .yearInReview, .themes:
             return nil
         }
@@ -149,19 +165,45 @@ public final class ProGateService {
 
     // MARK: - Internals
 
-    private static let countedGates: Set<ProGate> = [.dailyRecap, .askOrbit]
+    private func askCounter() -> Int {
+        defaults.integer(forKey: askWeekKey())
+    }
 
-    private func weeklyUsage(_ gate: ProGate) -> Int {
-        defaults.integer(forKey: weekKey(for: gate))
+    private func recapDays() -> Set<String> {
+        let raw = defaults.array(forKey: recapDaysKey()) as? [String] ?? []
+        return Set(raw)
     }
 
     /// Bucket key for the ISO week containing `now()`. Using
     /// `yearForWeekOfYear` (not the regular calendar year) keeps the
     /// week boundary stable when a year flips mid-week.
-    private func weekKey(for gate: ProGate) -> String {
+    private func weekKey(for gateRaw: String) -> String {
         let calendar = Calendar.current
         let comps = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now())
-        return "orbit.gate.\(gate.rawValue).w\(comps.yearForWeekOfYear ?? 0).\(comps.weekOfYear ?? 0)"
+        return "orbit.gate.\(gateRaw).w\(comps.yearForWeekOfYear ?? 0).\(comps.weekOfYear ?? 0)"
+    }
+
+    private func askWeekKey() -> String {
+        weekKey(for: ProGate.askOrbit.rawValue)
+    }
+
+    /// Suffixed so it doesn't collide with the legacy integer-counter
+    /// key that older builds wrote to the same gate namespace. A user
+    /// upgrading from a previous version starts the week with a fresh
+    /// (empty) day-set, which only ever makes the free tier more
+    /// generous — never less.
+    private func recapDaysKey() -> String {
+        weekKey(for: ProGate.dailyRecap.rawValue) + ".days"
+    }
+
+    /// Stable per-day token used as a Set member, e.g. "20260513".
+    /// We use raw date components rather than a Date so the token is
+    /// timezone-stable across launches and serializes cleanly to
+    /// UserDefaults as a String.
+    private func todayKey() -> String {
+        let calendar = Calendar.current
+        let comps = calendar.dateComponents([.year, .month, .day], from: now())
+        return String(format: "%04d%02d%02d", comps.year ?? 0, comps.month ?? 0, comps.day ?? 0)
     }
 }
 
