@@ -25,12 +25,19 @@ public final class HealthKitService {
     /// onboarding doesn't re-prompt on every cold start.
     public private(set) var hasRequestedAuthorization: Bool
 
+    /// User's stated intent to let Orbit read Health data. Separate from
+    /// the system auth state — flipping this off in Settings stops Orbit
+    /// from reading even while iOS still has access granted, which gives
+    /// the user a quick kill-switch without leaving the app.
+    public private(set) var isEnabled: Bool
+
     /// Captured at runtime when a read succeeds; we use it to decide
     /// whether to show the Daily Recap footer at all.
     public private(set) var lastReadSucceeded: Bool = false
 
     private let store: HKHealthStore?
     private static let requestedKey = "orbit.healthkit.requested"
+    private static let enabledKey = "orbit.healthkit.enabled"
 
     public init() {
         if HKHealthStore.isHealthDataAvailable() {
@@ -38,7 +45,16 @@ public final class HealthKitService {
         } else {
             self.store = nil
         }
-        self.hasRequestedAuthorization = UserDefaults.standard.bool(forKey: Self.requestedKey)
+        let defaults = UserDefaults.standard
+        let requested = defaults.bool(forKey: Self.requestedKey)
+        self.hasRequestedAuthorization = requested
+        // Upgrade path: users who authorized before this flag existed
+        // get their Orbit-side toggle pre-flipped to match.
+        if defaults.object(forKey: Self.enabledKey) == nil {
+            self.isEnabled = requested
+        } else {
+            self.isEnabled = defaults.bool(forKey: Self.enabledKey)
+        }
     }
 
     public var isAvailable: Bool { store != nil }
@@ -62,6 +78,29 @@ public final class HealthKitService {
         } catch {
             OrbitLog.app.error("HealthKit auth request failed: \(String(describing: error), privacy: .public)")
             return false
+        }
+    }
+
+    /// Flip the Orbit-side toggle. Enabling triggers the system prompt
+    /// on the first run; subsequent toggles only update the local flag
+    /// since iOS doesn't allow apps to programmatically revoke access.
+    /// Returns true when the resulting state matches the requested
+    /// value — callers can use this to surface a soft failure haptic
+    /// when the auth prompt is denied.
+    @discardableResult
+    public func setEnabled(_ enabled: Bool) async -> Bool {
+        if enabled {
+            if !hasRequestedAuthorization {
+                let ok = await requestAuthorization()
+                guard ok else { return false }
+            }
+            isEnabled = true
+            UserDefaults.standard.set(true, forKey: Self.enabledKey)
+            return true
+        } else {
+            isEnabled = false
+            UserDefaults.standard.set(false, forKey: Self.enabledKey)
+            return true
         }
     }
 

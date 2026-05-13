@@ -63,7 +63,7 @@ private struct ContentRoot: View {
                     // the asked-once flag so subsequent visits to the
                     // permissions screen don't re-ask.
                     onEnableHealth: {
-                        await environment.healthKit.requestAuthorization()
+                        await environment.healthKit.setEnabled(true)
                     }
                 )
                 .orbitTheme(environment.themeService.theme)

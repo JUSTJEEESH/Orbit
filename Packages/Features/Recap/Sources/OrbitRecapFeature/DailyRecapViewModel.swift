@@ -57,7 +57,7 @@ public final class DailyRecapViewModel {
         // Pull HealthKit data after the recap is on screen so primary
         // copy never waits on Health. Only attempt the read when the user
         // has already gone through the prompt.
-        if let healthKit, healthKit.hasRequestedAuthorization {
+        if let healthKit, healthKit.isEnabled {
             let snapshot = await healthKit.snapshot(for: date ?? Date())
             self.healthSnapshot = snapshot.isEmpty ? nil : snapshot
         }

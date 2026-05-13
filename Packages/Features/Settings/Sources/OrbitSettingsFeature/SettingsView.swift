@@ -114,6 +114,7 @@ public struct SettingsView: View {
                         notificationsSection
                         remindersSection
                         calendarSection
+                        healthSection
                         subscriptionSection
                         aboutSection
                         dangerSection
@@ -373,7 +374,7 @@ public struct SettingsView: View {
         }
         .task {
             await notifications.refreshAuthorizationStatus()
-            if let healthKit, healthKit.hasRequestedAuthorization {
+            if let healthKit, healthKit.isEnabled {
                 typicalSleepWindow = await healthKit.typicalSleepWindow()
             }
         }
@@ -543,6 +544,82 @@ public struct SettingsView: View {
                         Haptics.play(.warning)
                     } else if newValue {
                         Haptics.play(.success)
+                    }
+                }
+            }
+        )
+    }
+
+    // MARK: - Apple Health
+
+    @ViewBuilder
+    private var healthSection: some View {
+        if let healthKit {
+            VStack(alignment: .leading, spacing: OrbitSpacing.md) {
+                OrbitSectionHeader(
+                    "Apple Health",
+                    subtitle: "Enrich your Daily Recap with sleep and steps."
+                )
+                OrbitCard {
+                    VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+                        if HealthKitService.isHealthDataAvailable {
+                            Toggle(isOn: healthToggleBinding(for: healthKit)) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Read sleep and steps")
+                                        .font(OrbitTypography.bodyEmphasized)
+                                        .foregroundStyle(OrbitColor.textPrimary)
+                                    Text("Orbit reads only — never writes. Sleep and step counts appear at the bottom of your Daily Recap.")
+                                        .font(OrbitTypography.footnote)
+                                        .foregroundStyle(OrbitColor.textSecondary)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+                            .tint(currentTheme.primary)
+
+                            if healthKit.isEnabled, healthKit.hasRequestedAuthorization {
+                                OrbitDivider()
+                                Button {
+                                    healthKit.openSystemSettings()
+                                } label: {
+                                    HStack {
+                                        Text("Manage Health permissions")
+                                            .font(OrbitTypography.callout)
+                                            .foregroundStyle(currentTheme.primary)
+                                        Spacer()
+                                        Image(systemName: "arrow.up.right")
+                                            .scaledFont(size: 13, weight: .semibold)
+                                            .foregroundStyle(currentTheme.primary)
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityHint("Opens iOS Settings to allow or revoke specific Health data types.")
+                            }
+                        } else {
+                            Text("Apple Health isn't available on this device.")
+                                .font(OrbitTypography.footnote)
+                                .foregroundStyle(OrbitColor.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func healthToggleBinding(for healthKit: HealthKitService) -> Binding<Bool> {
+        Binding(
+            get: { healthKit.isEnabled },
+            set: { newValue in
+                Task { @MainActor in
+                    let ok = await healthKit.setEnabled(newValue)
+                    if newValue, ok {
+                        Haptics.play(.success)
+                        // After the first successful enable, refresh the
+                        // sleep window so the Notifications hint can pick
+                        // it up without waiting for the next .task.
+                        typicalSleepWindow = await healthKit.typicalSleepWindow()
+                    } else if newValue, !ok {
+                        Haptics.play(.warning)
                     }
                 }
             }
