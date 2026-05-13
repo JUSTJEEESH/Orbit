@@ -31,7 +31,11 @@ public final class CalendarSyncService {
     /// user — this is the breadcrumb.
     public private(set) var lastError: String?
 
-    private let store = EKEventStore()
+    // Deferred so launching the app doesn't pay the EventKit-daemon
+    // hop for users who never enable Calendar mirroring. The static
+    // authorizationStatus(for:) below is a cheap entitlement check
+    // and stays eager so the Settings toggle renders correctly.
+    private lazy var store = EKEventStore()
     private let tasks: any TaskRepository
 
     public init(tasks: any TaskRepository) {

@@ -13,9 +13,16 @@ struct OrbitApp: App {
         // Persistence is required to run; if init fails we fall back to an
         // in-memory environment so the app still launches and the failure is
         // surfaced through logs and Settings.
+        //
+        // Wrapped in a signpost so the cold-launch critical path shows up
+        // in Instruments → Points of Interest under "AppEnvironment init",
+        // making it cheap to measure the impact of any future deferral
+        // work (or to catch regressions if something slow gets re-added).
         let env: AppEnvironment
         do {
-            env = try AppEnvironment.makeProduction(appConfig: config)
+            env = try OrbitSignpost.measureSync("AppEnvironment init") {
+                try AppEnvironment.makeProduction(appConfig: config)
+            }
             OrbitLog.persistence.notice("Persistence: SwiftData ready (App Group=\(config.appGroupIdentifier, privacy: .public)).")
         } catch {
             OrbitLog.persistence.fault("Persistence init failed, falling back to in-memory: \(String(describing: error), privacy: .public)")

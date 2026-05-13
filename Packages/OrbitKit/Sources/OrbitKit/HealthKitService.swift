@@ -35,16 +35,18 @@ public final class HealthKitService {
     /// whether to show the Daily Recap footer at all.
     public private(set) var lastReadSucceeded: Bool = false
 
-    private let store: HKHealthStore?
+    // Deferred so the cold-launch path doesn't pay the Health-daemon
+    // hop for users who never open the Recap or Settings → Health
+    // surfaces. Constructing HKHealthStore() is ~10-20ms on real
+    // hardware; the static isHealthDataAvailable() above stays eager
+    // because it's effectively free.
+    private lazy var store: HKHealthStore? = {
+        Self.isHealthDataAvailable ? HKHealthStore() : nil
+    }()
     private static let requestedKey = "orbit.healthkit.requested"
     private static let enabledKey = "orbit.healthkit.enabled"
 
     public init() {
-        if HKHealthStore.isHealthDataAvailable() {
-            self.store = HKHealthStore()
-        } else {
-            self.store = nil
-        }
         let defaults = UserDefaults.standard
         let requested = defaults.bool(forKey: Self.requestedKey)
         self.hasRequestedAuthorization = requested
@@ -57,7 +59,7 @@ public final class HealthKitService {
         }
     }
 
-    public var isAvailable: Bool { store != nil }
+    public var isAvailable: Bool { Self.isHealthDataAvailable }
 
     /// Triggers the HealthKit permission sheet for read access to sleep +
     /// step samples. Apple intentionally doesn't return per-type read
