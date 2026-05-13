@@ -46,7 +46,18 @@ private struct ContentRoot: View {
             } else {
                 OnboardingView(
                     account: environment.account,
-                    onComplete: { environment.onboardingComplete = true },
+                    onComplete: {
+                        environment.onboardingComplete = true
+                        // First-launch wow moment: plant three intro
+                        // memories so Timeline, Search, and the Daily
+                        // Recap aren't empty when the user lands on
+                        // them. Idempotent — re-onboarding after an
+                        // account wipe re-seeds; ordinary launches
+                        // never duplicate.
+                        Task { @MainActor in
+                            await environment.seedWelcomeMemoriesIfNeeded()
+                        }
+                    },
                     // Wire the Reminders permission row to enable the full
                     // sync flow (request EventKit + flip the toggle on) so
                     // users discover it during onboarding, not buried in

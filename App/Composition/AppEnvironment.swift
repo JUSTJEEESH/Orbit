@@ -231,6 +231,10 @@ final class AppEnvironment {
         await spotlight.deindexAll()
         account.signOut()
         onboardingComplete = false
+        // Re-onboarding after a wipe deserves the same welcome
+        // experience as a brand-new install — otherwise the user
+        // lands on an empty shell.
+        UserDefaults.standard.removeObject(forKey: Self.welcomeSeededDefaultsKey)
         memoriesDidChange()
     }
 
