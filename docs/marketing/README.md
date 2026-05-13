@@ -6,10 +6,16 @@ before App Store submission.
 | File | What it is | Where it goes |
 |------|------------|---------------|
 | `app-store-listing.md` | App name, subtitle, keywords, description, what's new, categories, privacy nutrition answers | App Store Connect (manual entry) |
+| `screenshots.md` | The 8-screenshot sequence + composition spec, revised against ButterKit's 2026 cheatsheet (problem → solution → social proof → features → privacy) | Reference doc |
+| `seed-data.md` | Sample memories, tasks, and capture playbook for populating the simulator | Reference doc |
+| `voice-scripts/` | Voice-memo transcripts + `say` workflow for recording in simulator | Used during screenshot prep |
+| `butterkit-prompts.md` | Ready-to-paste prompts for Claude Desktop to drive ButterKit via MCP | Paste into Claude Desktop |
+| `Screenshots Cheatsheet.pdf` | ButterKit's reference cheatsheet (the source we audit against) | Reference doc |
 | `landing.md` | Marketing site homepage copy + SEO metadata | `orbitbrain2.netlify.app/` |
 | `privacy.md` | Privacy Policy | `orbitbrain2.netlify.app/privacy` |
 | `terms.md` | Terms of Use | `orbitbrain2.netlify.app/terms` |
 | `support.md` | Support / FAQ page | `orbitbrain2.netlify.app/support` |
+| `website/` | Static HTML for the marketing site | Deploy to Netlify |
 
 ## Placeholders to fill in
 

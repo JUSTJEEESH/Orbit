@@ -1,19 +1,64 @@
 # App Store Screenshots — copy, sequence, and composition
 
-Apple shows up to **10** screenshots on the listing page. Most users
-swipe through the first 2–3 before deciding, so the sequence below
-is ordered by impact, not by app navigation.
+Revised against ButterKit's [App Store Screenshots Design Cheatsheet
+(2026)](./Screenshots%20Cheatsheet.pdf), which distills SplitMetrics +
+peer-reviewed research into a 14-point conversion playbook. The
+sequence below puts the **problem first**, social proof early, and
+features as the solution — the structure that converts highest.
 
-Required size: **6.7" iPhone (1290 × 2796 px)** captured on an
-iPhone 15 Pro Max / 16 Pro Max simulator. App Store derives the other
-device sizes automatically.
+Apple shows up to **10** screenshots on the listing page. Research
+shows ~89% of visitors never scroll past screenshot #3, so the first
+three slots carry almost all the conversion weight.
+
+Required size: **6.7" iPhone (1290 × 2796 px)** captured on an iPhone
+16 Pro Max simulator. App Store derives the other device sizes
+automatically.
+
+---
+
+## What the cheatsheet teaches
+
+Eight rules we're aligning to:
+
+1. **Start with the problem, not the brand.** First 1–2 screenshots
+   should answer "what problem does this app solve for me?" Apps
+   that lead with the most explanatory screenshot see a **+16.6%
+   install lift** vs. brand openers.
+2. **89% of users never scroll past screenshot #3.** Almost all
+   conversion weight lives in the first three.
+3. **Social proof early.** Customer quotes, awards, or download
+   counts in slots #1–3 — real users' words convert harder than your
+   marketing claims.
+4. **One focus per screenshot, ruthlessly concise.** Shorter
+   captions beat longer ones.
+5. **Maximum 3 typographic styles** total (Title / Subtitle /
+   optional Caption).
+6. **Use real design.** Avoid AI-generated slop. Hand-crafted reads
+   trustworthy.
+7. **Generous negative space.** Don't max out every element.
+8. **Show actual app UI inside device frames.** Brand-mark openers
+   without a phone undersell.
+
+The 14-point checklist (from the cheatsheet, all in scope):
+
+- [x] Start with the problem your app solves in the first 1–2 screenshots
+- [x] Present features as solutions to that problem
+- [x] Structure screenshots as a storyboard with a clear narrative
+- [ ] Include social proof early (reviews / downloads / awards / press)  ← see "Honest social-proof gap" below
+- [x] Limit color palette (Aurora blue + neutrals)
+- [x] No more than 3 typographic styles (headline / subline / caption)
+- [x] Generous negative space
+- [x] One focus point per screenshot, ruthlessly concise
+- [x] Consistent colors / typography / layout / storytelling
+- [x] Real design — no AI slop
+- [x] Use a professional template (ButterKit)
+- [x] Put your 3 most compelling first
+- [x] Show actual app UI inside device frames
+- [ ] Translate and localize for each target market  ← v1 ships English-only; localize in v1.1
 
 ---
 
 ## Composition template (apply to every screenshot)
-
-All eight screenshots share the same chrome so the listing reads as a
-unified gallery — the way Apple Journal, Things 3, and Day One do it.
 
 ```
 ┌──────────────────────────────────┐  ← 1290 × 2796 canvas
@@ -34,272 +79,264 @@ unified gallery — the way Apple Journal, Things 3, and Day One do it.
 
 ### Caption typography
 
-- **Headline**: 108 pt, weight 700, SF Pro Display, tracking -0.025em,
-  line height 1.05. Color = brand text-primary (off-black light,
-  off-white dark).
-- **Subline**: 36 pt, weight 500, SF Pro Display, tracking -0.005em,
-  line height 1.3. Color = text-secondary.
-- **Eyebrow** (optional, for the brand opener): 22 pt, weight 600,
-  tracking 0.16em, all caps, in the **accent blue** (`#2D5BFF`).
+Three styles max — that's the cheatsheet's rule.
+
+- **Headline** — 108 pt, weight 700, SF Pro Display, tracking -0.025em,
+  line height 1.05. Color = text-primary (`#111111` on light bg,
+  `#F4F1EB` on dark bg).
+- **Subline** — 36 pt, weight 500, SF Pro Display, tracking -0.005em,
+  line height 1.3. Color = text-secondary (`#5C5C5C` light /
+  `#A8A8A8` dark).
+- **Caption** (optional, only screenshot #3) — 24 pt, weight 500,
+  small-caps tracked, for the review attribution.
 
 ### Background
 
-- Default: **`#FBFAF7`** (the app's off-white) for a calm gallery feel.
-- Screenshots #1 (brand opener) and #8 (privacy close) use a
-  **dark variant `#0E0E0E`** so the sequence has a satisfying frame
-  and ends as confidently as it begins.
+- Default: **`#FBFAF7`** (off-white) for screenshots #2, #4–#7.
+- **`#0E0E0E`** (dark) for the problem opener (#1) and the privacy
+  close (#8) — bookends the gallery.
+- **`#2D5BFF`** (Aurora accent) for the social-proof quote (#3) —
+  so the quote pops visually inside the sequence.
 
 ### Device frame
 
-Use a clean iPhone 16 Pro Max frame, **black titanium**. No drop
-shadow. No screen bezel reflection. The frame should be slightly
-clipped at the bottom of the canvas — gives a sense of the phone
-extending beyond, very Apple Journal.
+iPhone 16 Pro Max, black titanium. No drop shadow, no bezel
+reflection. Slightly clipped at the bottom of the canvas.
 
 ### Padding
 
 - Top: 200 px before the caption headline
-- Between headline and subline: 24 px
-- Between subline and device frame: 120 px
+- Headline → subline: 24 px
+- Subline → device frame: 120 px
 - Side margins: 75 px
 
 ---
 
 ## The sequence (8 screenshots)
 
-### 1 ▸ Brand opener
+Read the headlines top-to-bottom — they should themselves be the
+elevator pitch. They do here: problem → solution → trust → AI →
+recap → ask → past → privacy.
 
-**Dark background.** Sets the tone. No device frame on this one —
-just the Orbit wordmark + glyph, oversized, with the tagline beneath.
-Think Apple Journal's first screenshot: a brand statement.
+### 1 ▸ The problem (was: brand opener)
 
-| Field    | Copy                                          |
-|----------|-----------------------------------------------|
-| Eyebrow  | `AI · SECOND BRAIN`                           |
-| Headline | `Memories find their orbit.`                  |
-| Subline  | `A calm second brain for iPhone.`             |
-
-**What's on screen:** centered Orbit logo glyph (the atom) at ~280px,
-followed by the wordmark "Orbit" at ~96pt below it. Below that, in
-serif, the tagline at 56pt. Background `#0E0E0E`.
-
----
-
-### 2 ▸ The capture moment
-
-The single most important screen. Shows that capture is one tap.
+**Background:** dark `#0E0E0E`. No device frame. Text composition.
 
 | Field    | Copy                                          |
 |----------|-----------------------------------------------|
-| Headline | `Capture anything, in seconds.`               |
-| Subline  | `Text, voice, photos, links, a place — all in one timeline.` |
+| Eyebrow  | _(none — strip the eyebrow on this one)_      |
+| Headline | `The moments worth keeping keep slipping away.` |
+| Subline  | _(none)_                                      |
 
-**App state to capture:**
-- Open the **Capture** sheet
-- Type a real-feeling memory in the text field, e.g.
-  *"Need to remember the name of that bookshop in Roatan — the owner gave me a coffee."*
-- Show the **mode switcher** at the top (Text · Voice · Photo · Link)
-  with **Text** selected
-- The Save button visible at the bottom
+**What's on screen:** Just the headline, centered, large (serif —
+New York), with substantial vertical breathing room above and below.
+This is a magazine cover, not a product screenshot.
+
+> Cheatsheet alignment: rule #1 (start with the problem). This was
+> previously a brand-mark opener, which the data calls out as a
+> conversion mistake for indie launches.
 
 ---
 
-### 3 ▸ AI hiding itself
+### 2 ▸ The solution intro
 
-Shows the magic without screaming about it. A memory detail view
-where AI has already added a summary, tags, and category.
+**Background:** light `#FBFAF7`. Device frame.
 
 | Field    | Copy                                          |
 |----------|-----------------------------------------------|
-| Headline | `Apple Intelligence does the filing.`         |
-| Subline  | `Titles. Tags. Summaries. All on-device while you write.` |
+| Headline | `One app. Everything you remember.`           |
+| Subline  | `Text · voice · photos · links · places.`     |
 
-**App state to capture:**
-- Open a **Memory Detail** view on a captured voice note
-- Show the AI-generated summary at the top
-- Show the inferred category eyebrow (e.g. **Travel · 4:32 PM**)
-- Show 2–3 generated tags as chips beneath the body
-- The audio waveform + transcript should be visible
+**App state:** Capture sheet open with the **mode switcher**
+visible (Text / Voice / Photo / Link). Body field shows the bookshop
+text from the seed data (so it reads as a real thought, not Lorem
+ipsum). Keyboard dismissed.
 
 ---
 
-### 4 ▸ Daily Recap (signature feature)
+### 3 ▸ Social proof / credibility
 
-The most distinctively "Orbit" surface — leads with editorial
-typography. This is also the share card in disguise, which sells
-the visual quality of the app.
+**Background:** solid Aurora `#2D5BFF`. No device frame. Centered
+typography composition.
+
+| Field    | Copy                                          |
+|----------|-----------------------------------------------|
+| Headline | `"Finally, a second brain that actually feels calm."` |
+| Caption  | `— Early review` (small-caps below)           |
+
+**What's on screen:** Just the quote, in big serif (New York) at
+96pt, centered, color `#F4F1EB`. Below it the attribution in 24pt
+tracked small-caps. Lots of negative space.
+
+> Cheatsheet alignment: rule #4 (social proof early). See "Honest
+> social-proof gap" below — we're using an early-tester quote
+> placeholder until real reviews land in v1.1.
+
+---
+
+### 4 ▸ AI hiding itself
+
+**Background:** light `#FBFAF7`. Device frame.
+
+| Field    | Copy                                          |
+|----------|-----------------------------------------------|
+| Headline | `AI does the filing.`                         |
+| Subline  | `Titles. Tags. Summaries. All on-device.`     |
+
+**App state:** Memory Detail view on the **bookshop voice note**
+(seeded memory #1). Show the auto-inferred category eyebrow, the
+voice waveform + transcript, and the AI-generated summary + tag
+chips lower down.
+
+---
+
+### 5 ▸ Daily Recap
+
+**Background:** light `#FBFAF7`. Device frame.
 
 | Field    | Copy                                          |
 |----------|-----------------------------------------------|
 | Headline | `One paragraph, every evening.`               |
-| Subline  | `A reflection of your day — gentle, never demanded.` |
+| Subline  | `A reflection of your day, gentle.`           |
 
-**App state to capture:**
-- Open the **Daily Recap** sheet for today
-- Make sure the day has 4–6 captures so the narrative has content
-- Show the big day number, weekday in serif, narrative paragraph,
-  and the captures stat
-- Bonus: scroll so the first highlight memory card is just visible
+**App state:** Daily Recap sheet open for today. 168pt day number in
+Aurora blue, day-of-week in serif, narrative paragraph, stats row,
+sleep + steps footer.
 
 ---
 
-### 5 ▸ Ask Orbit (the differentiator)
+### 6 ▸ Ask Orbit
 
-This is the demo. Question + answer + sources. Most powerful "wow
-factor" screen in the listing.
+**Background:** light `#FBFAF7`. Device frame.
 
 | Field    | Copy                                          |
 |----------|-----------------------------------------------|
-| Headline | `Chat with your own memories.`                |
-| Subline  | `Orbit answers from your captures. Never the cloud.` |
+| Headline | `Chat with your memories.`                    |
+| Subline  | `Orbit answers from your captures.`           |
 
-**App state to capture:**
-- Open the **Ask Orbit** sheet
-- Show a real-feeling answered question, e.g.
-  - Question (in the field/header): *"What did Pamela say about the restaurant?"*
-  - Answer card showing a 2–3 sentence Orbit response
-  - **Sources** section below showing 2–3 source memory chips
-- Use serif for the answer body (Orbit already styles it that way)
+**App state:** Ask Orbit sheet with the Pamela question answered:
+question at top, serif answer card with sources beneath.
 
 ---
 
-### 6 ▸ Share-worthy moments
+### 7 ▸ Time / resurfacing
 
-Sells the share-card feature, which doubles as a product polish
-signal. Show the actual rendered share card.
-
-| Field    | Copy                                          |
-|----------|-----------------------------------------------|
-| Headline | `Worth remembering. Worth sharing.`           |
-| Subline  | `Turn any memory or recap into a beautifully framed image.` |
-
-**App state to capture:**
-- Open a memory's share sheet *or*
-- A standalone preview of the **Daily Recap share card**
-  rendered at 1080 × 1350 with the brand mark + day number hero
-- If using the system share sheet preview, make sure the card image
-  is the dominant element
-
----
-
-### 7 ▸ On This Day / Year in Review
-
-Sells the **time** dimension — the app's emotional payoff. Choose
-Year in Review for the dramatic year glyph.
+**Background:** light `#FBFAF7`. Device frame.
 
 | Field    | Copy                                          |
 |----------|-----------------------------------------------|
-| Headline | `Your past, surfaced at the right moment.`    |
+| Headline | `Your past, on cue.`                          |
 | Subline  | `On This Day · Year in Review · Time Capsules` |
 
-**App state to capture:**
-- Open the **Year in Review** sheet
-- Show the year hero (the 220pt year number in accent blue)
-- Show the headline ("[N] memories — a year in motion.")
-- Show the monthly sparkline below
-- Show at least one highlight row visible at the bottom
+**App state:** Year in Review sheet (time-travel the simulator clock
+to Dec 28 — see [`seed-data.md`](./seed-data.md) for the workaround).
+220pt year glyph in Aurora, sparkline, label/value rows.
 
 ---
 
-### 8 ▸ Private by design (closing trust signal)
+### 8 ▸ Privacy close
 
-**Dark background.** Closes the sequence the way it opened, with a
-brand statement — but the brand statement here is the privacy
-promise.
+**Background:** dark `#0E0E0E`. No device frame. Centered checklist.
 
 | Field    | Copy                                          |
 |----------|-----------------------------------------------|
-| Eyebrow  | `PRIVACY · ON DEVICE`                         |
 | Headline | `Nothing leaves your phone.`                  |
-| Subline  | `On-device AI. End-to-end iCloud. No analytics. No ads.` |
+| Subline  | `On-device AI. No analytics. No ads.`         |
 
-**What's on screen:** no device frame. Instead, a centered visual
-composition matching screenshot #1:
-- A small Orbit glyph in the accent color
-- Four short label lines stacked vertically, each prefixed with a
-  small green checkmark:
-  - `On-device AI`
-  - `End-to-end iCloud`
-  - `No analytics or tracking`
-  - `No data sold or shared`
+**What's on screen:** Four-row checklist, each row 56pt SF Pro
+Display Medium in `#F4F1EB` with a 36pt green `#3FAE6A` checkmark:
 
-Background `#0E0E0E`. Same dark variant as screenshot #1 — bookends
-the sequence.
+- ✓  On-device AI
+- ✓  End-to-end iCloud
+- ✓  No analytics or tracking
+- ✓  No data sold or shared
 
 ---
 
-## Caption sequence at a glance (for verification)
+## Caption sequence at a glance (verification)
 
-This is what your gallery reads like if a user only sees the
-headlines while scrubbing through:
+If a user scrubs the gallery and reads only the headlines:
 
-1. **Memories find their orbit.**
-2. **Capture anything, in seconds.**
-3. **Apple Intelligence does the filing.**
-4. **One paragraph, every evening.**
-5. **Chat with your own memories.**
-6. **Worth remembering. Worth sharing.**
-7. **Your past, surfaced at the right moment.**
+1. **The moments worth keeping keep slipping away.**
+2. **One app. Everything you remember.**
+3. **"Finally, a second brain that actually feels calm."**
+4. **AI does the filing.**
+5. **One paragraph, every evening.**
+6. **Chat with your memories.**
+7. **Your past, on cue.**
 8. **Nothing leaves your phone.**
 
-Read top-to-bottom. That's the elevator pitch. If the sequence
-doesn't read as a story on its own, the screenshots aren't doing
-their job — but this one does.
+That's the pitch.
 
 ---
 
-## How to actually produce these
+## Honest social-proof gap
 
-### Option A — Hand-composed in Figma (recommended)
+The cheatsheet pushes hard on social proof, but a v1 launch has no
+real reviews yet. Three options:
 
-1. Set up a 1290 × 2796 frame for each screenshot.
-2. Import the iPhone 16 Pro Max mockup ([free from Apple's
-   Design Resources](https://developer.apple.com/design/resources/)).
-3. Take a clean simulator screenshot at iPhone 16 Pro Max resolution
-   in the app, then paste it inside the device frame.
-4. Add the caption stack at top using the typography spec above.
-5. Export as PNG at 1290 × 2796.
+**A. Run TestFlight beta for 2 weeks, collect real quotes.** Send
+Orbit to 5–15 testers, ask each for one sentence, pick the most
+honest line for screenshot #3. **Most legitimate path.** Adds ~2
+weeks to launch timeline.
 
-### Option B — Automated with Fastlane snapshot
+**B. Replace #3 with a credibility signal that isn't a quote.**
+Examples:
+- "Built on Apple Intelligence" + Apple logo
+- The privacy checklist as the credibility signal
+- A specific concrete stat ("100% on-device AI" / "Zero analytics
+  SDKs")
 
-If you want to regenerate screenshots on every release:
+**C. Skip social proof at v1, swap in another feature.** Acceptable;
+you'll still beat 80% of indie listings on the rest of the
+cheatsheet.
 
-1. Install [`fastlane snapshot`](https://docs.fastlane.tools/getting-started/ios/screenshots/).
-2. Write a UI test per screenshot that drives the app into the
-   right state (open Daily Recap, fill in a memory, etc).
-3. Use [`frameit`](https://docs.fastlane.tools/actions/frameit/) to
-   wrap them in device frames with captions auto-pulled from a
-   `title.strings` file.
-
-For a v1 launch with eight screenshots, Option A is faster (a few
-hours total) and gives you more visual control. Switch to Option B
-once you ship updates regularly.
-
-### Localization
-
-If you ever ship localized listings, the caption headlines are short
-enough (2–6 words each) that translation is a 30-minute pass per
-language. The subline is where most of the localization effort goes.
+**Recommendation: B for launch, A by v1.1.** Lead with the "Built
+on Apple Intelligence" credibility signal (or just the bare quote
+placeholder above with `— Early review` if you've had any beta
+tester feedback at all), and swap it for a real customer review
+within a month of shipping when real reviews land.
 
 ---
 
-## App Preview video (optional)
+## Production paths
 
-App Preview videos play autoplay in the listing and convert ~25%
-better than screenshots alone when done well. If you want one:
+### Option A — ButterKit (recommended)
 
-- **15–30 seconds** of real app usage, no animations or text overlays
-  (Apple's guidelines forbid lifestyle footage or non-app content).
-- Suggested cut:
-  1. **0–3s** — open the Capture sheet, type a one-line memory, hit save.
-  2. **4–7s** — timeline updates, AI summary fades in on the new card.
-  3. **8–14s** — tap Daily Recap pill, scroll through the recap content.
-  4. **15–22s** — open Ask Orbit, type a question, watch the answer render.
-  5. **23–28s** — share a memory as a card, system share sheet appears.
-  6. **29–30s** — Orbit logo + tagline title card.
-- Record the screen via Xcode → **Device → Window → Screen Recording**
-  on a real device for the best fidelity.
-- Trim and export as **1080 × 1920** H.264 .mov, ≤500 MB.
+ButterKit is the dedicated screenshot composition tool you have a
+lifetime pro license for. Templates, device frames, multi-language
+export, and direct App Store Connect upload are all built in. Drive
+it from **Claude Desktop** with the MCP server you configured — see
+[`butterkit-prompts.md`](./butterkit-prompts.md) for the
+ready-to-paste prompts.
 
-Apple lets you submit one App Preview per device size. You can ship
-without one for v1 and add later.
+### Option B — Figma (manual fallback)
+
+1. Frame 1290 × 2796 per screenshot.
+2. Import iPhone 16 Pro Max mockup from [Apple Design Resources](https://developer.apple.com/design/resources/).
+3. Paste your simulator screenshot inside the device frame.
+4. Add caption layers using the typography spec above.
+5. Export each frame as PNG.
+
+### Option C — Fastlane snapshot (for ongoing releases)
+
+`fastlane snapshot` + `frameit` can regenerate on every release.
+Heavier setup; worth it once you ship updates monthly or want
+localization at scale.
+
+---
+
+## App Preview video (optional, post-launch)
+
+App Preview videos boost conversion ~25% on top of strong
+screenshots, but are not required for v1. Cut sheet:
+
+- 0–3s: Capture sheet → type → save
+- 4–7s: Timeline updates, AI summary fades in
+- 8–14s: Daily Recap, scroll through content
+- 15–22s: Ask Orbit, type question, watch answer render
+- 23–28s: Share a memory as a card
+- 29–30s: Orbit logo title card
+
+Record on a real device via Xcode → Device → Window → Screen
+Recording. Export 1080 × 1920 H.264 .mov, ≤500 MB.
