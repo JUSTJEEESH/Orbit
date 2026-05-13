@@ -1,6 +1,7 @@
 import SwiftUI
 import OrbitKit
 import OrbitDesignSystem
+import OrbitStore
 
 @main
 struct OrbitApp: App {
@@ -71,6 +72,7 @@ private struct ContentRoot: View {
         }
         .environment(environment)
         .environment(\.reviewPrompts, environment.reviewPrompts)
+        .environment(\.proGates, environment.proGates)
         .tint(OrbitColor.textPrimary)
         .task {
             await environment.account.refreshCredentialState()

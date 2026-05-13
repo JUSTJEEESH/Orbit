@@ -150,8 +150,49 @@ public final class EntitlementService {
             displayName: product.displayName,
             description: product.description,
             displayPrice: product.displayPrice,
-            kind: kind(for: product)
+            kind: kind(for: product),
+            introductoryOffer: introductoryOfferDescription(for: product)
         )
+    }
+
+    /// Returns a friendly summary like "7-day free trial" for a
+    /// subscription's introductory offer, or nil when none is configured.
+    /// We deliberately render this as a single-line tagline so it can sit
+    /// alongside the regular price in the paywall product row.
+    private static func introductoryOfferDescription(for product: Product) -> String? {
+        guard
+            product.type == .autoRenewable,
+            let offer = product.subscription?.introductoryOffer
+        else { return nil }
+
+        let period = offer.period
+        let unitWord: String = {
+            switch period.unit {
+            case .day:   return period.value == 1 ? "day" : "days"
+            case .week:  return period.value == 1 ? "week" : "weeks"
+            case .month: return period.value == 1 ? "month" : "months"
+            case .year:  return period.value == 1 ? "year" : "years"
+            @unknown default: return "days"
+            }
+        }()
+        // Apple's StoreKit returns a Week with value 1 for "P1W", but
+        // users read "7-day" more naturally than "1-week" for trials.
+        // Normalize the common case.
+        let valueLabel: String
+        if period.unit == .week, period.value == 1 {
+            valueLabel = "7-day"
+        } else {
+            valueLabel = "\(period.value)-\(unitWord)"
+        }
+
+        switch offer.paymentMode {
+        case .freeTrial:
+            return "\(valueLabel) free trial"
+        case .payAsYouGo, .payUpFront:
+            return "\(valueLabel) intro at \(offer.displayPrice)"
+        default:
+            return nil
+        }
     }
 
     private static func kind(for product: Product) -> OrbitProduct.Kind {

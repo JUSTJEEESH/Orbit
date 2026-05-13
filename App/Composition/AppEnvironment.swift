@@ -43,6 +43,7 @@ final class AppEnvironment {
     let calendarSync: CalendarSyncService
     let healthKit: HealthKitService
     let reviewPrompts: ReviewPromptService
+    let proGates: ProGateService
 
     let captureMemory: CaptureMemoryUseCase
     let listMemories: ListMemoriesUseCase
@@ -260,6 +261,7 @@ final class AppEnvironment {
         self.calendarSync = CalendarSyncService(tasks: tasks)
         self.healthKit = HealthKitService()
         self.reviewPrompts = ReviewPromptService()
+        self.proGates = ProGateService(entitlements: entitlements)
 
         self.onboardingComplete = UserDefaults.standard.bool(forKey: Self.onboardingKey)
 

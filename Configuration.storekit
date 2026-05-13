@@ -68,7 +68,11 @@
           "familyShareable" : false,
           "groupNumber" : 1,
           "internalID" : "com.orbit.app.pro.yearly.id",
-          "introductoryOffer" : null,
+          "introductoryOffer" : {
+            "internalID" : "com.orbit.app.pro.yearly.trial",
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P1W"
+          },
           "localizations" : [
             {
               "description" : "Best value. Billed annually.",

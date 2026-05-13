@@ -167,6 +167,16 @@ public struct PaywallView: View {
     }
 
     private func planTagline(for product: OrbitProduct) -> String {
+        // Free-trial copy takes precedence — it's the most persuasive
+        // line we have, and burying it under "Billed annually" sells
+        // the offer short.
+        if let intro = product.introductoryOffer {
+            switch product.kind {
+            case .yearly:   return "\(intro), then \(product.displayPrice)/year."
+            case .monthly:  return "\(intro), then \(product.displayPrice)/month."
+            default:        return intro
+            }
+        }
         switch product.kind {
         case .monthly:  return "Billed monthly. Cancel anytime."
         case .yearly:   return "Best value. Billed once a year."

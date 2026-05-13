@@ -9,6 +9,10 @@ public struct OrbitProduct: Sendable, Identifiable, Hashable {
     public let description: String
     public let displayPrice: String
     public let kind: Kind
+    /// Optional human-readable summary of a paid product's introductory
+    /// offer (e.g. "7-day free trial"). nil when none is configured or
+    /// when the user has already consumed it.
+    public let introductoryOffer: String?
 
     public enum Kind: Sendable, Hashable {
         case monthly
@@ -17,11 +21,19 @@ public struct OrbitProduct: Sendable, Identifiable, Hashable {
         case unknown
     }
 
-    public init(id: String, displayName: String, description: String, displayPrice: String, kind: Kind) {
+    public init(
+        id: String,
+        displayName: String,
+        description: String,
+        displayPrice: String,
+        kind: Kind,
+        introductoryOffer: String? = nil
+    ) {
         self.id = id
         self.displayName = displayName
         self.description = description
         self.displayPrice = displayPrice
         self.kind = kind
+        self.introductoryOffer = introductoryOffer
     }
 }
