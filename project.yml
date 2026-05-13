@@ -75,6 +75,13 @@ targets:
         CFBundleDisplayName: Orbit
         UILaunchScreen:
           UIColorName: launch.background
+        # Orbit is a phone-only premium experience for v1, locked to
+        # portrait the same way Apple Journal, Day One, and Things do.
+        # UIRequiresFullScreen also silences the App Store validation
+        # warning about iPad needing all four orientations.
+        UIRequiresFullScreen: true
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
         # Enables ActivityKit Live Activities so the voice-capture session
         # surfaces in the Dynamic Island, Lock Screen, and StandBy mode.
         NSSupportsLiveActivities: true
@@ -95,6 +102,10 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app
         CODE_SIGN_ENTITLEMENTS: App/Resources/Orbit.entitlements
+        # iPhone only for v1 — keeps the "All interface orientations must
+        # be supported" iPad validation warning away and matches the
+        # premium portrait-first journaling app archetype.
+        TARGETED_DEVICE_FAMILY: 1
         # Tells the asset-catalog compiler to ship these App Icon image
         # sets alongside the primary AppIcon so
         # UIApplication.setAlternateIconName can find them at runtime.
