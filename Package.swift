@@ -121,7 +121,7 @@ let package = Package(
         ),
         .target(
             name: "OrbitCaptureFeature",
-            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitMedia"],
+            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitMedia", "OrbitStore"],
             path: "Packages/Features/Capture/Sources/OrbitCaptureFeature",
             swiftSettings: swiftSettings
         ),

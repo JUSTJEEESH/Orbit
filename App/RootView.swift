@@ -40,7 +40,14 @@ struct RootView: View {
                         captureMemory: env.captureMemory,
                         mediaStorage: env.mediaStorage,
                         speechTranscriber: env.speechTranscriber,
-                        linkFetcher: env.linkFetcher
+                        linkFetcher: env.linkFetcher,
+                        // Evaluated every recorder tick so a Pro
+                        // upgrade lifts the cap mid-recording.
+                        voiceCapProvider: {
+                            env.proGates.canAccess(.voiceLength)
+                                ? nil
+                                : ProGateService.freeVoiceSeconds
+                        }
                     ),
                     onCompleted: { memoryID in
                         env.memoriesDidChange()
@@ -48,7 +55,14 @@ struct RootView: View {
                         env.scheduleSealedDeliveryIfNeeded(for: memoryID)
                         env.requestedModal = nil
                     },
-                    onCancel: { env.requestedModal = nil }
+                    onCancel: { env.requestedModal = nil },
+                    onPresentPaywall: {
+                        env.requestedModal = nil
+                        Task { @MainActor in
+                            try? await Task.sleep(for: .milliseconds(280))
+                            env.requestedModal = .paywall
+                        }
+                    }
                 )
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)

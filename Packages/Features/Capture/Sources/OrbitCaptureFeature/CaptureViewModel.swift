@@ -5,6 +5,7 @@ import OrbitDomain
 import OrbitMedia
 import OrbitKit
 import OrbitDesignSystem
+import OrbitStore
 
 @MainActor
 @Observable
@@ -49,6 +50,11 @@ public final class CaptureViewModel {
     /// permission Orbit needs (mic or speech). The view uses this to
     /// surface an "Open Settings" button alongside the message.
     public var errorOffersSettings: Bool = false
+    /// Set when a ProGate trips during capture (currently only
+    /// `.voiceLength`). The view watches this to surface the soft
+    /// paywall inline. The audio captured up to the cap is preserved
+    /// in `voiceState` so the user can still save what they recorded.
+    public var lockedGate: ProGate?
     /// Future surface date for Time Capsule. `nil` means surface
     /// immediately. UI exposes this through a "Schedule for later" toggle.
     public var surfaceDate: Date?
@@ -65,6 +71,11 @@ public final class CaptureViewModel {
     private let linkFetcher: LinkPreviewFetcher
     private let drafts: DraftStore
     private let liveActivity = CaptureLiveActivityController()
+    /// Closure that returns the current maximum recording length for
+    /// voice notes, or `nil` for unlimited (Pro). Evaluated on every
+    /// recorder tick so a Pro upgrade mid-recording lifts the cap
+    /// immediately.
+    private let voiceCapProvider: @MainActor () -> TimeInterval?
 
     private var recorder: VoiceRecorder?
     private var recordTask: Task<Void, Never>?
@@ -75,14 +86,33 @@ public final class CaptureViewModel {
         mediaStorage: MediaStorage,
         speechTranscriber: SpeechTranscriber,
         linkFetcher: LinkPreviewFetcher,
-        drafts: DraftStore = .userDefaults
+        drafts: DraftStore = .userDefaults,
+        voiceCapProvider: @escaping @MainActor () -> TimeInterval? = { nil }
     ) {
         self.captureMemory = captureMemory
         self.mediaStorage = mediaStorage
         self.speechTranscriber = speechTranscriber
         self.linkFetcher = linkFetcher
         self.drafts = drafts
+        self.voiceCapProvider = voiceCapProvider
         self.textDraft = drafts.loadTextDraft() ?? ""
+    }
+
+    /// Seconds remaining before the free-tier voice cap auto-stops the
+    /// current recording. `nil` when no cap applies (Pro) or no
+    /// recording is in flight. The view uses this to show a quiet
+    /// "Xs left on free" hint as the user approaches the limit.
+    public var voiceRemainingSeconds: TimeInterval? {
+        guard let cap = voiceCapProvider() else { return nil }
+        guard case .recording(let elapsed, _) = voiceState else { return nil }
+        return max(0, cap - elapsed)
+    }
+
+    /// Called by the view when the user dismisses the soft paywall
+    /// presented for `lockedGate`. We never clear it automatically —
+    /// the user owns the dismiss action.
+    public func clearLockedGate() {
+        lockedGate = nil
     }
 
     // MARK: - Save
@@ -203,10 +233,30 @@ public final class CaptureViewModel {
             recordTask = Task { @MainActor [weak self] in
                 guard let self else { return }
                 var collected: [Float] = []
+                var autoStopOnCap = false
                 for await event in stream {
                     collected.append(event.level)
                     if collected.count > 600 { collected.removeFirst(collected.count - 600) }
                     self.voiceState = .recording(elapsed: event.elapsed, levels: collected)
+
+                    // Free-tier cap. Evaluating the closure every tick
+                    // lets a Pro upgrade mid-recording lift the cap
+                    // immediately — we never freeze the value at start.
+                    if let cap = self.voiceCapProvider(), event.elapsed >= cap {
+                        autoStopOnCap = true
+                        break
+                    }
+                }
+                if autoStopOnCap {
+                    // Side-effects happen outside the stream loop so
+                    // recorder.stop() can finalize cleanly. lockedGate
+                    // is set after the stop returns, when voiceState
+                    // is already on .recorded — that way the soft
+                    // paywall surfaces over a card showing the audio
+                    // the user just captured, not over a half-torn-
+                    // down recording state.
+                    await self.stopRecording()
+                    self.lockedGate = .voiceLength
                 }
             }
             Haptics.play(.impactRigid)

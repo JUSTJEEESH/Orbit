@@ -5,11 +5,15 @@ import OrbitDesignSystem
 import OrbitDomain
 import OrbitMedia
 import OrbitKit
+import OrbitStore
 
 public struct CaptureView: View {
     @State private var model: CaptureViewModel
     private let onCompleted: @MainActor (UUID) -> Void
     private let onCancel: @MainActor () -> Void
+    /// Called when the user taps "See Orbit Pro" inside the inline
+    /// gate sheet. The caller routes them to the full PaywallView.
+    private let onPresentPaywall: @MainActor () -> Void
 
     @FocusState private var textFocus: Bool
     @State private var photoPickerItem: PhotosPickerItem?
@@ -20,11 +24,24 @@ public struct CaptureView: View {
     public init(
         viewModel: CaptureViewModel,
         onCompleted: @escaping @MainActor (UUID) -> Void,
-        onCancel: @escaping @MainActor () -> Void
+        onCancel: @escaping @MainActor () -> Void,
+        onPresentPaywall: @escaping @MainActor () -> Void = {}
     ) {
         self._model = State(initialValue: viewModel)
         self.onCompleted = onCompleted
         self.onCancel = onCancel
+        self.onPresentPaywall = onPresentPaywall
+    }
+
+    /// Binding into the view model's locked-gate state so a SwiftUI
+    /// sheet(item:) can present and dismiss the soft paywall.
+    private var lockedGateBinding: Binding<ProGate?> {
+        Binding(
+            get: { model.lockedGate },
+            set: { newValue in
+                if newValue == nil { model.clearLockedGate() }
+            }
+        )
     }
 
     public var body: some View {
@@ -70,6 +87,20 @@ public struct CaptureView: View {
             .sheet(isPresented: $showSchedulePicker) {
                 schedulePickerSheet
                     .presentationDetents([.medium])
+            }
+            .sheet(item: lockedGateBinding) { gate in
+                // Presented in-place over the capture sheet so the
+                // recorded audio underneath remains available for save
+                // after dismiss. The audio is the user's data — we
+                // never throw it away just because we hit a paywall.
+                ProGateSheet(
+                    gate: gate,
+                    onSeeProDetails: {
+                        model.clearLockedGate()
+                        onPresentPaywall()
+                    },
+                    onDismiss: { model.clearLockedGate() }
+                )
             }
             .navigationTitle("Capture")
             .navigationBarTitleDisplayMode(.inline)
@@ -156,8 +187,17 @@ public struct CaptureView: View {
                 Text(Self.formatDuration(elapsed))
                     .font(OrbitTypography.monoNumeric)
                     .foregroundStyle(OrbitColor.textPrimary)
+                if let remaining = model.voiceRemainingSeconds, remaining < 15 {
+                    // Quiet nudge during the final 15s so the auto-stop
+                    // doesn't feel like it came out of nowhere.
+                    Text("\(Int(ceil(remaining)))s left on free")
+                        .font(OrbitTypography.footnote)
+                        .foregroundStyle(OrbitColor.warning)
+                        .transition(.opacity)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .animation(.easeInOut(duration: 0.18), value: model.voiceRemainingSeconds.map { Int($0) })
         case .transcribing(_, let duration, _):
             HStack(spacing: OrbitSpacing.sm) {
                 ProgressView()
