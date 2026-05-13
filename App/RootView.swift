@@ -170,6 +170,23 @@ struct RootView: View {
                     onCancel: { env.requestedModal = nil }
                 )
                 .presentationDetents([.large])
+            case .proGate(let gate):
+                // Soft contextual paywall. Tapping "See Orbit Pro"
+                // dismisses this sheet and queues the full PaywallView
+                // after a short delay — SwiftUI's .sheet(item:) needs
+                // a beat to complete the dismiss animation before
+                // re-presenting cleanly with a new item id.
+                ProGateSheet(
+                    gate: gate,
+                    onSeeProDetails: {
+                        env.requestedModal = nil
+                        Task { @MainActor in
+                            try? await Task.sleep(for: .milliseconds(280))
+                            env.requestedModal = .paywall
+                        }
+                    },
+                    onDismiss: { env.requestedModal = nil }
+                )
             }
         }
         .onAppear { Haptics.prepare() }
@@ -189,7 +206,7 @@ struct RootView: View {
                     refreshToken: env.memoryListVersion,
                     clock: env.clock,
                     makeDetailViewModel: makeDetailViewModel,
-                    onPresentRecap: { env.requestedModal = .dailyRecap },
+                    onPresentRecap: { env.requestRecap() },
                     onPresentPatterns: { env.requestedModal = .patterns },
                     onPresentAskOrbit: { env.requestedModal = .askOrbit },
                     onPresentLetter: { env.requestedModal = .letter },

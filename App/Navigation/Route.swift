@@ -1,4 +1,5 @@
 import Foundation
+import OrbitStore
 
 /// The top-level tab destinations. Capture is intentionally NOT a tab — it
 /// lives behind the floating action button so it's always reachable without
@@ -40,6 +41,10 @@ enum AppModal: Hashable, Identifiable {
     case letter
     case yearInReview
     case gratitude
+    /// Soft contextual paywall — presented when a free user lands on a
+    /// gated surface. Carries the specific gate so the sheet can lead
+    /// with feature-aware copy ("you've savored your free recaps").
+    case proGate(ProGate)
 
     var id: Self { self }
 }

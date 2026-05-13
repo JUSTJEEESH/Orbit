@@ -180,6 +180,20 @@ final class AppEnvironment {
         }
     }
 
+    /// Trigger sites call this instead of setting `requestedModal =
+    /// .dailyRecap` directly. Free users hitting the weekly quota are
+    /// routed to the soft paywall sheet instead of the recap — so the
+    /// quota check lives in one place and every entry point (Home
+    /// button, notification tap, AppIntents) inherits it.
+    func requestRecap() {
+        if proGates.canAccess(.dailyRecap) {
+            proGates.recordUsage(.dailyRecap)
+            requestedModal = .dailyRecap
+        } else {
+            requestedModal = .proGate(.dailyRecap)
+        }
+    }
+
     /// Deletes a memory and removes it from Spotlight. Use this from the UI
     /// instead of `deleteMemory` directly.
     func removeMemory(id: UUID) async throws {
@@ -332,7 +346,7 @@ final class AppEnvironment {
         // user taps the delivered recap notification. Must happen after every
         // stored property is initialized so `self` is fully formed.
         self.notifications.onOpenRecap = { [weak self] in
-            self?.requestedModal = .dailyRecap
+            self?.requestRecap()
         }
 
         // Same pattern for the watch session — the receiver needs to nudge
