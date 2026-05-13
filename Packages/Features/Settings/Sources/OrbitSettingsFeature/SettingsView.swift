@@ -22,6 +22,13 @@ public struct SettingsView: View {
     private let onDeleteAccount: @MainActor @Sendable () async throws -> Void
     private let onDismiss: @MainActor () -> Void
 
+    /// One-shot demo data seeder. The UI affordance that calls this
+    /// only renders in DEBUG builds (see `demoDataSection`), so the
+    /// Release App Store binary never shows it — but the closure
+    /// itself is unconditional to keep the init signature identical
+    /// across build configurations.
+    private let onSeedDemoData: (@MainActor @Sendable () async -> Void)?
+
     /// Reminders sync state surfaced through plain values so this feature
     /// package doesn't have to depend on EventKit. RootView wires the live
     /// bindings to `RemindersSyncService`.
@@ -68,7 +75,8 @@ public struct SettingsView: View {
         calendarLastError: String? = nil,
         onToggleCalendarSync: @escaping @MainActor @Sendable (Bool) async -> Void = { _ in },
         onOpenCalendarSettings: @escaping @MainActor () -> Void = {},
-        healthKit: HealthKitService? = nil
+        healthKit: HealthKitService? = nil,
+        onSeedDemoData: (@MainActor @Sendable () async -> Void)? = nil
     ) {
         self.appConfig = appConfig
         self.account = account
@@ -93,6 +101,7 @@ public struct SettingsView: View {
         self.onToggleCalendarSync = onToggleCalendarSync
         self.onOpenCalendarSettings = onOpenCalendarSettings
         self.healthKit = healthKit
+        self.onSeedDemoData = onSeedDemoData
     }
 
     public var body: some View {
@@ -108,6 +117,9 @@ public struct SettingsView: View {
                         subscriptionSection
                         aboutSection
                         dangerSection
+                        #if DEBUG
+                        demoDataSection
+                        #endif
                     }
                     .padding(.vertical, OrbitSpacing.lg)
                 }
@@ -677,4 +689,49 @@ public struct SettingsView: View {
         }
         .padding(.vertical, OrbitSpacing.xxs)
     }
+
+    // MARK: - Demo data (DEBUG only)
+
+    #if DEBUG
+    @State private var isSeeding: Bool = false
+    @State private var didSeed: Bool = false
+
+    /// One-shot button for populating the app with realistic demo
+    /// content so screenshots look lived-in. Compiled out of Release
+    /// — Apple Review never sees this surface.
+    private var demoDataSection: some View {
+        VStack(alignment: .leading, spacing: OrbitSpacing.md) {
+            OrbitSectionHeader(
+                "Demo data",
+                subtitle: "Screenshot prep only — present in DEBUG builds, stripped from Release."
+            )
+            OrbitCard {
+                VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+                    Text("Seed demo memories")
+                        .font(OrbitTypography.bodyEmphasized)
+                        .foregroundStyle(OrbitColor.textPrimary)
+                    Text("Creates 10 memories (voice transcripts hard-coded — no Speech Recognition needed), 3 manual tasks, and a sealed letter. Safe to run once; tapping again duplicates the seed.")
+                        .font(OrbitTypography.footnote)
+                        .foregroundStyle(OrbitColor.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    OrbitButton(
+                        didSeed ? "Seeded ✓" : (isSeeding ? "Seeding…" : "Seed now"),
+                        systemImage: "wand.and.stars",
+                        style: .secondary
+                    ) {
+                        guard let onSeedDemoData, !isSeeding else { return }
+                        isSeeding = true
+                        Task { @MainActor in
+                            await onSeedDemoData()
+                            isSeeding = false
+                            didSeed = true
+                            Haptics.play(.success)
+                        }
+                    }
+                    .disabled(isSeeding || onSeedDemoData == nil)
+                }
+            }
+        }
+    }
+    #endif
 }

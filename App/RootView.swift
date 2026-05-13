@@ -95,7 +95,12 @@ struct RootView: View {
                         }
                     },
                     onOpenCalendarSettings: { env.calendarSync.openSystemSettings() },
-                    healthKit: env.healthKit
+                    healthKit: env.healthKit,
+                    onSeedDemoData: {
+                        #if DEBUG
+                        await env.seedDemoData()
+                        #endif
+                    }
                 )
                 .presentationDetents([.large])
             case .paywall:
