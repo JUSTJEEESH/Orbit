@@ -2,6 +2,7 @@ import Foundation
 import Observation
 import UIKit
 import OrbitDomain
+import OrbitKit
 import OrbitMedia
 
 @MainActor
@@ -57,7 +58,8 @@ public final class MemoryDetailViewModel {
             await loadAttachedImageIfNeeded(for: memory)
             await loadAttachedAudioIfNeeded(for: memory)
         } catch {
-            self.state = .failed(String(describing: error))
+            OrbitLog.persistence.error("Memory load failed: \(String(describing: error), privacy: .public)")
+            self.state = .failed("Couldn't load this memory. It may have been deleted.")
         }
     }
 

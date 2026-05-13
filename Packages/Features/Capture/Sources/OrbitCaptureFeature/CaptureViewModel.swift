@@ -261,8 +261,9 @@ public final class CaptureViewModel {
             }
             Haptics.play(.impactRigid)
         } catch {
+            OrbitLog.capture.error("Voice record start failed: \(String(describing: error), privacy: .public)")
             self.recorder = nil
-            errorMessage = error.localizedDescription
+            errorMessage = "Couldn't start recording. Try again in a moment."
             voiceState = .idle
             Haptics.play(.failure)
         }
@@ -306,8 +307,9 @@ public final class CaptureViewModel {
                 Haptics.play(.warning)
             }
         } catch {
+            OrbitLog.capture.error("Voice record stop failed: \(String(describing: error), privacy: .public)")
             self.recorder = nil
-            errorMessage = error.localizedDescription
+            errorMessage = "Couldn't save your recording. Try again."
             voiceState = .idle
             Haptics.play(.failure)
         }

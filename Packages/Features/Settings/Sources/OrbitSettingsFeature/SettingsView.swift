@@ -158,7 +158,8 @@ public struct SettingsView: View {
                             Haptics.play(.success)
                             onDismiss()
                         } catch {
-                            deletionError = error.localizedDescription
+                            OrbitLog.app.error("Account deletion failed: \(String(describing: error), privacy: .public)")
+                            deletionError = "Couldn't delete the account right now. Try again in a moment."
                             Haptics.play(.failure)
                         }
                     }

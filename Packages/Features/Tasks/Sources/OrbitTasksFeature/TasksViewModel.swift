@@ -105,7 +105,8 @@ public final class TasksViewModel {
             self.memoriesByID = lookup
             self.errorMessage = nil
         } catch {
-            self.errorMessage = String(describing: error)
+            OrbitLog.app.error("Tasks load failed: \(String(describing: error), privacy: .public)")
+            self.errorMessage = "Couldn't load your tasks. Try again in a moment."
         }
     }
 
@@ -116,7 +117,8 @@ public final class TasksViewModel {
             await load()
             await onTaskMutated(task)
         } catch {
-            errorMessage = String(describing: error)
+            OrbitLog.app.error("Task mutation failed: \(String(describing: error), privacy: .public)")
+            errorMessage = "Couldn't save that change. Try again."
             Haptics.play(.failure)
         }
     }
@@ -128,7 +130,8 @@ public final class TasksViewModel {
             await load()
             await onTaskMutated(task)
         } catch {
-            errorMessage = String(describing: error)
+            OrbitLog.app.error("Task mutation failed: \(String(describing: error), privacy: .public)")
+            errorMessage = "Couldn't save that change. Try again."
             Haptics.play(.failure)
         }
     }
@@ -142,7 +145,8 @@ public final class TasksViewModel {
                 await onTaskMutated(updated)
             }
         } catch {
-            errorMessage = String(describing: error)
+            OrbitLog.app.error("Task mutation failed: \(String(describing: error), privacy: .public)")
+            errorMessage = "Couldn't save that change. Try again."
         }
     }
 
@@ -152,7 +156,8 @@ public final class TasksViewModel {
             await load()
             await onTaskMutated(task)
         } catch {
-            errorMessage = String(describing: error)
+            OrbitLog.app.error("Task mutation failed: \(String(describing: error), privacy: .public)")
+            errorMessage = "Couldn't save that change. Try again."
         }
     }
 
@@ -163,7 +168,8 @@ public final class TasksViewModel {
             await load()
             await onTaskDeleted(task)
         } catch {
-            errorMessage = String(describing: error)
+            OrbitLog.app.error("Task mutation failed: \(String(describing: error), privacy: .public)")
+            errorMessage = "Couldn't save that change. Try again."
         }
     }
 

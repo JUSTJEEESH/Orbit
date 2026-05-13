@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import StoreKit
+import OrbitKit
 
 /// StoreKit 2 wrapper. Owns three jobs:
 ///   1. Load product metadata from the App Store (or the local `.storekit`
@@ -90,17 +91,19 @@ public final class EntitlementService {
                     await refreshEntitlements()
                     return .success
                 case .unverified(_, let error):
-                    return .failed(error.localizedDescription)
+                    OrbitLog.app.error("Purchase verification failed: \(String(describing: error), privacy: .public)")
+                    return .failed("Couldn't verify your purchase. Try again in a moment.")
                 }
             case .userCancelled:
                 return .cancelled
             case .pending:
                 return .pending
             @unknown default:
-                return .failed("Unknown purchase result")
+                return .failed("Purchase didn't complete. Try again.")
             }
         } catch {
-            return .failed(error.localizedDescription)
+            OrbitLog.app.error("Purchase failed: \(String(describing: error), privacy: .public)")
+            return .failed("Purchase didn't complete. Check your payment method and try again.")
         }
     }
 

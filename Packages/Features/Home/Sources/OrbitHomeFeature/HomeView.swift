@@ -687,7 +687,8 @@ public struct HomeView: View {
             memories = try await listMemories()
             loadState = .loaded
         } catch {
-            loadState = .failed(String(describing: error))
+            OrbitLog.persistence.error("Home load failed: \(String(describing: error), privacy: .public)")
+            loadState = .failed("Couldn't load your memories. Try again in a moment.")
         }
         // Insights + On This Day + gratitude run in parallel with the list;
         // failures are silent because their absence is the natural fallback.

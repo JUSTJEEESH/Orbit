@@ -59,7 +59,7 @@ public final class RemindersSyncService {
                 }
             } catch {
                 OrbitLog.app.error("Reminders auth request failed: \(String(describing: error), privacy: .public)")
-                lastError = "Couldn't request Reminders access: \(error.localizedDescription)"
+                lastError = "Couldn't reach Reminders. Try again from Settings."
                 isEnabled = false
                 UserDefaults.standard.set(false, forKey: Self.enabledKey)
                 return false
@@ -154,7 +154,7 @@ public final class RemindersSyncService {
             }
         } catch {
             OrbitLog.app.error("Mirror to Reminders failed: \(String(describing: error), privacy: .public)")
-            lastError = "Save failed: \(error.localizedDescription)"
+            lastError = "Couldn't save to Reminders. Try again."
         }
     }
 

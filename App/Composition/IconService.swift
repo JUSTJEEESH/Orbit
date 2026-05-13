@@ -1,5 +1,6 @@
 import UIKit
 import Observation
+import OrbitKit
 
 /// Manages the home-screen icon variant. Wraps
 /// `UIApplication.setAlternateIconName(_:)` and exposes an `Observable`
@@ -75,7 +76,8 @@ final class IconService {
             current = variant
             lastError = nil
         } catch {
-            lastError = error.localizedDescription
+            OrbitLog.app.error("Set app icon failed: \(String(describing: error), privacy: .public)")
+            lastError = "Couldn't change the app icon. Try again in a moment."
         }
     }
 }

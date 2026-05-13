@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import OrbitDomain
+import OrbitKit
 
 @MainActor
 @Observable
@@ -32,7 +33,8 @@ public final class YearInReviewViewModel {
                 state = .loaded(review)
             }
         } catch {
-            state = .failed(String(describing: error))
+            OrbitLog.app.error("Year in Review load failed: \(String(describing: error), privacy: .public)")
+            state = .failed("Couldn't load your year in review. Try again in a moment.")
         }
     }
 }

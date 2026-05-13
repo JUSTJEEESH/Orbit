@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import OrbitDomain
+import OrbitKit
 
 @MainActor
 @Observable
@@ -22,7 +23,8 @@ public final class HabitsViewModel {
             habits = try await listHabits()
             errorMessage = nil
         } catch {
-            errorMessage = String(describing: error)
+            OrbitLog.app.error("Habits load failed: \(String(describing: error), privacy: .public)")
+            errorMessage = "Couldn't load your habits. Try again in a moment."
         }
     }
 }

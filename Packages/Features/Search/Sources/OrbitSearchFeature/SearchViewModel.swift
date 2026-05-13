@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import OrbitDomain
+import OrbitKit
 
 @MainActor
 @Observable
@@ -84,7 +85,8 @@ public final class SearchViewModel {
             results = hits
             state = hits.isEmpty ? .empty : .results
         } catch {
-            state = .failed(String(describing: error))
+            OrbitLog.search.error("Search failed: \(String(describing: error), privacy: .public)")
+            state = .failed("Search couldn't run right now. Try again in a moment.")
         }
     }
 

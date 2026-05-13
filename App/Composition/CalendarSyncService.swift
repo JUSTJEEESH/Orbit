@@ -63,7 +63,7 @@ public final class CalendarSyncService {
                 }
             } catch {
                 OrbitLog.app.error("Calendar auth request failed: \(String(describing: error), privacy: .public)")
-                lastError = "Couldn't request Calendar access: \(error.localizedDescription)"
+                lastError = "Couldn't reach Calendar. Try again from Settings."
                 isEnabled = false
                 UserDefaults.standard.set(false, forKey: Self.enabledKey)
                 return false
@@ -171,7 +171,7 @@ public final class CalendarSyncService {
             }
         } catch {
             OrbitLog.app.error("Mirror to Calendar failed: \(String(describing: error), privacy: .public)")
-            lastError = "Save failed: \(error.localizedDescription)"
+            lastError = "Couldn't save to Calendar. Try again."
         }
     }
 

@@ -47,7 +47,8 @@ public final class ReadingListViewModel {
             )
             errorMessage = nil
         } catch {
-            errorMessage = String(describing: error)
+            OrbitLog.app.error("Reading list load failed: \(String(describing: error), privacy: .public)")
+            errorMessage = "Couldn't load your reading list. Try again in a moment."
         }
     }
 
@@ -57,7 +58,8 @@ public final class ReadingListViewModel {
             Haptics.play(.selection)
             await load()
         } catch {
-            errorMessage = String(describing: error)
+            OrbitLog.app.error("Reading list status update failed: \(String(describing: error), privacy: .public)")
+            errorMessage = "Couldn't update that book. Try again."
         }
     }
 

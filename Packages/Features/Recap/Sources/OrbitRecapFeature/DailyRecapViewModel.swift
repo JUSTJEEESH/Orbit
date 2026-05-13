@@ -51,7 +51,8 @@ public final class DailyRecapViewModel {
             self.highlights = await resolveHighlights(recap.highlightIDs)
             self.state = .loaded
         } catch {
-            self.state = .failed(String(describing: error))
+            OrbitLog.app.error("Recap generation failed: \(String(describing: error), privacy: .public)")
+            self.state = .failed("Couldn't generate today's recap. Try again in a moment.")
         }
 
         // Pull HealthKit data after the recap is on screen so primary

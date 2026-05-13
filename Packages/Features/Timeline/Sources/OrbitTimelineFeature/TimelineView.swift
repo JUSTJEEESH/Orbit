@@ -171,7 +171,8 @@ public struct TimelineView: View {
             memories = try await listMemories()
             loadState = .loaded
         } catch {
-            loadState = .failed(String(describing: error))
+            OrbitLog.persistence.error("Timeline load failed: \(String(describing: error), privacy: .public)")
+            loadState = .failed("Couldn't load your timeline. Try again in a moment.")
         }
     }
 

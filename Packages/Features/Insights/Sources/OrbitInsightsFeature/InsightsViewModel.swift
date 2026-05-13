@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import OrbitDomain
+import OrbitKit
 
 /// Owns the list of insights for the patterns surface and the rotating
 /// preview card on Home. Recomputes from the repository on demand; the
@@ -26,7 +27,8 @@ public final class InsightsViewModel {
             insights = try await generate()
             error = nil
         } catch {
-            self.error = String(describing: error)
+            OrbitLog.ai.error("Insights generation failed: \(String(describing: error), privacy: .public)")
+            self.error = "Couldn't load insights right now."
         }
     }
 
