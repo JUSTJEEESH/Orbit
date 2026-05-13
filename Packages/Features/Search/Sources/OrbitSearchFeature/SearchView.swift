@@ -31,10 +31,20 @@ public struct SearchView: View {
                             model.queryDidChange()
                         }
                     ),
-                    systemImage: "magnifyingglass"
+                    systemImage: "magnifyingglass",
+                    focused: $fieldFocus
                 )
-                .focused($fieldFocus)
                 .submitLabel(.search)
+                .onSubmit { fieldFocus = false }
+                .toolbar {
+                    ToolbarItemGroup(placement: .keyboard) {
+                        Spacer()
+                        Button("Done") {
+                            fieldFocus = false
+                        }
+                        .foregroundStyle(OrbitColor.textPrimary)
+                    }
+                }
 
                 scopeChips
 
@@ -45,15 +55,11 @@ public struct SearchView: View {
             .padding(.top, OrbitSpacing.md)
             .padding(.bottom, 96)
         }
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Done") {
-                    fieldFocus = false
-                }
-                .foregroundStyle(OrbitColor.textPrimary)
-            }
-        }
+        .background(
+            Color.clear
+                .contentShape(Rectangle())
+                .onTapGesture { fieldFocus = false }
+        )
         .navigationDestination(for: MemoryDetailRoute.self) { route in
             MemoryDetailView(
                 viewModel: makeDetailViewModel(route.memoryID),
@@ -163,7 +169,7 @@ public struct SearchView: View {
             }
         }
         .scrollIndicators(.hidden)
-        .scrollDismissesKeyboard(.interactively)
+        .scrollDismissesKeyboard(.immediately)
     }
 }
 
