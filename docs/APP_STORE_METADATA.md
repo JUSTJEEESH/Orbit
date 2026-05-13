@@ -133,12 +133,10 @@ on this branch.
   > "Delete a single memory — long-press the card (or swipe left
   > on Timeline) and tap Delete."
 
-- `index.html` end-CTA and hero use the link
-  `https://apps.apple.com/app/orbit/idXXXXXXXXX`. Replace
-  `idXXXXXXXXX` with the real numeric App Store ID once Apple
-  assigns one (after you create the app record in App Store
-  Connect). Until then, point the link at the App Store Connect
-  preview URL or just disable the button.
+- `index.html` end-CTA and hero link to
+  `https://apps.apple.com/app/orbit/id6769115384`
+  (App Store ID assigned by Apple in App Store Connect).
+  `docs/marketing/landing.md` uses the same URL.
 
 - The contact email **`support@orbitbrain2.netlify.app`** uses a
   Netlify subdomain that won't deliver mail. Apple's submission
@@ -414,8 +412,8 @@ on this branch.
 - [ ] "End-to-end iCloud" softened on `index.html`.
 - [ ] Real support email working and updated across all four pages
       plus in-app `Settings → About → Contact Support`.
-- [ ] Real App Store app ID substituted for `idXXXXXXXXX` once Apple
-      issues one.
+- [x] Real App Store app ID (`6769115384`) substituted across
+      `index.html` (hero + end CTA) and `docs/marketing/landing.md`.
 - [ ] App Store Connect: Privacy URL, Terms URL, Support URL all
       set and resolving.
 - [ ] App Store Connect: privacy nutrition label declarations match
