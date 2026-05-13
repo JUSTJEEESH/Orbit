@@ -13,6 +13,8 @@ public struct YearInReviewView: View {
 
     @State private var sheetMemory: MemoryIDBox?
     @Environment(\.orbitTheme) private var orbitTheme
+    @Environment(\.requestReview) private var requestReview
+    @Environment(\.reviewPrompts) private var reviewPrompts
 
     public init(
         viewModel: YearInReviewViewModel,
@@ -59,6 +61,26 @@ public struct YearInReviewView: View {
             }
         }
         .task { await model.load() }
+        .onChange(of: model.state) { _, newState in
+            guard case .loaded = newState else { return }
+            considerReviewPrompt()
+        }
+    }
+
+    /// Year in Review is a once-a-year signature moment — the kind of
+    /// surface that earns an honest 5-star opinion. We record the
+    /// completion and let the gate decide whether to actually surface
+    /// the App Store prompt (it won't, for example, if we just asked
+    /// the user yesterday after a recap).
+    private func considerReviewPrompt() {
+        guard let reviewPrompts else { return }
+        reviewPrompts.recordValueEvent(.yearInReviewCompleted)
+        guard reviewPrompts.shouldRequestReview(for: .yearInReviewCompleted) else { return }
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(1.5))
+            requestReview()
+            reviewPrompts.didRequestReview()
+        }
     }
 
     /// Extracts the loaded `YearInReview` for the toolbar share button.

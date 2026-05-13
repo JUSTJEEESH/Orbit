@@ -10,6 +10,8 @@ import OrbitShareFeature
 public struct DailyRecapView: View {
     @State private var model: DailyRecapViewModel
     @Environment(\.orbitTheme) private var orbitTheme
+    @Environment(\.requestReview) private var requestReview
+    @Environment(\.reviewPrompts) private var reviewPrompts
     private let onDismiss: @MainActor () -> Void
 
     public init(
@@ -48,6 +50,29 @@ public struct DailyRecapView: View {
                 }
             }
             .task { await model.load() }
+            .onChange(of: model.state) { _, newState in
+                guard case .loaded = newState else { return }
+                considerReviewPrompt()
+            }
+        }
+    }
+
+    /// Records that the user just saw a successful recap, then asks
+    /// the review-prompt service whether it's a good moment to surface
+    /// the App Store rating sheet. The gating logic (install age,
+    /// cooldown, lifetime cap) lives in `ReviewPromptService`; the
+    /// view stays declarative.
+    private func considerReviewPrompt() {
+        guard let reviewPrompts else { return }
+        reviewPrompts.recordValueEvent(.dailyRecapViewed)
+        guard reviewPrompts.shouldRequestReview(for: .dailyRecapViewed) else { return }
+        // Wait a beat so the prompt doesn't fight the recap's entrance
+        // animation — it should feel like a calm reward, not an
+        // interruption.
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(1.2))
+            requestReview()
+            reviewPrompts.didRequestReview()
         }
     }
 

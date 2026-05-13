@@ -70,6 +70,7 @@ private struct ContentRoot: View {
             }
         }
         .environment(environment)
+        .environment(\.reviewPrompts, environment.reviewPrompts)
         .tint(OrbitColor.textPrimary)
         .task {
             await environment.account.refreshCredentialState()
