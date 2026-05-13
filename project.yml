@@ -1,0 +1,306 @@
+# XcodeGen project definition. Run `xcodegen generate` to (re)create Orbit.xcodeproj.
+# Keeping the project file generated avoids merge conflicts and keeps source as the truth.
+#
+# Identifier handling: `Scripts/setup-identity.sh` patches the canonical
+# identifiers below to your personal IDs (recorded in Config/Identity.xcconfig).
+# After a `git pull` that touches this file, run the script again with no
+# arguments to re-apply.
+
+name: Orbit
+options:
+  bundleIdPrefix: com.orbit
+  deploymentTarget:
+    iOS: "26.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+  groupSortPosition: top
+  xcodeVersion: "16.0"
+
+configs:
+  Debug: debug
+  Release: release
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    # `Scripts/setup-identity.sh` replaces this placeholder with your real
+    # Apple developer team id from Config/Identity.xcconfig. xcconfig
+    # inheritance alone wasn't reliably propagating the team through
+    # Xcode's Signing tab, so we also pin it here.
+    DEVELOPMENT_TEAM: "ORBIT_TEAM_ID_PLACEHOLDER"
+  configs:
+    Debug:
+      baseConfig: Config/Debug.xcconfig
+    Release:
+      baseConfig: Config/Release.xcconfig
+
+packages:
+  OrbitWorkspace:
+    path: .
+
+schemes:
+  Orbit:
+    build:
+      targets:
+        Orbit: all
+        OrbitShareExtension: [run, test, profile, analyze, archive]
+        OrbitWidgets: [run, test, profile, analyze, archive]
+        OrbitWatch: [run, test, profile, analyze, archive]
+        OrbitCameraCapture: [run, test, profile, analyze, archive]
+        OrbitSafariExtension: [run, test, profile, analyze, archive]
+    run:
+      config: Debug
+      storeKitConfiguration: Configuration.storekit
+    test:
+      config: Debug
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
+
+targets:
+  Orbit:
+    type: application
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: App
+    resources:
+      - path: App/Resources
+    info:
+      path: App/Resources/Info.plist
+      properties:
+        CFBundleDisplayName: Orbit
+        UILaunchScreen:
+          UIColorName: launch.background
+        # Orbit is a phone-only premium experience for v1, locked to
+        # portrait the same way Apple Journal, Day One, and Things do.
+        # TARGETED_DEVICE_FAMILY=1 in build settings keeps the iPad
+        # validation warning away on its own — UIRequiresFullScreen is
+        # deprecated as of iOS 26 and was redundant here.
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        # Enables ActivityKit Live Activities so the voice-capture session
+        # surfaces in the Dynamic Island, Lock Screen, and StandBy mode.
+        NSSupportsLiveActivities: true
+        NSMicrophoneUsageDescription: Orbit uses the microphone to capture voice notes you record.
+        NSSpeechRecognitionUsageDescription: Orbit transcribes your voice notes on-device so they become searchable.
+        NSPhotoLibraryUsageDescription: Orbit lets you save screenshots and photos as memories.
+        NSCameraUsageDescription: Orbit lets you capture moments straight into your memory timeline.
+        NSRemindersFullAccessUsageDescription: Orbit mirrors your tasks to iOS Reminders so you can manage them from Siri, CarPlay, or the Reminders app.
+        NSCalendarsFullAccessUsageDescription: Orbit mirrors your due-dated tasks to a dedicated Orbit calendar so they show up on the Lock Screen, Apple Watch, and CarPlay alongside your other events.
+        NSHealthShareUsageDescription: Orbit privately reads your sleep and step data to enrich your Daily Recap with the rhythms of your day.
+        NSUserActivityTypes:
+          - com.orbit.capture
+        CFBundleURLTypes:
+          - CFBundleURLName: com.orbit.app
+            CFBundleURLSchemes:
+              - orbit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app
+        CODE_SIGN_ENTITLEMENTS: App/Resources/Orbit.entitlements
+        # iPhone only for v1 — keeps the "All interface orientations must
+        # be supported" iPad validation warning away and matches the
+        # premium portrait-first journaling app archetype.
+        TARGETED_DEVICE_FAMILY: 1
+        # Tells the asset-catalog compiler to ship these App Icon image
+        # sets alongside the primary AppIcon so
+        # UIApplication.setAlternateIconName can find them at runtime.
+        # Xcode auto-generates the matching CFBundleAlternateIcons entries
+        # in Info.plist from this list.
+        ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES: Orbit-Sunset Orbit-Cosmic Orbit-Forest
+    dependencies:
+      - package: OrbitWorkspace
+        product: OrbitKit
+      - package: OrbitWorkspace
+        product: OrbitDesignSystem
+      - package: OrbitWorkspace
+        product: OrbitDomain
+      - package: OrbitWorkspace
+        product: OrbitPersistence
+      - package: OrbitWorkspace
+        product: OrbitMedia
+      - package: OrbitWorkspace
+        product: OrbitAI
+      - package: OrbitWorkspace
+        product: OrbitAccount
+      - package: OrbitWorkspace
+        product: OrbitStore
+      - package: OrbitWorkspace
+        product: OrbitHomeFeature
+      - package: OrbitWorkspace
+        product: OrbitTimelineFeature
+      - package: OrbitWorkspace
+        product: OrbitSearchFeature
+      - package: OrbitWorkspace
+        product: OrbitCaptureFeature
+      - package: OrbitWorkspace
+        product: OrbitSettingsFeature
+      - package: OrbitWorkspace
+        product: OrbitMemoryDetailFeature
+      - package: OrbitWorkspace
+        product: OrbitRecapFeature
+      - package: OrbitWorkspace
+        product: OrbitInsightsFeature
+      - package: OrbitWorkspace
+        product: OrbitTasksFeature
+      - package: OrbitWorkspace
+        product: OrbitAskFeature
+      - package: OrbitWorkspace
+        product: OrbitYearInReviewFeature
+      - package: OrbitWorkspace
+        product: OrbitWellnessFeature
+      - package: OrbitWorkspace
+        product: OrbitShareFeature
+      - target: OrbitShareExtension
+        embed: true
+      - target: OrbitWidgets
+        embed: true
+      - target: OrbitCameraCapture
+        embed: true
+      - target: OrbitSafariExtension
+        embed: true
+
+  OrbitShareExtension:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: Extensions/ShareExtension
+    info:
+      path: Extensions/ShareExtension/Info.plist
+      properties:
+        CFBundleDisplayName: Orbit
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.share-services
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
+          NSExtensionAttributes:
+            NSExtensionActivationRule:
+              NSExtensionActivationSupportsText: true
+              NSExtensionActivationSupportsWebURLWithMaxCount: 1
+              NSExtensionActivationSupportsImageWithMaxCount: 1
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app.share
+        CODE_SIGN_ENTITLEMENTS: Extensions/ShareExtension/Orbit.entitlements
+        SKIP_INSTALL: YES
+    dependencies:
+      - package: OrbitWorkspace
+        product: OrbitDomain
+      - package: OrbitWorkspace
+        product: OrbitPersistence
+
+  OrbitWidgets:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: Extensions/OrbitWidgets
+    info:
+      path: Extensions/OrbitWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: Orbit
+        # Live Activity surfaces are vended from this widget extension, so it
+        # has to advertise support too — not just the host app.
+        NSSupportsLiveActivities: true
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app.widgets
+        CODE_SIGN_ENTITLEMENTS: Extensions/OrbitWidgets/Orbit.entitlements
+        SKIP_INSTALL: YES
+    dependencies:
+      - package: OrbitWorkspace
+        product: OrbitKit
+      - package: OrbitWorkspace
+        product: OrbitDesignSystem
+      - package: OrbitWorkspace
+        product: OrbitDomain
+      - package: OrbitWorkspace
+        product: OrbitPersistence
+
+  # Lock Screen + Action Button + Control Center camera capture. Built
+  # against the iOS 18+ LockedCameraCapture framework so users can fire a
+  # photo into Orbit without unlocking. Captures land in a per-session App
+  # Group directory; the host app's CaptureInboxService drains them on the
+  # next foreground.
+  #
+  # `type: extensionkit-extension` is the modern ExtensionKit-style product
+  # type — it gets embedded in `Contents/Extensions/` instead of the legacy
+  # `PlugIns/` directory. Xcode refuses to load LockedCameraCapture
+  # extensions out of PlugIns.
+  OrbitCameraCapture:
+    type: extensionkit-extension
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: Extensions/CameraCapture
+    info:
+      path: Extensions/CameraCapture/Info.plist
+      properties:
+        CFBundleDisplayName: Orbit
+        NSCameraUsageDescription: Capture moments straight to your Orbit timeline without unlocking.
+        EXAppExtensionAttributes:
+          EXExtensionPointIdentifier: com.apple.lockedcamera.capture
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app.camera
+        CODE_SIGN_ENTITLEMENTS: Extensions/CameraCapture/Orbit.entitlements
+        SKIP_INSTALL: YES
+        # The system instantiates this extension directly from its bundle
+        # so there's no objc symbol to look up — but we still need to make
+        # sure the launch identifier matches what Apple's launch services
+        # expect.
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.photography
+
+  # Safari Web Extension. JS side (toolbar action + context menu + popup)
+  # sends a "clip" message via `browser.runtime.sendNativeMessage` to the
+  # SafariWebExtensionHandler, which writes a JSON envelope into the App
+  # Group inbox. Host drains on next foreground.
+  OrbitSafariExtension:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: Extensions/SafariExtension
+    info:
+      path: Extensions/SafariExtension/Info.plist
+      properties:
+        CFBundleDisplayName: Orbit
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.Safari.web-extension
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).SafariWebExtensionHandler
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app.safari
+        CODE_SIGN_ENTITLEMENTS: Extensions/SafariExtension/Orbit.entitlements
+        SKIP_INSTALL: YES
+
+  # watchOS companion. Capture-only app: records voice memos on the wrist,
+  # transfers them via WatchConnectivity to the iPhone, which persists +
+  # transcribes through the same pipeline as iPhone captures. Pure SwiftUI +
+  # AVFoundation + WatchConnectivity — none of the OrbitKit / OrbitDesignSystem
+  # packages link here (they import UIKit, which doesn't exist on watchOS).
+  OrbitWatch:
+    type: application
+    platform: watchOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: WatchApp
+    info:
+      path: WatchApp/Info.plist
+      properties:
+        CFBundleDisplayName: Orbit
+        WKApplication: true
+        WKCompanionAppBundleIdentifier: com.orbit.app
+        NSMicrophoneUsageDescription: Orbit records voice memos from your wrist and sends them to your iPhone.
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app.watchkitapp
+        CODE_SIGN_ENTITLEMENTS: WatchApp/Orbit.entitlements
+        TARGETED_DEVICE_FAMILY: 4
+        SUPPORTS_MACCATALYST: NO

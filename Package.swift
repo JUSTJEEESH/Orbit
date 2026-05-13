@@ -1,0 +1,216 @@
+// swift-tools-version: 6.0
+// Orbit workspace package. All modules live here as products so the app target
+// (defined in project.yml / Orbit.xcodeproj) consumes a single local package
+// reference and pulls only what each target needs.
+
+import PackageDescription
+
+let swiftSettings: [SwiftSetting] = [
+    .enableUpcomingFeature("ExistentialAny"),
+]
+
+let package = Package(
+    name: "OrbitWorkspace",
+    defaultLocalization: "en",
+    platforms: [
+        .iOS("26.0"),
+    ],
+    products: [
+        .library(name: "OrbitKit", targets: ["OrbitKit"]),
+        .library(name: "OrbitDesignSystem", targets: ["OrbitDesignSystem"]),
+        .library(name: "OrbitDomain", targets: ["OrbitDomain"]),
+        .library(name: "OrbitPersistence", targets: ["OrbitPersistence"]),
+        .library(name: "OrbitMedia", targets: ["OrbitMedia"]),
+        .library(name: "OrbitAI", targets: ["OrbitAI"]),
+        .library(name: "OrbitAccount", targets: ["OrbitAccount"]),
+        .library(name: "OrbitStore", targets: ["OrbitStore"]),
+        .library(name: "OrbitHomeFeature", targets: ["OrbitHomeFeature"]),
+        .library(name: "OrbitTimelineFeature", targets: ["OrbitTimelineFeature"]),
+        .library(name: "OrbitSearchFeature", targets: ["OrbitSearchFeature"]),
+        .library(name: "OrbitCaptureFeature", targets: ["OrbitCaptureFeature"]),
+        .library(name: "OrbitSettingsFeature", targets: ["OrbitSettingsFeature"]),
+        .library(name: "OrbitMemoryDetailFeature", targets: ["OrbitMemoryDetailFeature"]),
+        .library(name: "OrbitRecapFeature", targets: ["OrbitRecapFeature"]),
+        .library(name: "OrbitInsightsFeature", targets: ["OrbitInsightsFeature"]),
+        .library(name: "OrbitTasksFeature", targets: ["OrbitTasksFeature"]),
+        .library(name: "OrbitAskFeature", targets: ["OrbitAskFeature"]),
+        .library(name: "OrbitYearInReviewFeature", targets: ["OrbitYearInReviewFeature"]),
+        .library(name: "OrbitWellnessFeature", targets: ["OrbitWellnessFeature"]),
+        .library(name: "OrbitShareFeature", targets: ["OrbitShareFeature"]),
+    ],
+    targets: [
+        // MARK: - Cross-cutting
+        .target(
+            name: "OrbitKit",
+            path: "Packages/OrbitKit/Sources/OrbitKit",
+            swiftSettings: swiftSettings
+        ),
+
+        // MARK: - Design System
+        .target(
+            name: "OrbitDesignSystem",
+            dependencies: ["OrbitKit"],
+            path: "Packages/OrbitDesignSystem/Sources/OrbitDesignSystem",
+            swiftSettings: swiftSettings
+        ),
+
+        // MARK: - Domain (pure Swift, no framework imports)
+        .target(
+            name: "OrbitDomain",
+            path: "Packages/OrbitDomain/Sources/OrbitDomain",
+            swiftSettings: swiftSettings
+        ),
+
+        // MARK: - Persistence
+        .target(
+            name: "OrbitPersistence",
+            dependencies: ["OrbitDomain"],
+            path: "Packages/OrbitPersistence/Sources/OrbitPersistence",
+            swiftSettings: swiftSettings
+        ),
+
+        // MARK: - Media (audio, speech, link metadata)
+        .target(
+            name: "OrbitMedia",
+            dependencies: ["OrbitDomain"],
+            path: "Packages/OrbitMedia/Sources/OrbitMedia",
+            swiftSettings: swiftSettings
+        ),
+
+        // MARK: - AI (Foundation Models, entity extraction, OCR)
+        .target(
+            name: "OrbitAI",
+            dependencies: ["OrbitDomain"],
+            path: "Packages/OrbitAI/Sources/OrbitAI",
+            swiftSettings: swiftSettings
+        ),
+
+        // MARK: - Account (Sign in with Apple + keychain)
+        .target(
+            name: "OrbitAccount",
+            path: "Packages/OrbitAccount/Sources/OrbitAccount",
+            swiftSettings: swiftSettings
+        ),
+
+        // MARK: - Store (StoreKit 2 entitlements + paywall view)
+        .target(
+            name: "OrbitStore",
+            dependencies: ["OrbitDesignSystem", "OrbitKit"],
+            path: "Packages/OrbitStore/Sources/OrbitStore",
+            swiftSettings: swiftSettings
+        ),
+
+        // MARK: - Features
+        .target(
+            name: "OrbitHomeFeature",
+            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitMemoryDetailFeature"],
+            path: "Packages/Features/Home/Sources/OrbitHomeFeature",
+            swiftSettings: swiftSettings
+        ),
+        .target(
+            name: "OrbitTimelineFeature",
+            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitMemoryDetailFeature"],
+            path: "Packages/Features/Timeline/Sources/OrbitTimelineFeature",
+            swiftSettings: swiftSettings
+        ),
+        .target(
+            name: "OrbitSearchFeature",
+            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitMemoryDetailFeature"],
+            path: "Packages/Features/Search/Sources/OrbitSearchFeature",
+            swiftSettings: swiftSettings
+        ),
+        .target(
+            name: "OrbitCaptureFeature",
+            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitMedia", "OrbitStore"],
+            path: "Packages/Features/Capture/Sources/OrbitCaptureFeature",
+            swiftSettings: swiftSettings
+        ),
+        .target(
+            name: "OrbitSettingsFeature",
+            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitAI", "OrbitAccount", "OrbitStore"],
+            path: "Packages/Features/Settings/Sources/OrbitSettingsFeature",
+            swiftSettings: swiftSettings
+        ),
+        .target(
+            name: "OrbitMemoryDetailFeature",
+            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitMedia", "OrbitShareFeature"],
+            path: "Packages/Features/MemoryDetail/Sources/OrbitMemoryDetailFeature",
+            swiftSettings: swiftSettings
+        ),
+        .target(
+            name: "OrbitRecapFeature",
+            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitShareFeature"],
+            path: "Packages/Features/Recap/Sources/OrbitRecapFeature",
+            swiftSettings: swiftSettings
+        ),
+        .target(
+            name: "OrbitInsightsFeature",
+            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitMemoryDetailFeature"],
+            path: "Packages/Features/Insights/Sources/OrbitInsightsFeature",
+            swiftSettings: swiftSettings
+        ),
+        .target(
+            name: "OrbitTasksFeature",
+            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitMemoryDetailFeature"],
+            path: "Packages/Features/Tasks/Sources/OrbitTasksFeature",
+            swiftSettings: swiftSettings
+        ),
+        .target(
+            name: "OrbitAskFeature",
+            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitMemoryDetailFeature", "OrbitStore"],
+            path: "Packages/Features/Ask/Sources/OrbitAskFeature",
+            swiftSettings: swiftSettings
+        ),
+        .target(
+            name: "OrbitYearInReviewFeature",
+            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain", "OrbitMemoryDetailFeature", "OrbitShareFeature", "OrbitStore"],
+            path: "Packages/Features/YearInReview/Sources/OrbitYearInReviewFeature",
+            swiftSettings: swiftSettings
+        ),
+        .target(
+            name: "OrbitWellnessFeature",
+            dependencies: ["OrbitKit", "OrbitDesignSystem", "OrbitDomain"],
+            path: "Packages/Features/Wellness/Sources/OrbitWellnessFeature",
+            swiftSettings: swiftSettings
+        ),
+        .target(
+            name: "OrbitShareFeature",
+            dependencies: ["OrbitDesignSystem", "OrbitDomain"],
+            path: "Packages/Features/Share/Sources/OrbitShareFeature",
+            resources: [.process("Resources")],
+            swiftSettings: swiftSettings
+        ),
+
+        // MARK: - Tests
+        .testTarget(
+            name: "OrbitDomainTests",
+            dependencies: ["OrbitDomain"],
+            path: "Packages/OrbitDomain/Tests/OrbitDomainTests",
+            swiftSettings: swiftSettings
+        ),
+        .testTarget(
+            name: "OrbitDesignSystemTests",
+            dependencies: ["OrbitDesignSystem"],
+            path: "Packages/OrbitDesignSystem/Tests/OrbitDesignSystemTests",
+            swiftSettings: swiftSettings
+        ),
+        .testTarget(
+            name: "OrbitPersistenceTests",
+            dependencies: ["OrbitPersistence", "OrbitDomain"],
+            path: "Packages/OrbitPersistence/Tests/OrbitPersistenceTests",
+            swiftSettings: swiftSettings
+        ),
+        .testTarget(
+            name: "OrbitMediaTests",
+            dependencies: ["OrbitMedia"],
+            path: "Packages/OrbitMedia/Tests/OrbitMediaTests",
+            swiftSettings: swiftSettings
+        ),
+        .testTarget(
+            name: "OrbitAITests",
+            dependencies: ["OrbitAI", "OrbitDomain"],
+            path: "Packages/OrbitAI/Tests/OrbitAITests",
+            swiftSettings: swiftSettings
+        ),
+    ]
+)
