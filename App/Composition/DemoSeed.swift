@@ -26,7 +26,18 @@ extension AppEnvironment {
         // real capture.
         var createdIDs: [UUID] = []
 
-        // 1 — Voice: bookshop in Roatan
+        // Demo memories are deliberately spread across the last ~5 weeks
+        // so the Home tab's "Worth revisiting" surface has variety to
+        // anchor on (engine requires anchor ≥7 days old, max 60). The
+        // dates also produce realistic Timeline scrolling instead of
+        // every card stacked on one day.
+        let daysAgo: (Int) -> Date = { offset in
+            Calendar.current.date(byAdding: .day, value: -offset, to: self.clock.now())
+                ?? self.clock.now()
+        }
+
+        // 1 — Voice: bookshop in Roatan (22 days ago — anchor candidate,
+        // rich entity content, threads into the reading cluster: #3, #8, #9)
         await seedVoiceMemo(
             transcript: """
             Note to self about that bookshop in Roatan — the one with \
@@ -42,10 +53,11 @@ extension AppEnvironment {
             cat that sleeps on the philosophy table.
             """,
             duration: 42,
+            createdAt: daysAgo(22),
             into: &createdIDs
         )
 
-        // 2 — Text: talk opener
+        // 2 — Text: talk opener (5 days ago, recent, threads to #3 via talk-prep)
         await seedText("""
             Idea for opening the talk next month — start with the \
             Kandinsky line about the soul being a piano with many \
@@ -60,9 +72,11 @@ extension AppEnvironment {
             thing we can do is mistake our station for the signal itself.
 
             I should ask Maria if she'll do the intro. She owes me one.
-            """, into: &createdIDs)
+            """,
+            createdAt: daysAgo(5),
+            into: &createdIDs)
 
-        // 3 — Link: New Yorker
+        // 3 — Link: New Yorker (31 days ago, reading + talk-prep cluster)
         await seedLink(
             urlString: "https://www.newyorker.com/magazine/2024/02/12/the-new-economics-of-the-arts",
             title: "The New Economics of the Arts",
@@ -72,10 +86,11 @@ extension AppEnvironment {
             generosity, it's infrastructure — the same way roads are, \
             the same way libraries are. Save for the talk.
             """,
+            createdAt: daysAgo(31),
             into: &createdIDs
         )
 
-        // 4 — Voice: Pamela / restaurant (anchors Ask Orbit demo)
+        // 4 — Voice: Pamela / restaurant (10 days ago — Pamela entity)
         await seedVoiceMemo(
             transcript: """
             OK so Pamela called this morning — she finally tried that new \
@@ -91,10 +106,11 @@ extension AppEnvironment {
             don't take walk-ins.
             """,
             duration: 45,
+            createdAt: daysAgo(10),
             into: &createdIDs
         )
 
-        // 5 — Text: Dr. Tanaka follow-up
+        // 5 — Text: Dr. Tanaka follow-up (35 days ago, anchors health cluster: #7)
         await seedText("""
             Reminder to myself: I should write to Dr. Tanaka about the \
             follow-up in March. The lab results from October were better \
@@ -108,9 +124,11 @@ extension AppEnvironment {
             week since November), I'm sleeping seven hours instead of \
             five, the afternoon brain fog is gone. Don't mention the \
             coffee.
-            """, into: &createdIDs)
+            """,
+            createdAt: daysAgo(35),
+            into: &createdIDs)
 
-        // 6 — Text: gratitude triple
+        // 6 — Text: gratitude triple (1 day ago — yesterday)
         await seedText("""
             Three things I'm grateful for today —
 
@@ -128,9 +146,11 @@ extension AppEnvironment {
             station kind, in a styrofoam cup — but felt earned because \
             it was the first thing after the morning run and I drank it \
             sitting on the trunk of the car while the sun came up.
-            """, into: &createdIDs)
+            """,
+            createdAt: daysAgo(1),
+            into: &createdIDs)
 
-        // 7 — Voice: river run
+        // 7 — Voice: river run (18 days ago, health cluster with #5)
         await seedVoiceMemo(
             transcript: """
             Just finished the river loop, second time this week — six \
@@ -144,10 +164,11 @@ extension AppEnvironment {
             the new shoes are working.
             """,
             duration: 35,
+            createdAt: daysAgo(18),
             into: &createdIDs
         )
 
-        // 8 — Link: Every essay
+        // 8 — Link: Every essay (14 days ago, reading cluster)
         await seedLink(
             urlString: "https://every.to/p/the-end-of-organizing",
             title: "The End of Organizing",
@@ -158,10 +179,11 @@ extension AppEnvironment {
             mechanism for anxiety more than a productivity strategy. \
             Worth thirty minutes when I'm not exhausted.
             """,
+            createdAt: daysAgo(14),
             into: &createdIDs
         )
 
-        // 9 — Text: want to read
+        // 9 — Text: want to read (45 days ago, reading + Pamela cluster)
         await seedText("""
             I want to read "The Master and Margarita" — Pamela has \
             mentioned it twice now in different contexts, once when we \
@@ -174,7 +196,9 @@ extension AppEnvironment {
 
             I trust her completely on this. Add to the list. Borrow \
             from the library first, buy a copy if I love it.
-            """, into: &createdIDs)
+            """,
+            createdAt: daysAgo(45),
+            into: &createdIDs)
 
         // 10 — Letter to future self (sealed)
         await seedLetter()
@@ -220,9 +244,9 @@ extension AppEnvironment {
     // MARK: - Helpers
 
     @MainActor
-    private func seedText(_ body: String, into createdIDs: inout [UUID]) async {
+    private func seedText(_ body: String, createdAt: Date? = nil, into createdIDs: inout [UUID]) async {
         do {
-            let memory = try await captureMemory(content: .text(body))
+            let memory = try await captureMemory(content: .text(body), createdAt: createdAt)
             scheduleEnrichment(for: memory.id)
             createdIDs.append(memory.id)
         } catch {
@@ -231,10 +255,11 @@ extension AppEnvironment {
     }
 
     @MainActor
-    private func seedVoiceMemo(transcript: String, duration: TimeInterval, into createdIDs: inout [UUID]) async {
+    private func seedVoiceMemo(transcript: String, duration: TimeInterval, createdAt: Date? = nil, into createdIDs: inout [UUID]) async {
         do {
             let memory = try await captureMemory(
-                content: .voiceNote(transcript: transcript, duration: duration)
+                content: .voiceNote(transcript: transcript, duration: duration),
+                createdAt: createdAt
             )
             scheduleEnrichment(for: memory.id)
             createdIDs.append(memory.id)
@@ -244,11 +269,12 @@ extension AppEnvironment {
     }
 
     @MainActor
-    private func seedLink(urlString: String, title: String, summary: String, into createdIDs: inout [UUID]) async {
+    private func seedLink(urlString: String, title: String, summary: String, createdAt: Date? = nil, into createdIDs: inout [UUID]) async {
         guard let url = URL(string: urlString) else { return }
         do {
             let memory = try await captureMemory(
-                content: .link(url: url, title: title, summary: summary)
+                content: .link(url: url, title: title, summary: summary),
+                createdAt: createdAt
             )
             scheduleEnrichment(for: memory.id)
             createdIDs.append(memory.id)
