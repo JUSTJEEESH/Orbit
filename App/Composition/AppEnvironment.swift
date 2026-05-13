@@ -55,6 +55,7 @@ final class AppEnvironment {
     let searchMemories: SearchMemoriesUseCase
     let generateDailyRecap: GenerateDailyRecapUseCase
     let generateInsights: GenerateInsightsUseCase
+    let listMemorySuggestions: ListSuggestionsUseCase
     let listTasks: ListTasksUseCase
     let listTaskSuggestions: ListTaskSuggestionsUseCase
     let promoteHintToTask: PromoteHintToTaskUseCase
@@ -318,6 +319,11 @@ final class AppEnvironment {
             memories: memories,
             generator: InsightsEngine(),
             dismissals: UserDefaultsInsightDismissalStore(),
+            clock: clock
+        )
+        self.listMemorySuggestions = ListSuggestionsUseCase(
+            memories: memories,
+            generator: SuggestionEngine(),
             clock: clock
         )
         self.listTasks = ListTasksUseCase(repository: tasks)

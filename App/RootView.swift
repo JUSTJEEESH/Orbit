@@ -264,6 +264,7 @@ struct RootView: View {
                     listMemories: env.listMemories,
                     generateInsights: env.generateInsights,
                     listOnThisDay: env.listOnThisDay,
+                    listSuggestions: env.listMemorySuggestions,
                     loadGratitudeStatus: env.loadGratitudeStatus,
                     removeMemory: { id in try await env.removeMemory(id: id) },
                     refreshToken: env.memoryListVersion,

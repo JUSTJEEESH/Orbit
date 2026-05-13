@@ -8,6 +8,7 @@ public struct HomeView: View {
     private let listMemories: ListMemoriesUseCase
     private let generateInsights: GenerateInsightsUseCase
     private let listOnThisDay: ListOnThisDayUseCase
+    private let listSuggestions: ListSuggestionsUseCase
     private let removeMemory: @MainActor @Sendable (UUID) async throws -> Void
     private let refreshToken: Int
     private let clock: any OrbitClock
@@ -28,6 +29,7 @@ public struct HomeView: View {
     @State private var onThisDay: OnThisDayContent?
     @State private var showOnThisDay: Bool = false
     @State private var gratitudeStatus: GratitudeStatus = .empty
+    @State private var suggestionFeed: MemorySuggestionFeed?
     @Namespace private var heroNamespace
     @Environment(\.orbitTheme) private var orbitTheme
 
@@ -39,6 +41,7 @@ public struct HomeView: View {
         listMemories: ListMemoriesUseCase,
         generateInsights: GenerateInsightsUseCase,
         listOnThisDay: ListOnThisDayUseCase,
+        listSuggestions: ListSuggestionsUseCase,
         loadGratitudeStatus: LoadGratitudeStatusUseCase,
         removeMemory: @escaping @MainActor @Sendable (UUID) async throws -> Void,
         refreshToken: Int = 0,
@@ -56,6 +59,7 @@ public struct HomeView: View {
         self.listMemories = listMemories
         self.generateInsights = generateInsights
         self.listOnThisDay = listOnThisDay
+        self.listSuggestions = listSuggestions
         self.loadGratitudeStatus = loadGratitudeStatus
         self.removeMemory = removeMemory
         self.refreshToken = refreshToken
@@ -292,6 +296,9 @@ public struct HomeView: View {
             }
             if let primaryInsight {
                 insightCard(primaryInsight)
+            }
+            if let suggestionFeed {
+                SuggestionSection(feed: suggestionFeed, heroNamespace: heroNamespace)
             }
             recentSection
         }
@@ -690,11 +697,17 @@ public struct HomeView: View {
             OrbitLog.persistence.error("Home load failed: \(String(describing: error), privacy: .public)")
             loadState = .failed("Couldn't load your memories. Try again in a moment.")
         }
-        // Insights + On This Day + gratitude run in parallel with the list;
-        // failures are silent because their absence is the natural fallback.
+        // Insights + On This Day + gratitude + suggestions run in parallel
+        // with the list; failures are silent because their absence is the
+        // natural fallback (the section simply hides).
         await reloadInsights()
         await reloadOnThisDay()
         await reloadGratitudeStatus()
+        await reloadSuggestions()
+    }
+
+    private func reloadSuggestions() async {
+        suggestionFeed = try? await listSuggestions()
     }
 
     private func reloadGratitudeStatus() async {
