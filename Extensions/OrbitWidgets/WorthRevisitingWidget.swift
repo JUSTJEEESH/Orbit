@@ -2,6 +2,7 @@ import WidgetKit
 import SwiftUI
 import OrbitDesignSystem
 import OrbitDomain
+import OrbitKit
 import OrbitPersistence
 
 /// Surfaces the SuggestionEngine's memory-of-the-day anchor on the home
@@ -107,13 +108,24 @@ struct WorthRevisitingProvider: TimelineProvider {
     }
 
     private func fetchAll() async -> [Memory] {
+        // Surface the App Group resolution state to Console so we can tell
+        // the difference between "entitlement missing" (factory falls back
+        // to a per-process store the host app can't see) and "container
+        // opens but is genuinely empty."
+        let storeURL = ModelContainerFactory.appGroupStoreURL(for: "group.com.orbit.app")
+        if storeURL == nil {
+            OrbitLog.app.error("Worth-revisiting widget: App Group container unresolved. Entitlement missing or sandbox blocked.")
+        }
         do {
             let container = try ModelContainerFactory.makeContainer(
                 mode: .appGroup(identifier: "group.com.orbit.app")
             )
             let repo = SwiftDataMemoryRepository(modelContainer: container)
-            return try await repo.list(filter: .all)
+            let memories = try await repo.list(filter: .all)
+            OrbitLog.app.notice("Worth-revisiting widget: fetched \(memories.count, privacy: .public) memories; storeURL=\(storeURL?.path ?? "<nil>", privacy: .public).")
+            return memories
         } catch {
+            OrbitLog.app.error("Worth-revisiting widget: fetch failed: \(String(describing: error), privacy: .public)")
             return []
         }
     }

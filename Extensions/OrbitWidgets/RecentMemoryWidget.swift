@@ -2,6 +2,7 @@ import WidgetKit
 import SwiftUI
 import OrbitDesignSystem
 import OrbitDomain
+import OrbitKit
 import OrbitPersistence
 
 /// `@unchecked Sendable` wrapper around WidgetKit's non-Sendable completion
@@ -64,13 +65,20 @@ struct RecentMemoryProvider: TimelineProvider {
     }
 
     private func fetchLatest() async -> Memory? {
+        let storeURL = ModelContainerFactory.appGroupStoreURL(for: "group.com.orbit.app")
+        if storeURL == nil {
+            OrbitLog.app.error("Recent-memory widget: App Group container unresolved. Entitlement missing or sandbox blocked.")
+        }
         do {
             let container = try ModelContainerFactory.makeContainer(
                 mode: .appGroup(identifier: "group.com.orbit.app")
             )
             let repo = SwiftDataMemoryRepository(modelContainer: container)
-            return try await repo.list(filter: MemoryFilter(limit: 1, sort: .newestFirst)).first
+            let memory = try await repo.list(filter: MemoryFilter(limit: 1, sort: .newestFirst)).first
+            OrbitLog.app.notice("Recent-memory widget: fetched \(memory == nil ? "none" : "one", privacy: .public); storeURL=\(storeURL?.path ?? "<nil>", privacy: .public).")
+            return memory
         } catch {
+            OrbitLog.app.error("Recent-memory widget: fetch failed: \(String(describing: error), privacy: .public)")
             return nil
         }
     }
