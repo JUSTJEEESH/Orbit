@@ -53,6 +53,7 @@ private struct ContentRoot: View {
             } else {
                 OnboardingView(
                     account: environment.account,
+                    themeService: environment.themeService,
                     onComplete: {
                         environment.onboardingComplete = true
                         // First-launch wow moment: plant three intro
