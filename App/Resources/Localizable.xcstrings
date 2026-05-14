@@ -1,48 +1,107 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "A few things to enable" : {
+
+    },
+    "Allow" : {
+
+    },
     "Capture" : {
       "comment" : "FAB label",
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Capture" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Capture"
+          }
+        }
       }
     },
     "Capture to Orbit" : {
       "comment" : "AppIntent title",
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Capture to Orbit" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Capture to Orbit"
+          }
+        }
       }
     },
     "Home" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Home" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Home"
+          }
+        }
       }
     },
-    "Timeline" : {
+    "Make it yours" : {
+
+    },
+    "Memories find their orbit." : {
+
+    },
+    "Orbit" : {
+
+    },
+    "Orbit Pro" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Timeline" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Orbit Pro"
+          }
+        }
       }
+    },
+    "Photos, transcription, and integrations (Reminders, Calendar, Health) are enabled later — Orbit will ask once when you need each one." : {
+
     },
     "Search" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Search" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search"
+          }
+        }
       }
     },
     "Settings" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Settings" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings"
+          }
+        }
       }
     },
-    "Orbit Pro" : {
+    "Sign in with Apple to sync across your devices. Or continue as a guest — you can sign in any time." : {
+
+    },
+    "These power voice notes and your Daily Recap. You can change them anytime in Settings." : {
+
+    },
+    "Timeline" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Orbit Pro" } }
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Timeline"
+          }
+        }
       }
     }
   },
