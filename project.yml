@@ -159,8 +159,16 @@ targets:
         embed: true
       - target: OrbitWidgets
         embed: true
-      - target: OrbitCameraCapture
-        embed: true
+      # OrbitCameraCapture is disabled for v1. The ExtensionKit-style
+      # extension (type: extensionkit-extension) currently embeds into
+      # the wrong bundle directory under xcodegen's auto-embed and the
+      # archive validator rejects it. Re-enable in v1.1 once the
+      # destination override is sorted (likely needs `copy.destination:
+      # extensions` or an updated xcodegen). The target definition and
+      # source files stay in the project — we just don't ship the .appex
+      # with the iPhone app bundle yet.
+      # - target: OrbitCameraCapture
+      #   embed: true
       - target: OrbitSafariExtension
         embed: true
       - target: OrbitWatch

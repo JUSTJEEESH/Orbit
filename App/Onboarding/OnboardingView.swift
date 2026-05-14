@@ -750,7 +750,12 @@ private struct IntelligenceLiveDemo: View {
                 Capsule().fill(orbitTheme.primary).frame(width: 28, height: 4)
                 Capsule().fill(OrbitColor.textTertiary.opacity(0.5)).frame(width: 38, height: 4)
             }
-            (Text(visibleText) + Text(cursorOn ? "│" : "").foregroundStyle(orbitTheme.primary))
+            // iOS 26 deprecated the `Text(_:) + Text(_:)` operator in
+            // favor of inline-Text interpolation. Wrapping the cursor as
+            // an interpolated styled Text preserves the accent color on
+            // just the cursor while letting the outer text inherit the
+            // body font + primary color.
+            Text("\(visibleText)\(Text(cursorOn ? "│" : "").foregroundStyle(orbitTheme.primary))")
                 .font(OrbitTypography.body)
                 .foregroundStyle(OrbitColor.textPrimary)
                 .frame(maxWidth: .infinity, alignment: .leading)

@@ -20,9 +20,14 @@ public struct AppConfig: Sendable {
             #if DEBUG
             return .debug
             #else
-            if Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt" {
-                return .testflight
-            }
+            // The legacy `Bundle.main.appStoreReceiptURL` check that used
+            // to distinguish TestFlight from production was deprecated in
+            // iOS 18 in favor of `AppTransaction.shared`, which is async.
+            // Since nothing in the app currently branches on `.testflight`,
+            // we just return `.production` in non-DEBUG builds. If we ever
+            // need the distinction (e.g., toggling diagnostic logging in
+            // TestFlight), the async-cached AppTransaction.shared.environment
+            // is the right call to wire in.
             return .production
             #endif
         }
