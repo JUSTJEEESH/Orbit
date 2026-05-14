@@ -27,7 +27,7 @@ settings:
     # Apple developer team id from Config/Identity.xcconfig. xcconfig
     # inheritance alone wasn't reliably propagating the team through
     # Xcode's Signing tab, so we also pin it here.
-    DEVELOPMENT_TEAM: "ORBIT_TEAM_ID_PLACEHOLDER"
+    DEVELOPMENT_TEAM: "RB657RW2UW"
   configs:
     Debug:
       baseConfig: Config/Debug.xcconfig
@@ -95,12 +95,12 @@ targets:
         NSUserActivityTypes:
           - com.orbit.capture
         CFBundleURLTypes:
-          - CFBundleURLName: com.orbit.app
+          - CFBundleURLName: com.joshgreen.orbit
             CFBundleURLSchemes:
               - orbit
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app
+        PRODUCT_BUNDLE_IDENTIFIER: com.joshgreen.orbit
         CODE_SIGN_ENTITLEMENTS: App/Resources/Orbit.entitlements
         # iPhone only for v1 — keeps the "All interface orientations must
         # be supported" iPad validation warning away and matches the
@@ -184,7 +184,7 @@ targets:
               NSExtensionActivationSupportsImageWithMaxCount: 1
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app.share
+        PRODUCT_BUNDLE_IDENTIFIER: com.joshgreen.orbit.share
         CODE_SIGN_ENTITLEMENTS: Extensions/ShareExtension/Orbit.entitlements
         SKIP_INSTALL: YES
     dependencies:
@@ -210,7 +210,7 @@ targets:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app.widgets
+        PRODUCT_BUNDLE_IDENTIFIER: com.joshgreen.orbit.widgets
         CODE_SIGN_ENTITLEMENTS: Extensions/OrbitWidgets/Orbit.entitlements
         SKIP_INSTALL: YES
     dependencies:
@@ -248,7 +248,7 @@ targets:
           EXExtensionPointIdentifier: com.apple.lockedcamera.capture
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app.camera
+        PRODUCT_BUNDLE_IDENTIFIER: com.joshgreen.orbit.camera
         CODE_SIGN_ENTITLEMENTS: Extensions/CameraCapture/Orbit.entitlements
         SKIP_INSTALL: YES
         # The system instantiates this extension directly from its bundle
@@ -276,7 +276,7 @@ targets:
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).SafariWebExtensionHandler
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app.safari
+        PRODUCT_BUNDLE_IDENTIFIER: com.joshgreen.orbit.safari
         CODE_SIGN_ENTITLEMENTS: Extensions/SafariExtension/Orbit.entitlements
         SKIP_INSTALL: YES
 
@@ -296,11 +296,11 @@ targets:
       properties:
         CFBundleDisplayName: Orbit
         WKApplication: true
-        WKCompanionAppBundleIdentifier: com.orbit.app
+        WKCompanionAppBundleIdentifier: com.joshgreen.orbit
         NSMicrophoneUsageDescription: Orbit records voice memos from your wrist and sends them to your iPhone.
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app.watchkitapp
+        PRODUCT_BUNDLE_IDENTIFIER: com.joshgreen.orbit.watchkitapp
         CODE_SIGN_ENTITLEMENTS: WatchApp/Orbit.entitlements
         TARGETED_DEVICE_FAMILY: 4
         SUPPORTS_MACCATALYST: NO

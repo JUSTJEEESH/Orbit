@@ -54,7 +54,7 @@ public struct AppConfig: Sendable {
     ) -> AppConfig {
         let info = Bundle.main.infoDictionary ?? [:]
         return AppConfig(
-            bundleIdentifier: Bundle.main.bundleIdentifier ?? "com.orbit.app",
+            bundleIdentifier: Bundle.main.bundleIdentifier ?? "com.joshgreen.orbit",
             displayName: info["CFBundleDisplayName"] as? String ?? "Orbit",
             marketingVersion: info["CFBundleShortVersionString"] as? String ?? "0.0.0",
             buildNumber: info["CFBundleVersion"] as? String ?? "0",

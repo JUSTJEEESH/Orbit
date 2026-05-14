@@ -18,7 +18,7 @@ struct SendableCompletion<T>: @unchecked Sendable {
 }
 
 struct RecentMemoryWidget: Widget {
-    let kind: String = "com.orbit.app.widgets.recent"
+    let kind: String = "com.joshgreen.orbit.widgets.recent"
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: RecentMemoryProvider()) { entry in

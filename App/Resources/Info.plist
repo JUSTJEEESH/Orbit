@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Orbit</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.joshgreen.orbit</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>orbit</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Orbit mirrors your due-dated tasks to a dedicated Orbit calendar so they show up on the Lock Screen, Apple Watch, and CarPlay alongside your other events.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Orbit lets you capture moments straight into your memory timeline.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Orbit privately reads your sleep and step data to enrich your Daily Recap with the rhythms of your day.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Orbit uses the microphone to capture voice notes you record.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Orbit lets you save screenshots and photos as memories.</string>
+	<key>NSRemindersFullAccessUsageDescription</key>
+	<string>Orbit mirrors your tasks to iOS Reminders so you can manage them from Siri, CarPlay, or the Reminders app.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Orbit transcribes your voice notes on-device so they become searchable.</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+	<key>NSUserActivityTypes</key>
+	<array>
+		<string>com.orbit.capture</string>
+	</array>
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIColorName</key>
+		<string>launch.background</string>
+	</dict>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+</dict>
+</plist>

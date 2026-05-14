@@ -15,16 +15,17 @@
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>
 	<key>CFBundlePackageType</key>
-	<string>APPL</string>
+	<string>XPC!</string>
 	<key>CFBundleShortVersionString</key>
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Orbit records voice memos from your wrist and sends them to your iPhone.</string>
-	<key>WKApplication</key>
+	<key>NSExtension</key>
+	<dict>
+		<key>NSExtensionPointIdentifier</key>
+		<string>com.apple.widgetkit-extension</string>
+	</dict>
+	<key>NSSupportsLiveActivities</key>
 	<true/>
-	<key>WKCompanionAppBundleIdentifier</key>
-	<string>com.joshgreen.orbit</string>
 </dict>
 </plist>
