@@ -92,6 +92,7 @@ targets:
         NSRemindersFullAccessUsageDescription: Orbit mirrors your tasks to iOS Reminders so you can manage them from Siri, CarPlay, or the Reminders app.
         NSCalendarsFullAccessUsageDescription: Orbit mirrors your due-dated tasks to a dedicated Orbit calendar so they show up on the Lock Screen, Apple Watch, and CarPlay alongside your other events.
         NSHealthShareUsageDescription: Orbit privately reads your sleep and step data to enrich your Daily Recap with the rhythms of your day.
+        NSHealthUpdateUsageDescription: Orbit doesn't write to Health. This permission is declared because Apple requires both read and update strings for any app with HealthKit access, even when the app only reads.
         NSUserActivityTypes:
           - com.orbit.capture
         CFBundleURLTypes:
@@ -169,10 +170,22 @@ targets:
       # with the iPhone app bundle yet.
       # - target: OrbitCameraCapture
       #   embed: true
-      - target: OrbitSafariExtension
-        embed: true
-      - target: OrbitWatch
-        embed: true
+      # OrbitSafariExtension is disabled for v1. The web-extension
+      # resources (manifest.json icons, _locales/en/messages.json) need
+      # a proper build-out before Apple's validator will accept the
+      # bundle. Code is in place; re-enable in v1.1 alongside finishing
+      # the extension's resource folder.
+      # - target: OrbitSafariExtension
+      #   embed: true
+      # OrbitWatch is disabled for v1. Two reasons: (1) WatchKit app
+      # bundle is missing an Assets.xcassets / CFBundleIconName, which
+      # blocks Apple's archive validator; (2) the WCSession pairing
+      # path has known v1 quirks (see earlier sessions on the file
+      # handoff timing). UI work is polished and the target is kept in
+      # the project; re-enable in v1.1 once we can ship a proper watchOS
+      # icon set + sort the pairing edge case.
+      # - target: OrbitWatch
+      #   embed: true
 
   OrbitShareExtension:
     type: app-extension
