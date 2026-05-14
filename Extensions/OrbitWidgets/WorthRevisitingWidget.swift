@@ -132,42 +132,106 @@ struct WorthRevisitingProvider: TimelineProvider {
 }
 
 struct WorthRevisitingWidgetView: View {
+    @Environment(\.widgetFamily) private var family
     let entry: WorthRevisitingEntry
 
     var body: some View {
-        VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
-            Text("Worth revisiting")
-                .font(OrbitTypography.caption)
-                .foregroundStyle(OrbitColor.textTertiary)
-
+        VStack(alignment: .leading, spacing: 10) {
+            eyebrow
             if let memory = entry.memory {
                 Text(headline(memory))
-                    .font(OrbitTypography.body)
+                    .font(headlineFont)
                     .foregroundStyle(OrbitColor.textPrimary)
-                    .lineLimit(4)
-                Spacer()
-                HStack(spacing: OrbitSpacing.xs) {
-                    if let category = memory.ai.category, !category.isEmpty {
-                        chip(category)
-                    }
-                    Spacer()
-                    Text(memory.createdAt.formatted(.relative(presentation: .named)))
-                        .font(OrbitTypography.footnote)
-                        .foregroundStyle(OrbitColor.textSecondary)
-                }
+                    .lineLimit(headlineLineLimit)
+                    .minimumScaleFactor(0.85)
+                    .lineSpacing(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Spacer(minLength: 0)
+                footer(memory)
             } else {
-                Spacer()
-                Text("Nothing to revisit yet")
-                    .font(OrbitTypography.bodyEmphasized)
-                    .foregroundStyle(OrbitColor.textPrimary)
-                Text("Capture a few thoughts and they'll surface here.")
-                    .font(OrbitTypography.footnote)
-                    .foregroundStyle(OrbitColor.textSecondary)
-                Spacer()
+                emptyState
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .widgetURL(deepLinkURL)
+    }
+
+    // MARK: - Pieces
+
+    /// Editorial eyebrow: small accented dot + tracked uppercase label.
+    /// Feels like a magazine kicker rather than a generic widget header,
+    /// matching the in-app OrbitEyebrow visual.
+    private var eyebrow: some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(OrbitColor.accent)
+                .frame(width: 6, height: 6)
+            Text("WORTH REVISITING")
+                .font(OrbitTypography.caption)
+                .tracking(0.9)
+                .foregroundStyle(OrbitColor.textTertiary)
+        }
+    }
+
+    /// Right-sized per widget family. systemSmall is ~160pt wide, so
+    /// `.body` overflows and clips; footnote keeps 4-5 lines readable
+    /// while leaving room for the eyebrow and footer.
+    private var headlineFont: Font {
+        switch family {
+        case .systemSmall: return OrbitTypography.footnote
+        default: return OrbitTypography.callout
+        }
+    }
+
+    private var headlineLineLimit: Int {
+        switch family {
+        case .systemSmall: return 5
+        default: return 4
+        }
+    }
+
+    private func footer(_ memory: Memory) -> some View {
+        HStack(spacing: 6) {
+            // Category chip eats horizontal space — only show on medium+
+            // where there's room for it alongside the date.
+            if family != .systemSmall,
+               let category = memory.ai.category, !category.isEmpty {
+                chip(category)
+            }
+            Spacer(minLength: 0)
+            Text(dateText(for: memory.createdAt))
+                .font(OrbitTypography.caption)
+                .foregroundStyle(OrbitColor.textTertiary)
+        }
+    }
+
+    /// Small widget gets the abbreviated absolute date (`Apr 22`) — saves
+    /// horizontal space and reads cleaner at small sizes than a relative
+    /// phrase like "3 weeks ago." Medium gets the relative phrase which
+    /// is friendlier when there's room.
+    private func dateText(for date: Date) -> String {
+        switch family {
+        case .systemSmall:
+            return date.formatted(.dateTime.month(.abbreviated).day())
+        default:
+            return date.formatted(.relative(presentation: .named))
+        }
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 8) {
+            Spacer(minLength: 0)
+            Image(systemName: "sparkle")
+                .scaledFont(size: 22, weight: .regular)
+                .foregroundStyle(OrbitColor.textTertiary)
+            Text("Nothing to revisit yet")
+                .font(OrbitTypography.footnote)
+                .foregroundStyle(OrbitColor.textSecondary)
+                .multilineTextAlignment(.center)
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity)
     }
 
     private var deepLinkURL: URL? {

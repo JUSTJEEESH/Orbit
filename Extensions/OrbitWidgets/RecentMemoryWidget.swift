@@ -85,38 +85,25 @@ struct RecentMemoryProvider: TimelineProvider {
 }
 
 struct RecentMemoryWidgetView: View {
+    @Environment(\.widgetFamily) private var family
     let entry: RecentMemoryEntry
 
     var body: some View {
-        VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
-            Text("Most recent")
-                .font(OrbitTypography.caption)
-                .foregroundStyle(OrbitColor.textTertiary)
-
+        VStack(alignment: .leading, spacing: 10) {
+            eyebrow
             if let memory = entry.memory {
                 Text(headline(memory))
-                    .font(OrbitTypography.body)
+                    .font(headlineFont)
                     .foregroundStyle(OrbitColor.textPrimary)
-                    .lineLimit(4)
-                Spacer()
-                HStack(spacing: OrbitSpacing.xs) {
-                    if let category = memory.ai.category, !category.isEmpty {
-                        chip(category)
-                    }
-                    Spacer()
-                    Text(memory.createdAt.formatted(.relative(presentation: .named)))
-                        .font(OrbitTypography.footnote)
-                        .foregroundStyle(OrbitColor.textSecondary)
-                }
+                    .lineLimit(headlineLineLimit)
+                    .minimumScaleFactor(0.85)
+                    .lineSpacing(2)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Spacer(minLength: 0)
+                footer(memory)
             } else {
-                Spacer()
-                Text("Nothing here yet")
-                    .font(OrbitTypography.bodyEmphasized)
-                    .foregroundStyle(OrbitColor.textPrimary)
-                Text("Tap to capture your first memory.")
-                    .font(OrbitTypography.footnote)
-                    .foregroundStyle(OrbitColor.textSecondary)
-                Spacer()
+                emptyState
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
@@ -124,6 +111,64 @@ struct RecentMemoryWidgetView: View {
         // widget is empty, fall back to the capture flow so a tap is
         // never wasted on a dead surface.
         .widgetURL(deepLinkURL)
+    }
+
+    // MARK: - Pieces
+
+    private var eyebrow: some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(OrbitColor.accent)
+                .frame(width: 6, height: 6)
+            Text("MOST RECENT")
+                .font(OrbitTypography.caption)
+                .tracking(0.9)
+                .foregroundStyle(OrbitColor.textTertiary)
+        }
+    }
+
+    /// Right-sized per widget family. Recent supports medium + large
+    /// (no small variant), so callout on medium, body on large for the
+    /// extra vertical room.
+    private var headlineFont: Font {
+        switch family {
+        case .systemLarge: return OrbitTypography.body
+        default: return OrbitTypography.callout
+        }
+    }
+
+    private var headlineLineLimit: Int {
+        switch family {
+        case .systemLarge: return 8
+        default: return 4
+        }
+    }
+
+    private func footer(_ memory: Memory) -> some View {
+        HStack(spacing: 6) {
+            if let category = memory.ai.category, !category.isEmpty {
+                chip(category)
+            }
+            Spacer(minLength: 0)
+            Text(memory.createdAt.formatted(.relative(presentation: .named)))
+                .font(OrbitTypography.caption)
+                .foregroundStyle(OrbitColor.textTertiary)
+        }
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 8) {
+            Spacer(minLength: 0)
+            Image(systemName: "plus.circle")
+                .scaledFont(size: 22, weight: .regular)
+                .foregroundStyle(OrbitColor.textTertiary)
+            Text("Tap to capture your first memory")
+                .font(OrbitTypography.footnote)
+                .foregroundStyle(OrbitColor.textSecondary)
+                .multilineTextAlignment(.center)
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity)
     }
 
     private var deepLinkURL: URL? {
