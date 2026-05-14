@@ -282,8 +282,35 @@ targets:
     type: app-extension
     platform: iOS
     deploymentTarget: "26.0"
+    # Safari web extensions require a specific bundle structure:
+    # manifest.json, background.js, popup.{html,css,js} at the bundle
+    # root; _locales/en/messages.json and images/*.png with their
+    # directory structure preserved. xcodegen's default `path: Extensions/SafariExtension`
+    # spec flattens directories — Apple's validator then rejects the
+    # build because it can't find _locales/en/messages.json at the
+    # expected nested path. Explicit sources spec below: individual
+    # files go to the bundle root (auto-detected as resources), while
+    # _locales and images use `type: folder` to preserve their
+    # internal directory structure (Xcode "blue folder" / folder
+    # reference).
     sources:
-      - path: Extensions/SafariExtension
+      - path: Extensions/SafariExtension/SafariWebExtensionHandler.swift
+      - path: Extensions/SafariExtension/Resources/manifest.json
+        buildPhase: resources
+      - path: Extensions/SafariExtension/Resources/background.js
+        buildPhase: resources
+      - path: Extensions/SafariExtension/Resources/popup.html
+        buildPhase: resources
+      - path: Extensions/SafariExtension/Resources/popup.css
+        buildPhase: resources
+      - path: Extensions/SafariExtension/Resources/popup.js
+        buildPhase: resources
+      - path: Extensions/SafariExtension/Resources/_locales
+        type: folder
+        buildPhase: resources
+      - path: Extensions/SafariExtension/Resources/images
+        type: folder
+        buildPhase: resources
     info:
       path: Extensions/SafariExtension/Info.plist
       properties:
