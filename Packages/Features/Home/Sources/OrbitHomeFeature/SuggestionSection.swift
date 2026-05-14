@@ -15,6 +15,10 @@ import OrbitMemoryDetailFeature
 struct SuggestionSection: View {
     let feed: MemorySuggestionFeed
     let heroNamespace: Namespace.ID
+    /// Called when the user picks "Don't suggest again" from a card's
+    /// long-press menu. Parent (HomeView) wires this to the dismiss
+    /// use case + a reload so the card disappears immediately.
+    let onDismiss: @MainActor (UUID) -> Void
 
     @Environment(\.orbitTheme) private var orbitTheme
 
@@ -30,9 +34,20 @@ struct SuggestionSection: View {
                     tint: OrbitCategoryPalette.tint(for: related.memory.ai.category)
                 ))
                 .matchedTransitionSource(id: related.memory.id, in: heroNamespace)
+                .contextMenu {
+                    Button(role: .destructive) {
+                        Haptics.play(.tap)
+                        onDismiss(related.memory.id)
+                    } label: {
+                        Label("Don't suggest again", systemImage: "eye.slash")
+                    }
+                }
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel(accessibilityLabel(for: related.memory))
-                .accessibilityHint("Double-tap to open.")
+                .accessibilityHint("Double-tap to open. Long-press for more.")
+                .accessibilityAction(named: "Don't suggest again") {
+                    onDismiss(related.memory.id)
+                }
             }
         }
     }

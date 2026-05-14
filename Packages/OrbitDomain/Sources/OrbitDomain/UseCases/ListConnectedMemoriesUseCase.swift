@@ -11,15 +11,18 @@ import Foundation
 public struct ListConnectedMemoriesUseCase: Sendable {
     private let memories: any MemoryRepository
     private let generator: any SuggestionGenerator
+    private let dismissalStore: any SuggestionDismissalStore
     private let clock: any OrbitClock
 
     public init(
         memories: any MemoryRepository,
         generator: any SuggestionGenerator,
+        dismissalStore: any SuggestionDismissalStore,
         clock: any OrbitClock
     ) {
         self.memories = memories
         self.generator = generator
+        self.dismissalStore = dismissalStore
         self.clock = clock
     }
 
@@ -27,6 +30,12 @@ public struct ListConnectedMemoriesUseCase: Sendable {
         let now = clock.now()
         let all = try await memories.list(filter: .all)
         guard let anchor = all.first(where: { $0.id == anchorID }) else { return [] }
-        return await generator.relatedMemories(anchor: anchor, from: all, now: now)
+        let dismissed = dismissalStore.dismissedIDs(at: now)
+        return await generator.relatedMemories(
+            anchor: anchor,
+            from: all,
+            dismissedIDs: dismissed,
+            now: now
+        )
     }
 }

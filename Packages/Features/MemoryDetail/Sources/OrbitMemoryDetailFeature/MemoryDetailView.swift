@@ -133,9 +133,20 @@ public struct MemoryDetailView: View {
                 .buttonStyle(OrbitBloomButtonStyle(
                     tint: OrbitCategoryPalette.tint(for: related.memory.ai.category)
                 ))
+                .contextMenu {
+                    Button(role: .destructive) {
+                        Haptics.play(.tap)
+                        Task { await model.dismissConnected(related.memory.id) }
+                    } label: {
+                        Label("Don't suggest again", systemImage: "eye.slash")
+                    }
+                }
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel("Connected memory. \(connectedEyebrow(for: related.memory)). \(connectedHeadline(for: related.memory)).")
-                .accessibilityHint("Double-tap to open.")
+                .accessibilityHint("Double-tap to open. Long-press for more.")
+                .accessibilityAction(named: "Don't suggest again") {
+                    Task { await model.dismissConnected(related.memory.id) }
+                }
             }
         }
     }

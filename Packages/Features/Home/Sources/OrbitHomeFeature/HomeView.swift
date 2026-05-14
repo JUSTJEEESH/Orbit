@@ -9,6 +9,10 @@ public struct HomeView: View {
     private let generateInsights: GenerateInsightsUseCase
     private let listOnThisDay: ListOnThisDayUseCase
     private let listSuggestions: ListSuggestionsUseCase
+    /// Records that the user picked "Don't suggest again" on a Worth-
+    /// Revisiting card. Synchronous (UserDefaults write) — we kick off
+    /// a reloadSuggestions() right after so the card disappears.
+    private let dismissSuggestion: @MainActor (UUID) -> Void
     private let removeMemory: @MainActor @Sendable (UUID) async throws -> Void
     private let refreshToken: Int
     private let clock: any OrbitClock
@@ -42,6 +46,7 @@ public struct HomeView: View {
         generateInsights: GenerateInsightsUseCase,
         listOnThisDay: ListOnThisDayUseCase,
         listSuggestions: ListSuggestionsUseCase,
+        dismissSuggestion: @escaping @MainActor (UUID) -> Void,
         loadGratitudeStatus: LoadGratitudeStatusUseCase,
         removeMemory: @escaping @MainActor @Sendable (UUID) async throws -> Void,
         refreshToken: Int = 0,
@@ -60,6 +65,7 @@ public struct HomeView: View {
         self.generateInsights = generateInsights
         self.listOnThisDay = listOnThisDay
         self.listSuggestions = listSuggestions
+        self.dismissSuggestion = dismissSuggestion
         self.loadGratitudeStatus = loadGratitudeStatus
         self.removeMemory = removeMemory
         self.refreshToken = refreshToken
@@ -298,7 +304,24 @@ public struct HomeView: View {
                 insightCard(primaryInsight)
             }
             if let suggestionFeed {
-                SuggestionSection(feed: suggestionFeed, heroNamespace: heroNamespace)
+                SuggestionSection(
+                    feed: suggestionFeed,
+                    heroNamespace: heroNamespace,
+                    onDismiss: { memoryID in
+                        // Optimistic UI: drop the dismissed card from
+                        // the in-memory feed so it disappears
+                        // immediately, then persist + reload from
+                        // source so the slot fills with the next-best
+                        // candidate.
+                        suggestionFeed = MemorySuggestionFeed(
+                            anchor: suggestionFeed.anchor,
+                            related: suggestionFeed.related.filter { $0.memory.id != memoryID },
+                            generatedAt: suggestionFeed.generatedAt
+                        )
+                        dismissSuggestion(memoryID)
+                        Task { await reloadSuggestions() }
+                    }
+                )
             }
             recentSection
         }

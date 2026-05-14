@@ -294,6 +294,7 @@ struct RootView: View {
                     generateInsights: env.generateInsights,
                     listOnThisDay: env.listOnThisDay,
                     listSuggestions: env.listMemorySuggestions,
+                    dismissSuggestion: { id in env.dismissSuggestion(memoryID: id) },
                     loadGratitudeStatus: env.loadGratitudeStatus,
                     removeMemory: { id in try await env.removeMemory(id: id) },
                     refreshToken: env.memoryListVersion,
@@ -410,6 +411,7 @@ struct RootView: View {
             speechTranscriber: env.speechTranscriber,
             listConnectedMemories: env.listConnectedMemories,
             explainConnections: env.explainConnections,
+            dismissSuggestion: { id in env.dismissSuggestion(memoryID: id) },
             removeMemory: { id in try await env.removeMemory(id: id) }
         )
     }

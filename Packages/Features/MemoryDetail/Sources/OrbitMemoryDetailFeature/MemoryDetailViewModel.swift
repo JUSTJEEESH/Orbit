@@ -43,6 +43,10 @@ public final class MemoryDetailViewModel {
     private let speechTranscriber: SpeechTranscriber?
     private let listConnectedMemories: ListConnectedMemoriesUseCase?
     private let explainConnections: ExplainConnectionsUseCase?
+    /// Optional dismissal hook. View calls this when the user picks
+    /// "Don't suggest again" on a Connected card; we record the
+    /// dismissal and reload the connected list so the slot fills.
+    private let dismissSuggestion: (@MainActor (UUID) -> Void)?
     private let removeMemory: @MainActor @Sendable (UUID) async throws -> Void
 
     public init(
@@ -52,6 +56,7 @@ public final class MemoryDetailViewModel {
         speechTranscriber: SpeechTranscriber? = nil,
         listConnectedMemories: ListConnectedMemoriesUseCase? = nil,
         explainConnections: ExplainConnectionsUseCase? = nil,
+        dismissSuggestion: (@MainActor (UUID) -> Void)? = nil,
         removeMemory: @escaping @MainActor @Sendable (UUID) async throws -> Void
     ) {
         self.memoryID = memoryID
@@ -60,7 +65,19 @@ public final class MemoryDetailViewModel {
         self.speechTranscriber = speechTranscriber
         self.listConnectedMemories = listConnectedMemories
         self.explainConnections = explainConnections
+        self.dismissSuggestion = dismissSuggestion
         self.removeMemory = removeMemory
+    }
+
+    /// Called by the view when the user dismisses a Connected card.
+    /// Optimistically drops the dismissed memory from the in-memory
+    /// list, persists via the dismissal use case, then reloads from
+    /// source so the next-best candidate fills the slot.
+    public func dismissConnected(_ relatedID: UUID) async {
+        connected.removeAll { $0.memory.id == relatedID }
+        connectionReasons.removeValue(forKey: relatedID)
+        dismissSuggestion?(relatedID)
+        await loadConnectedIfNeeded()
     }
 
     public func load() async {

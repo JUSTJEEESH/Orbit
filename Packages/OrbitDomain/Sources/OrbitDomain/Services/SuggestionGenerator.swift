@@ -8,7 +8,15 @@ public protocol SuggestionGenerator: Sendable {
     /// from the eligible window and returns it bundled with its top-ranked
     /// related memories. Returns `nil` when there's not enough corpus to
     /// land an honest result; the UI hides the section in that case.
-    func suggestions(from memories: [Memory], now: Date) async -> MemorySuggestionFeed?
+    ///
+    /// `dismissedIDs` is the caller-resolved set of memory IDs the user
+    /// has explicitly hidden from suggestions; the engine excludes them
+    /// from the candidate pool before anchor selection and ranking.
+    func suggestions(
+        from memories: [Memory],
+        dismissedIDs: Set<UUID>,
+        now: Date
+    ) async -> MemorySuggestionFeed?
 
     /// Memory-Detail surface. Caller supplies the anchor explicitly (the
     /// memory currently on screen); returns the top-ranked memories that
@@ -16,5 +24,15 @@ public protocol SuggestionGenerator: Sendable {
     /// staring at a specific memory, "what else from that day connects to
     /// this" is a legitimate question. Empty array when nothing scores
     /// above the relevance floor.
-    func relatedMemories(anchor: Memory, from memories: [Memory], now: Date) async -> [MemorySuggestionFeed.Related]
+    ///
+    /// `dismissedIDs` works the same way as in `suggestions(...)` —
+    /// the engine excludes any dismissed memory from the candidate
+    /// list. The anchor itself is never filtered (the user is actively
+    /// viewing it).
+    func relatedMemories(
+        anchor: Memory,
+        from memories: [Memory],
+        dismissedIDs: Set<UUID>,
+        now: Date
+    ) async -> [MemorySuggestionFeed.Related]
 }

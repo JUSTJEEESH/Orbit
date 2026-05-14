@@ -58,6 +58,11 @@ final class AppEnvironment {
     let listMemorySuggestions: ListSuggestionsUseCase
     let listConnectedMemories: ListConnectedMemoriesUseCase
     let explainConnections: ExplainConnectionsUseCase
+    let dismissSuggestion: DismissSuggestionUseCase
+    /// Held on the env so the account-wipe flow can call `clearAll()`
+    /// — a re-onboarded user shouldn't inherit dismissals from a prior
+    /// account on the same device.
+    let suggestionDismissalStore: any SuggestionDismissalStore
     let listTasks: ListTasksUseCase
     let listTaskSuggestions: ListTaskSuggestionsUseCase
     let promoteHintToTask: PromoteHintToTaskUseCase
@@ -238,6 +243,9 @@ final class AppEnvironment {
         // experience as a brand-new install — otherwise the user
         // lands on an empty shell.
         clearWelcomeSeededFlag()
+        // Suggestions dismissals belong to the user that just got
+        // wiped — a re-onboarded user starts with zero hidden memories.
+        suggestionDismissalStore.clearAll()
         memoriesDidChange()
     }
 
@@ -327,17 +335,29 @@ final class AppEnvironment {
         // Memory-Detail connected strip) call through the same actor so
         // any future caching state stays consistent across them.
         let suggestionEngine = SuggestionEngine()
+        // Single dismissal store shared across both surfaces — Home and
+        // Memory Detail must agree on what's dismissed, otherwise a memory
+        // hidden from "Worth revisiting" could still surface as a
+        // "Connected memory" elsewhere.
+        let suggestionDismissals: any SuggestionDismissalStore = UserDefaultsSuggestionDismissalStore()
+        self.suggestionDismissalStore = suggestionDismissals
         self.listMemorySuggestions = ListSuggestionsUseCase(
             memories: memories,
             generator: suggestionEngine,
+            dismissalStore: suggestionDismissals,
             clock: clock
         )
         self.listConnectedMemories = ListConnectedMemoriesUseCase(
             memories: memories,
             generator: suggestionEngine,
+            dismissalStore: suggestionDismissals,
             clock: clock
         )
         self.explainConnections = ExplainConnectionsUseCase(memories: memories, ai: ai)
+        self.dismissSuggestion = DismissSuggestionUseCase(
+            dismissalStore: suggestionDismissals,
+            clock: clock
+        )
         self.listTasks = ListTasksUseCase(repository: tasks)
         self.listTaskSuggestions = ListTaskSuggestionsUseCase(memories: memories, tasks: tasks)
         self.promoteHintToTask = PromoteHintToTaskUseCase(tasks: tasks, clock: clock)

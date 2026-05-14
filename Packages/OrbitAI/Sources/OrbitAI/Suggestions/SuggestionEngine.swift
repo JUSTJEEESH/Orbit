@@ -41,8 +41,16 @@ public actor SuggestionEngine: SuggestionGenerator {
 
     // MARK: - Public — Home surface (auto-picked anchor)
 
-    public func suggestions(from memories: [Memory], now: Date) async -> MemorySuggestionFeed? {
-        let pool = memories.filter { !$0.isSealed(at: now) }
+    public func suggestions(
+        from memories: [Memory],
+        dismissedIDs: Set<UUID>,
+        now: Date
+    ) async -> MemorySuggestionFeed? {
+        // Dismissals filter the pool before anchor selection — a
+        // memory the user hid shouldn't be re-elected as today's
+        // memory-of-the-day, and it can't surface as a related result
+        // either.
+        let pool = memories.filter { !$0.isSealed(at: now) && !dismissedIDs.contains($0.id) }
         guard pool.count >= 5 else { return nil }
 
         guard let anchor = pickAnchor(from: pool, now: now) else { return nil }
@@ -59,12 +67,16 @@ public actor SuggestionEngine: SuggestionGenerator {
     /// gate on the anchor (it's whatever the user tapped); no day-gap
     /// requirement on candidates (same-day captures can legitimately
     /// connect to the one being viewed).
+    ///
+    /// The anchor itself is never filtered out by `dismissedIDs` (the
+    /// user is actively viewing it); only candidates are.
     public func relatedMemories(
         anchor: Memory,
         from memories: [Memory],
+        dismissedIDs: Set<UUID>,
         now: Date
     ) async -> [MemorySuggestionFeed.Related] {
-        let pool = memories.filter { !$0.isSealed(at: now) }
+        let pool = memories.filter { !$0.isSealed(at: now) && !dismissedIDs.contains($0.id) }
         return rank(candidates: pool, anchor: anchor, now: now, minSeparationDays: 0)
     }
 
