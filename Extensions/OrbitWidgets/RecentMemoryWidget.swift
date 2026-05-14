@@ -7,7 +7,10 @@ import OrbitPersistence
 /// `@unchecked Sendable` wrapper around WidgetKit's non-Sendable completion
 /// handlers. The handler is documented to be invoked exactly once after the
 /// timeline call finishes, so racing concurrent uses cannot occur.
-private struct SendableCompletion<T>: @unchecked Sendable {
+///
+/// Internal (not private) so additional widget files in the bundle can
+/// reuse the helper without duplicating the workaround.
+struct SendableCompletion<T>: @unchecked Sendable {
     private let body: (T) -> Void
     init(_ body: @escaping (T) -> Void) { self.body = body }
     func invoke(_ value: T) { body(value) }
@@ -109,7 +112,17 @@ struct RecentMemoryWidgetView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-        .widgetURL(URL(string: entry.memory == nil ? "orbit://capture" : "orbit://capture"))
+        // When a memory is present, deep-link to Memory Detail; when the
+        // widget is empty, fall back to the capture flow so a tap is
+        // never wasted on a dead surface.
+        .widgetURL(deepLinkURL)
+    }
+
+    private var deepLinkURL: URL? {
+        if let memory = entry.memory {
+            return URL(string: "orbit://memory/\(memory.id.uuidString)")
+        }
+        return URL(string: "orbit://capture")
     }
 
     private func headline(_ memory: Memory) -> String {
