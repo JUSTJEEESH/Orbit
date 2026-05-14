@@ -34,9 +34,9 @@ public final class EntitlementService {
     public private(set) var products: [OrbitProduct] = []
     public private(set) var isLoadingProducts: Bool = false
 
-    public static let monthlyID = "com.orbit.app.pro.monthly"
-    public static let yearlyID = "com.orbit.app.pro.yearly"
-    public static let lifetimeID = "com.orbit.app.pro.lifetime"
+    public static let monthlyID = "com.joshgreen.orbit.pro.monthly"
+    public static let yearlyID = "com.joshgreen.orbit.pro.yearly"
+    public static let lifetimeID = "com.joshgreen.orbit.pro.lifetime"
 
     public static let defaultProductIDs: Set<String> = [
         monthlyID,

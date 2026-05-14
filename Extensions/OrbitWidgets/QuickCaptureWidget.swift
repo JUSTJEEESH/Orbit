@@ -3,7 +3,7 @@ import SwiftUI
 import OrbitDesignSystem
 
 struct QuickCaptureWidget: Widget {
-    let kind: String = "com.orbit.app.widgets.quickcapture"
+    let kind: String = "com.joshgreen.orbit.widgets.quickcapture"
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: QuickCaptureProvider()) { entry in

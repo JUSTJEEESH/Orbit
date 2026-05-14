@@ -17,7 +17,7 @@ import OrbitPersistence
 /// same memory the app shows. If the in-app engine changes, this widget
 /// needs to be kept in sync.
 struct WorthRevisitingWidget: Widget {
-    let kind: String = "com.orbit.app.widgets.worth-revisiting"
+    let kind: String = "com.joshgreen.orbit.widgets.worth-revisiting"
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: WorthRevisitingProvider()) { entry in

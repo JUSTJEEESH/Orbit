@@ -476,7 +476,7 @@ extension AppEnvironment {
         let embeddings = EmbeddingService()
         return AppEnvironment(
             appConfig: AppConfig(
-                bundleIdentifier: "com.orbit.app",
+                bundleIdentifier: "com.joshgreen.orbit",
                 displayName: "Orbit",
                 marketingVersion: "0.1.0",
                 buildNumber: "1",
