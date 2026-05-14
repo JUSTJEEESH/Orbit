@@ -17,7 +17,7 @@ struct OrbitApp: App {
         // production public API key from the RevenueCat dashboard
         // before App Store submission, ideally via an xcconfig-fed
         // Info.plist value so DEBUG and Release pick different keys.
-        RevenueCatConfig.configure(apiKey: "test_jYJreMUEiSTsVUCaduRFOfewdob")
+        RevenueCatConfig.configure(apiKey: "appl_JQnSEPnRagNJeDHJvgeSYJacJiP")
 
         let config = AppConfig.resolveFromBundle()
 
