@@ -2,7 +2,7 @@ import Foundation
 import OSLog
 import Speech
 
-private let log = Logger(subsystem: "com.orbit.app", category: "speech")
+private let log = Logger(subsystem: "com.joshgreen.orbit", category: "speech")
 
 /// Wraps `SFSpeechRecognizer` for transcription of a recorded audio file.
 ///

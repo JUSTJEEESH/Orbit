@@ -39,7 +39,7 @@ The project's actual deployment target is **iOS 26.0**
 version of the project. Replace with:
 
 > "Orbit requires **iPhone running iOS 26 or later**. The AI surfaces
-> (Daily Recap, Ask Orbit, auto-summaries, themes) use Apple
+> (Daily Recap, Ask Orbit, auto-summaries) use Apple
 > Intelligence, which is available on the iPhone 15 Pro lineup,
 > every iPhone 16 model, and newer. On supported devices everything
 > happens on-device; on older models you'll get lightweight
@@ -133,12 +133,10 @@ on this branch.
   > "Delete a single memory — long-press the card (or swipe left
   > on Timeline) and tap Delete."
 
-- `index.html` end-CTA and hero use the link
-  `https://apps.apple.com/app/orbit/idXXXXXXXXX`. Replace
-  `idXXXXXXXXX` with the real numeric App Store ID once Apple
-  assigns one (after you create the app record in App Store
-  Connect). Until then, point the link at the App Store Connect
-  preview URL or just disable the button.
+- `index.html` end-CTA and hero link to
+  `https://apps.apple.com/app/orbit/id6769115384`
+  (App Store ID assigned by Apple in App Store Connect).
+  `docs/marketing/landing.md` uses the same URL.
 
 - The contact email **`support@orbitbrain2.netlify.app`** uses a
   Netlify subdomain that won't deliver mail. Apple's submission
@@ -270,7 +268,7 @@ sync to iOS Reminders. Your sleep arrives in your Daily Recap.
 
 — ORBIT PRO
 A yearly subscription unlocks unlimited Daily Recaps, unlimited Ask
-Orbit, long-form voice notes, your full Year in Review, and themes.
+Orbit, long-form voice notes, and your full Year in Review.
 Free to try for 7 days.
 
 Subscriptions auto-renew unless cancelled 24 hours before the period
@@ -326,7 +324,7 @@ the in-review form will want:
 - Trial: 7 days
 - Renewal: Yearly
 - Display name: Orbit Pro
-- Description (max 45): "Unlimited Recap, Ask Orbit, voice, themes."
+- Description (max 45): "Unlimited Recap, Ask Orbit, long voice, full Year in Review."
 
 Also: the **privacy URL** and **terms URL** must be set in App Store
 Connect → App Information. Use the orbitbrain2.netlify.app paths
@@ -357,7 +355,7 @@ frames is plenty.
 | 3 | Memory Detail | A voice note opened, showing transcript + AI summary + auto-tags. | "Apple Intelligence writes the titles, the tags, the summaries." |
 | 4 | Daily Recap | A finished recap with one paragraph of reflective prose + linked highlights below. | "A day, read back to you. Each evening." |
 | 5 | Ask Orbit, conversation mid-flow | A question typed, an answer rendered, source memory cards linked underneath. | "Ask anything. Orbit answers from your own memories." |
-| 6 | Year in Review (or Themes) — Pro showcase | Editorial layout, big serif numbers, a memory-rain animation paused on a frame. | "Your year, the way you'd want to remember it." |
+| 6 | Year in Review — Pro showcase | Editorial layout, big serif numbers, a memory-rain animation paused on a frame. | "Your year, the way you'd want to remember it." |
 
 Optional 7th frame if you have room: privacy nutrition label hero
 screen, or the Settings → Account → Delete pane with the calm copy
@@ -414,8 +412,8 @@ on this branch.
 - [ ] "End-to-end iCloud" softened on `index.html`.
 - [ ] Real support email working and updated across all four pages
       plus in-app `Settings → About → Contact Support`.
-- [ ] Real App Store app ID substituted for `idXXXXXXXXX` once Apple
-      issues one.
+- [x] Real App Store app ID (`6769115384`) substituted across
+      `index.html` (hero + end CTA) and `docs/marketing/landing.md`.
 - [ ] App Store Connect: Privacy URL, Terms URL, Support URL all
       set and resolving.
 - [ ] App Store Connect: privacy nutrition label declarations match

@@ -25,9 +25,14 @@ public struct CaptureMemoryUseCase: Sendable {
         tags: [Tag] = [],
         media: [MediaAsset] = [],
         surfaceDate: Date? = nil,
-        isLetter: Bool = false
+        isLetter: Bool = false,
+        createdAt: Date? = nil
     ) async throws -> Memory {
         let now = clock.now()
+        // Optional override lets demo seeders and import flows backdate a
+        // capture without bypassing the use case. Production paths leave
+        // it nil and inherit clock.now() as before.
+        let timestamp = createdAt ?? now
         // Discard surface dates that have already passed — a "schedule"
         // affordance with a past date should land the memory immediately
         // rather than create an instantly-visible "sealed" record.
@@ -37,8 +42,8 @@ public struct CaptureMemoryUseCase: Sendable {
         }()
         var memory = Memory(
             content: content,
-            createdAt: now,
-            updatedAt: now,
+            createdAt: timestamp,
+            updatedAt: timestamp,
             tags: tags,
             media: media,
             ai: .pending,

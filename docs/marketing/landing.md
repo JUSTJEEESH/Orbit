@@ -30,7 +30,7 @@ Use these in your `<head>`:
 > A calm second brain for the things you don't want to forget.
 > On-device. Private. Beautifully native.
 >
-> **[Download on the App Store →](https://apps.apple.com/app/orbit/idXXXXXXXXX)**
+> **[Download on the App Store →](https://apps.apple.com/app/orbit/id6769115384)**
 
 *(Show a single device frame next to the hero, displaying the Daily
 Recap or Home screen. Single screenshot — don't crowd the hero with

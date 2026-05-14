@@ -25,11 +25,28 @@ public final class MemoryDetailViewModel {
     /// happening.
     public private(set) var isRetranscribing: Bool = false
     public private(set) var retranscribeError: String?
+    /// Up to 3 memories the SuggestionEngine has ranked as related to
+    /// this one. Empty array → the "Connected" section is hidden.
+    /// Loaded lazily after the primary memory loads so it never blocks
+    /// the first paint.
+    public private(set) var connected: [MemorySuggestionFeed.Related] = []
+    /// One-sentence "why these connect" reason per related memory,
+    /// keyed by `Memory.id`. Loaded async AFTER `connected` populates,
+    /// so the cards render immediately and the subheads fill in when
+    /// the model returns. Missing entries → card renders without a
+    /// subhead.
+    public private(set) var connectionReasons: [UUID: String] = [:]
 
     private let memoryID: UUID
     private let repository: any MemoryRepository
     private let mediaStorage: MediaStorage
     private let speechTranscriber: SpeechTranscriber?
+    private let listConnectedMemories: ListConnectedMemoriesUseCase?
+    private let explainConnections: ExplainConnectionsUseCase?
+    /// Optional dismissal hook. View calls this when the user picks
+    /// "Don't suggest again" on a Connected card; we record the
+    /// dismissal and reload the connected list so the slot fills.
+    private let dismissSuggestion: (@MainActor (UUID) -> Void)?
     private let removeMemory: @MainActor @Sendable (UUID) async throws -> Void
 
     public init(
@@ -37,13 +54,30 @@ public final class MemoryDetailViewModel {
         repository: any MemoryRepository,
         mediaStorage: MediaStorage,
         speechTranscriber: SpeechTranscriber? = nil,
+        listConnectedMemories: ListConnectedMemoriesUseCase? = nil,
+        explainConnections: ExplainConnectionsUseCase? = nil,
+        dismissSuggestion: (@MainActor (UUID) -> Void)? = nil,
         removeMemory: @escaping @MainActor @Sendable (UUID) async throws -> Void
     ) {
         self.memoryID = memoryID
         self.repository = repository
         self.mediaStorage = mediaStorage
         self.speechTranscriber = speechTranscriber
+        self.listConnectedMemories = listConnectedMemories
+        self.explainConnections = explainConnections
+        self.dismissSuggestion = dismissSuggestion
         self.removeMemory = removeMemory
+    }
+
+    /// Called by the view when the user dismisses a Connected card.
+    /// Optimistically drops the dismissed memory from the in-memory
+    /// list, persists via the dismissal use case, then reloads from
+    /// source so the next-best candidate fills the slot.
+    public func dismissConnected(_ relatedID: UUID) async {
+        connected.removeAll { $0.memory.id == relatedID }
+        connectionReasons.removeValue(forKey: relatedID)
+        dismissSuggestion?(relatedID)
+        await loadConnectedIfNeeded()
     }
 
     public func load() async {
@@ -57,9 +91,41 @@ public final class MemoryDetailViewModel {
             self.state = .loaded
             await loadAttachedImageIfNeeded(for: memory)
             await loadAttachedAudioIfNeeded(for: memory)
+            await loadConnectedIfNeeded()
         } catch {
             OrbitLog.persistence.error("Memory load failed: \(String(describing: error), privacy: .public)")
             self.state = .failed("Couldn't load this memory. It may have been deleted.")
+        }
+    }
+
+    /// Runs after the primary memory + media have loaded so the
+    /// Connected section doesn't block the first paint. Silent failure
+    /// — `connected` just stays empty and the section hides.
+    ///
+    /// Two-stage on purpose: `connected` is set first so the cards
+    /// render right away; the `connectionReasons` follow-up fetches
+    /// AI-generated subheads behind a second `await`, which gives
+    /// SwiftUI a chance to repaint between the two states. Result:
+    /// cards visible in milliseconds, subheads fill in when the
+    /// model returns.
+    private func loadConnectedIfNeeded() async {
+        guard let listConnectedMemories else { return }
+        do {
+            connected = try await listConnectedMemories(anchorID: memoryID)
+        } catch {
+            OrbitLog.persistence.error("Connected memories load failed: \(String(describing: error), privacy: .public)")
+            connected = []
+            return
+        }
+        guard let explainConnections, !connected.isEmpty else { return }
+        do {
+            connectionReasons = try await explainConnections(
+                anchorID: memoryID,
+                relatedIDs: connected.map(\.memory.id)
+            )
+        } catch {
+            OrbitLog.persistence.error("Connection reasons load failed: \(String(describing: error), privacy: .public)")
+            connectionReasons = [:]
         }
     }
 

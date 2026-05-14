@@ -10,10 +10,15 @@ public struct TimelineView: View {
     private let refreshToken: Int
     private let makeDetailViewModel: @MainActor (UUID) -> MemoryDetailViewModel
     private let onPresentCapture: @MainActor () -> Void
+    private let externalPath: Binding<[MemoryDetailRoute]>?
 
     @State private var memories: [Memory] = []
     @State private var loadState: LoadState = .idle
     @State private var pendingDeletions: Set<UUID> = []
+    /// Fallback path used when no external binding is provided. Keeps the
+    /// regular tap-from-list flow working without forcing every caller to
+    /// thread a binding through.
+    @State private var internalPath: [MemoryDetailRoute] = []
     @Namespace private var heroNamespace
 
     private enum LoadState: Equatable { case idle, loading, loaded, failed(String) }
@@ -23,17 +28,19 @@ public struct TimelineView: View {
         removeMemory: @escaping @MainActor @Sendable (UUID) async throws -> Void,
         refreshToken: Int = 0,
         makeDetailViewModel: @escaping @MainActor (UUID) -> MemoryDetailViewModel,
-        onPresentCapture: @escaping @MainActor () -> Void
+        onPresentCapture: @escaping @MainActor () -> Void,
+        path: Binding<[MemoryDetailRoute]>? = nil
     ) {
         self.listMemories = listMemories
         self.removeMemory = removeMemory
         self.refreshToken = refreshToken
         self.makeDetailViewModel = makeDetailViewModel
         self.onPresentCapture = onPresentCapture
+        self.externalPath = path
     }
 
     public var body: some View {
-        NavigationStack {
+        NavigationStack(path: pathBinding) {
             content
                 .navigationTitle("Timeline")
                 .navigationBarTitleDisplayMode(.large)
@@ -46,6 +53,14 @@ public struct TimelineView: View {
                 }
         }
         .task(id: refreshToken) { await reload() }
+    }
+
+    /// Returns the externally-supplied path binding when present (used by
+    /// Spotlight tap-to-open to push memories from outside the view), or
+    /// falls back to the internal `@State` so the regular tap-a-card flow
+    /// keeps working unchanged.
+    private var pathBinding: Binding<[MemoryDetailRoute]> {
+        externalPath ?? $internalPath
     }
 
     @ViewBuilder

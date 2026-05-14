@@ -28,6 +28,10 @@ public struct SettingsView: View {
     /// itself is unconditional to keep the init signature identical
     /// across build configurations.
     private let onSeedDemoData: (@MainActor @Sendable () async -> Void)?
+    /// Companion to `onSeedDemoData` that deletes only the memories
+    /// the seeder created — user-captured memories are left alone.
+    /// Same DEBUG-only contract.
+    private let onWipeDemoData: (@MainActor @Sendable () async -> Void)?
 
     /// Reminders sync state surfaced through plain values so this feature
     /// package doesn't have to depend on EventKit. RootView wires the live
@@ -51,6 +55,9 @@ public struct SettingsView: View {
 
     @State private var showDeleteConfirmation = false
     @State private var deletionError: String?
+    /// Presents the RevenueCat Customer Center sheet for Pro
+    /// subscribers — cancel, refund requests, history, etc.
+    @State private var showCustomerCenter = false
     /// Drives the in-place soft paywall when a free user taps a
     /// Pro-only theme tile. Routed back out to `onPresentPaywall`
     /// when they tap "See Orbit Pro".
@@ -80,7 +87,8 @@ public struct SettingsView: View {
         onToggleCalendarSync: @escaping @MainActor @Sendable (Bool) async -> Void = { _ in },
         onOpenCalendarSettings: @escaping @MainActor () -> Void = {},
         healthKit: HealthKitService? = nil,
-        onSeedDemoData: (@MainActor @Sendable () async -> Void)? = nil
+        onSeedDemoData: (@MainActor @Sendable () async -> Void)? = nil,
+        onWipeDemoData: (@MainActor @Sendable () async -> Void)? = nil
     ) {
         self.appConfig = appConfig
         self.account = account
@@ -106,6 +114,7 @@ public struct SettingsView: View {
         self.onOpenCalendarSettings = onOpenCalendarSettings
         self.healthKit = healthKit
         self.onSeedDemoData = onSeedDemoData
+        self.onWipeDemoData = onWipeDemoData
     }
 
     public var body: some View {
@@ -278,20 +287,11 @@ public struct SettingsView: View {
 
     private func themeTile(_ theme: OrbitTheme) -> some View {
         let isSelected = theme == currentTheme
-        // Aurora is the free baseline theme; the others (Sunset,
-        // Cosmic, Forest) are Pro. A user who downgraded after picking
-        // a non-Aurora theme keeps it as their selected theme — we
-        // don't kick them back to Aurora — but the lock badge stays
-        // hidden when they're on it (the checkmark wins).
-        let isLocked = theme.id != "aurora" && !entitlements.state.isPro
+        // Themes ship without a paywall — picking a color is aesthetic
+        // personalization, not a Pro feature. Tap-and-switch always works.
         return Button {
-            if isLocked {
-                Haptics.play(.warning)
-                lockedGate = .themes
-            } else {
-                Haptics.play(.selection)
-                Task { @MainActor in await onSelectTheme(theme) }
-            }
+            Haptics.play(.selection)
+            Task { @MainActor in await onSelectTheme(theme) }
         } label: {
             VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
                 ZStack(alignment: .topTrailing) {
@@ -302,13 +302,6 @@ public struct SettingsView: View {
                         Image(systemName: "checkmark.circle.fill")
                             .scaledFont(size: 18, weight: .semibold)
                             .foregroundStyle(OrbitColor.textInverted, theme.primary)
-                            .offset(x: 6, y: -6)
-                    } else if isLocked {
-                        Image(systemName: "lock.fill")
-                            .scaledFont(size: 10, weight: .bold)
-                            .foregroundStyle(OrbitColor.textInverted)
-                            .padding(5)
-                            .background(OrbitColor.textPrimary, in: .circle)
                             .offset(x: 6, y: -6)
                     }
                 }
@@ -334,7 +327,6 @@ public struct SettingsView: View {
                         lineWidth: isSelected ? 2 : 0.5
                     )
             )
-            .opacity(isLocked ? 0.85 : 1)
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
@@ -343,7 +335,7 @@ public struct SettingsView: View {
         .accessibilityHint(
             isSelected
                 ? "Currently selected."
-                : (isLocked ? "Orbit Pro theme. Double-tap to learn more." : "Double-tap to switch to this theme.")
+                : "Double-tap to switch to this theme."
         )
     }
 
@@ -687,13 +679,26 @@ public struct SettingsView: View {
                         OrbitButton("Upgrade to Pro", systemImage: "sparkles", style: .primary) {
                             onPresentPaywall()
                         }
+                        OrbitButton("Restore purchases", style: .secondary) {
+                            Task { await entitlements.restore() }
+                        }
                     } else {
+                        // Pro users get the RevenueCat Customer Center —
+                        // cancel, refund requests, plan switching,
+                        // purchase history. All in a sheet served by
+                        // the SDK; we just present.
+                        OrbitButton("Manage subscription", systemImage: "person.crop.circle.badge.checkmark", style: .primary) {
+                            showCustomerCenter = true
+                        }
                         OrbitButton("Restore purchases", style: .secondary) {
                             Task { await entitlements.restore() }
                         }
                     }
                 }
             }
+        }
+        .sheet(isPresented: $showCustomerCenter) {
+            OrbitCustomerCenterView(onDismiss: { showCustomerCenter = false })
         }
     }
 
@@ -810,6 +815,8 @@ public struct SettingsView: View {
     #if DEBUG
     @State private var isSeeding: Bool = false
     @State private var didSeed: Bool = false
+    @State private var isWiping: Bool = false
+    @State private var didWipe: Bool = false
 
     /// One-shot button for populating the app with realistic demo
     /// content so screenshots look lived-in. Compiled out of Release
@@ -844,6 +851,35 @@ public struct SettingsView: View {
                         }
                     }
                     .disabled(isSeeding || onSeedDemoData == nil)
+                }
+            }
+            OrbitCard {
+                VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+                    Text("Wipe demo memories")
+                        .font(OrbitTypography.bodyEmphasized)
+                        .foregroundStyle(OrbitColor.textPrimary)
+                    Text("Deletes only the memories created by Seed now. Anything you captured yourself stays put. Use this between screenshot passes.")
+                        .font(OrbitTypography.footnote)
+                        .foregroundStyle(OrbitColor.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    OrbitButton(
+                        didWipe ? "Wiped ✓" : (isWiping ? "Wiping…" : "Wipe now"),
+                        systemImage: "trash",
+                        style: .secondary
+                    ) {
+                        guard let onWipeDemoData, !isWiping else { return }
+                        isWiping = true
+                        Task { @MainActor in
+                            await onWipeDemoData()
+                            isWiping = false
+                            didWipe = true
+                            // Re-arm the seeder button so a wipe → reseed
+                            // cycle reads as a clean reset.
+                            didSeed = false
+                            Haptics.play(.success)
+                        }
+                    }
+                    .disabled(isWiping || onWipeDemoData == nil)
                 }
             }
         }

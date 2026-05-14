@@ -21,7 +21,7 @@ public final class AccountService {
     private static let emailKey = "siwa.email"
 
     public init() {
-        self.keychain = KeychainStore(service: "com.orbit.app.account")
+        self.keychain = KeychainStore(service: "com.joshgreen.orbit.account")
         self.state = Self.restore(from: keychain)
     }
 

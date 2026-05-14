@@ -42,6 +42,9 @@ public actor MockAIService: AIService {
             citationIndices: Array(0..<min(3, memories.count))
         )
     }
+    public func explainConnections(anchor: Memory, related: [Memory]) async throws -> [UUID: String] {
+        Dictionary(uniqueKeysWithValues: related.prefix(3).map { ($0.id, "Both about a sample theme.") })
+    }
 }
 
 public extension ClassificationResult {

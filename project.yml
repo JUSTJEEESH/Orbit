@@ -27,7 +27,7 @@ settings:
     # Apple developer team id from Config/Identity.xcconfig. xcconfig
     # inheritance alone wasn't reliably propagating the team through
     # Xcode's Signing tab, so we also pin it here.
-    DEVELOPMENT_TEAM: "ORBIT_TEAM_ID_PLACEHOLDER"
+    DEVELOPMENT_TEAM: "RB657RW2UW"
   configs:
     Debug:
       baseConfig: Config/Debug.xcconfig
@@ -92,15 +92,16 @@ targets:
         NSRemindersFullAccessUsageDescription: Orbit mirrors your tasks to iOS Reminders so you can manage them from Siri, CarPlay, or the Reminders app.
         NSCalendarsFullAccessUsageDescription: Orbit mirrors your due-dated tasks to a dedicated Orbit calendar so they show up on the Lock Screen, Apple Watch, and CarPlay alongside your other events.
         NSHealthShareUsageDescription: Orbit privately reads your sleep and step data to enrich your Daily Recap with the rhythms of your day.
+        NSHealthUpdateUsageDescription: Orbit doesn't write to Health. This permission is declared because Apple requires both read and update strings for any app with HealthKit access, even when the app only reads.
         NSUserActivityTypes:
           - com.orbit.capture
         CFBundleURLTypes:
-          - CFBundleURLName: com.orbit.app
+          - CFBundleURLName: com.joshgreen.orbit
             CFBundleURLSchemes:
               - orbit
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app
+        PRODUCT_BUNDLE_IDENTIFIER: com.joshgreen.orbit
         CODE_SIGN_ENTITLEMENTS: App/Resources/Orbit.entitlements
         # iPhone only for v1 — keeps the "All interface orientations must
         # be supported" iPad validation warning away and matches the
@@ -159,9 +160,19 @@ targets:
         embed: true
       - target: OrbitWidgets
         embed: true
-      - target: OrbitCameraCapture
-        embed: true
+      # OrbitCameraCapture is disabled for v1. The ExtensionKit-style
+      # extension (type: extensionkit-extension) currently embeds into
+      # the wrong bundle directory under xcodegen's auto-embed and the
+      # archive validator rejects it. Re-enable in v1.1 once the
+      # destination override is sorted (likely needs `copy.destination:
+      # extensions` or an updated xcodegen). The target definition and
+      # source files stay in the project — we just don't ship the .appex
+      # with the iPhone app bundle yet.
+      # - target: OrbitCameraCapture
+      #   embed: true
       - target: OrbitSafariExtension
+        embed: true
+      - target: OrbitWatch
         embed: true
 
   OrbitShareExtension:
@@ -184,14 +195,20 @@ targets:
               NSExtensionActivationSupportsImageWithMaxCount: 1
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app.share
+        PRODUCT_BUNDLE_IDENTIFIER: com.joshgreen.orbit.share
         CODE_SIGN_ENTITLEMENTS: Extensions/ShareExtension/Orbit.entitlements
         SKIP_INSTALL: YES
     dependencies:
       - package: OrbitWorkspace
+        product: OrbitKit
+      - package: OrbitWorkspace
+        product: OrbitDesignSystem
+      - package: OrbitWorkspace
         product: OrbitDomain
       - package: OrbitWorkspace
         product: OrbitPersistence
+      - package: OrbitWorkspace
+        product: OrbitMedia
 
   OrbitWidgets:
     type: app-extension
@@ -210,7 +227,7 @@ targets:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app.widgets
+        PRODUCT_BUNDLE_IDENTIFIER: com.joshgreen.orbit.widgets
         CODE_SIGN_ENTITLEMENTS: Extensions/OrbitWidgets/Orbit.entitlements
         SKIP_INSTALL: YES
     dependencies:
@@ -248,7 +265,7 @@ targets:
           EXExtensionPointIdentifier: com.apple.lockedcamera.capture
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app.camera
+        PRODUCT_BUNDLE_IDENTIFIER: com.joshgreen.orbit.camera
         CODE_SIGN_ENTITLEMENTS: Extensions/CameraCapture/Orbit.entitlements
         SKIP_INSTALL: YES
         # The system instantiates this extension directly from its bundle
@@ -265,8 +282,35 @@ targets:
     type: app-extension
     platform: iOS
     deploymentTarget: "26.0"
+    # Safari web extensions require a specific bundle structure:
+    # manifest.json, background.js, popup.{html,css,js} at the bundle
+    # root; _locales/en/messages.json and images/*.png with their
+    # directory structure preserved. xcodegen's default `path: Extensions/SafariExtension`
+    # spec flattens directories — Apple's validator then rejects the
+    # build because it can't find _locales/en/messages.json at the
+    # expected nested path. Explicit sources spec below: individual
+    # files go to the bundle root (auto-detected as resources), while
+    # _locales and images use `type: folder` to preserve their
+    # internal directory structure (Xcode "blue folder" / folder
+    # reference).
     sources:
-      - path: Extensions/SafariExtension
+      - path: Extensions/SafariExtension/SafariWebExtensionHandler.swift
+      - path: Extensions/SafariExtension/Resources/manifest.json
+        buildPhase: resources
+      - path: Extensions/SafariExtension/Resources/background.js
+        buildPhase: resources
+      - path: Extensions/SafariExtension/Resources/popup.html
+        buildPhase: resources
+      - path: Extensions/SafariExtension/Resources/popup.css
+        buildPhase: resources
+      - path: Extensions/SafariExtension/Resources/popup.js
+        buildPhase: resources
+      - path: Extensions/SafariExtension/Resources/_locales
+        type: folder
+        buildPhase: resources
+      - path: Extensions/SafariExtension/Resources/images
+        type: folder
+        buildPhase: resources
     info:
       path: Extensions/SafariExtension/Info.plist
       properties:
@@ -276,7 +320,7 @@ targets:
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).SafariWebExtensionHandler
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app.safari
+        PRODUCT_BUNDLE_IDENTIFIER: com.joshgreen.orbit.safari
         CODE_SIGN_ENTITLEMENTS: Extensions/SafariExtension/Orbit.entitlements
         SKIP_INSTALL: YES
 
@@ -295,12 +339,15 @@ targets:
       path: WatchApp/Info.plist
       properties:
         CFBundleDisplayName: Orbit
+        # Names the AppIcon set in WatchApp/Assets.xcassets so the
+        # App Store validator can find the watchOS icon images.
+        CFBundleIconName: AppIcon
         WKApplication: true
-        WKCompanionAppBundleIdentifier: com.orbit.app
+        WKCompanionAppBundleIdentifier: com.joshgreen.orbit
         NSMicrophoneUsageDescription: Orbit records voice memos from your wrist and sends them to your iPhone.
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.orbit.app.watchkitapp
+        PRODUCT_BUNDLE_IDENTIFIER: com.joshgreen.orbit.watchkitapp
         CODE_SIGN_ENTITLEMENTS: WatchApp/Orbit.entitlements
         TARGETED_DEVICE_FAMILY: 4
         SUPPORTS_MACCATALYST: NO

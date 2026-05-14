@@ -6,7 +6,7 @@ import OrbitDomain
 /// iPhone-wide search and Siri's contextual suggestions. Best-effort —
 /// indexing failures never block capture.
 public actor SpotlightIndexer {
-    public static let domainIdentifier = "com.orbit.app.memories"
+    public static let domainIdentifier = "com.joshgreen.orbit.memories"
 
     private let index: CSSearchableIndex
 

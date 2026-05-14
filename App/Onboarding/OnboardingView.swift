@@ -4,20 +4,25 @@ import OrbitDesignSystem
 import OrbitKit
 import OrbitAccount
 
-/// First-launch flow. Five beats — the signature moment, two short
-/// "show don't tell" explainers, permissions, and sign-in.
+/// First-launch flow. Seven beats — the signature moment, two short
+/// "show don't tell" explainers, permissions, theme picker, sign-in,
+/// and a final wrap that hands the user off to a populated Home.
 ///
 /// The shell is a single state-driven stage; pages animate in with a
-/// cross-fade-plus-slide so there's no swipe gesture to discover. Premium
-/// onboarding never asks the user to figure out the navigation.
+/// cross-fade-plus-slide so there's no swipe gesture to discover.
+/// Premium onboarding never asks the user to figure out the navigation.
 struct OnboardingView: View {
     private enum Stage: Int, CaseIterable {
-        case moment, capture, intelligence, permissions, signIn
+        case moment, capture, intelligence, permissions, theme, signIn, welcome
     }
 
     @State private var stage: Stage = .moment
     @State private var permissions = PermissionsCoordinator()
     @Bindable var account: AccountService
+    /// Theme picker (Stage.theme) writes through this service. The first
+    /// pick during onboarding bypasses the Pro gate by design — Settings
+    /// keeps its existing gate for subsequent switches.
+    @Bindable var themeService: ThemeService
     let onComplete: @MainActor () -> Void
     /// Custom Reminders handler. When supplied, the Reminders row's Allow
     /// tap routes through this closure (which both prompts EventKit AND
@@ -51,7 +56,9 @@ struct OnboardingView: View {
                     case .capture:       captureScene
                     case .intelligence:  intelligenceScene
                     case .permissions:   permissionsScene
+                    case .theme:         themeScene
                     case .signIn:        signInScene
+                    case .welcome:       welcomeScene
                     }
                 }
                 .transition(
@@ -105,7 +112,7 @@ struct OnboardingView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, OrbitSpacing.pageHorizontal)
             Spacer()
-            primaryButton("Continue") { goNext() }
+            primaryButton("Begin") { goNext() }
         }
         .padding(.bottom, OrbitSpacing.xxxl)
     }
@@ -120,8 +127,8 @@ struct OnboardingView: View {
                 .accessibilityHidden(true)
             Spacer().frame(height: OrbitSpacing.xl)
             explainerCopy(
-                title: "Capture in two taps",
-                body: "Type a thought. Speak a voice note. Snap a photo. Paste a link. Orbit holds it all — without making you organize anything."
+                title: "However it lands.",
+                body: "Type a thought. Speak a voice note. Snap a photo. Paste a link. Orbit holds it all — without asking you to organize anything."
             )
             Spacer()
             primaryButton("Continue") { goNext() }
@@ -134,8 +141,8 @@ struct OnboardingView: View {
     private var intelligenceScene: some View {
         VStack(spacing: 0) {
             Spacer()
-            IntelligenceMotif()
-                .frame(width: 260, height: 220)
+            IntelligenceLiveDemo()
+                .frame(width: 300, height: 240)
                 .accessibilityHidden(true)
             Spacer().frame(height: OrbitSpacing.xl)
             explainerCopy(
@@ -160,10 +167,10 @@ struct OnboardingView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: OrbitSpacing.xl) {
                     VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
-                        Text("A few things to enable")
+                        Text("Two essentials")
                             .font(OrbitTypography.largeTitle)
                             .foregroundStyle(OrbitColor.textPrimary)
-                        Text("These power voice notes and your Daily Recap. You can change them anytime in Settings.")
+                        Text("They power voice notes and Daily Recap. Change either in Settings, anytime.")
                             .font(OrbitTypography.body)
                             .foregroundStyle(OrbitColor.textSecondary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -178,7 +185,7 @@ struct OnboardingView: View {
                     // demanded — iOS itself will ask for transcription
                     // and photo access the first time you reach for
                     // those features.
-                    Text("Photos, transcription, and integrations (Reminders, Calendar, Health) are enabled later — Orbit will ask once when you need each one.")
+                    Text("Photos, transcription, Reminders, Calendar, Health — Orbit asks once, when you reach each.")
                         .font(OrbitTypography.footnote)
                         .foregroundStyle(OrbitColor.textTertiary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -189,7 +196,6 @@ struct OnboardingView: View {
             .scrollIndicators(.hidden)
 
             primaryButton("Continue") { goNext() }
-                .padding(.horizontal, OrbitSpacing.pageHorizontal)
                 .padding(.bottom, OrbitSpacing.xxxl)
         }
     }
@@ -304,16 +310,99 @@ struct OnboardingView: View {
         }
     }
 
-    // MARK: - 5. Sign in
+    // MARK: - 5. Theme picker (new)
+
+    /// Personalization moment. Tapping a swatch live-previews the
+    /// accent across the entire onboarding shell (the dots, primary
+    /// buttons, permission icons), so the user sees the change
+    /// instantly. Themes ship without a paywall — users can switch
+    /// freely here and any time later in Settings.
+    private var themeScene: some View {
+        VStack(spacing: 0) {
+            Spacer().frame(height: OrbitSpacing.xxxl + 8)
+            VStack(alignment: .leading, spacing: OrbitSpacing.lg) {
+                VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+                    Text("Make it yours")
+                        .font(OrbitTypography.largeTitle)
+                        .foregroundStyle(OrbitColor.textPrimary)
+                        .accessibilityAddTraits(.isHeader)
+                    Text("Sets the accent everywhere. Change it in Settings, anytime.")
+                        .font(OrbitTypography.body)
+                        .foregroundStyle(OrbitColor.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                LazyVGrid(
+                    columns: [
+                        GridItem(.flexible(), spacing: OrbitSpacing.md),
+                        GridItem(.flexible())
+                    ],
+                    spacing: OrbitSpacing.md
+                ) {
+                    ForEach(OrbitTheme.all) { theme in
+                        themeSwatch(theme)
+                    }
+                }
+            }
+            .padding(.horizontal, OrbitSpacing.pageHorizontal)
+            Spacer()
+            primaryButton("Continue") { goNext() }
+                .padding(.bottom, OrbitSpacing.xxxl)
+        }
+    }
+
+    private func themeSwatch(_ theme: OrbitTheme) -> some View {
+        let isSelected = themeService.theme.id == theme.id
+        return Button {
+            Haptics.play(.tap)
+            themeService.select(theme)
+        } label: {
+            VStack(spacing: OrbitSpacing.xs) {
+                ZStack {
+                    Circle()
+                        .fill(theme.primary)
+                        .frame(width: 68, height: 68)
+                        .shadow(color: theme.primary.opacity(0.35), radius: 14)
+                    if isSelected {
+                        Circle()
+                            .stroke(OrbitColor.textPrimary, lineWidth: 2)
+                            .frame(width: 80, height: 80)
+                    }
+                }
+                .frame(width: 88, height: 88)
+                Text(theme.name)
+                    .font(OrbitTypography.bodyEmphasized)
+                    .foregroundStyle(OrbitColor.textPrimary)
+                Text(theme.promotionalCopy)
+                    .font(OrbitTypography.footnote)
+                    .foregroundStyle(OrbitColor.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, OrbitSpacing.sm)
+            .background(
+                RoundedRectangle(cornerRadius: OrbitRadius.md)
+                    .fill(isSelected ? theme.primary.opacity(0.08) : Color.clear)
+            )
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.22), value: isSelected)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("\(theme.name) theme")
+        .accessibilityHint(theme.promotionalCopy)
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+    }
+
+    // MARK: - 6. Sign in
 
     private var signInScene: some View {
         VStack(alignment: .leading, spacing: 0) {
             Spacer().frame(height: OrbitSpacing.xxxl * 2)
             VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
-                Text("Make it yours")
+                Text("Across your devices")
                     .font(OrbitTypography.largeTitle)
                     .foregroundStyle(OrbitColor.textPrimary)
-                Text("Sign in with Apple to sync across your devices. Or continue as a guest — you can sign in any time.")
+                    .accessibilityAddTraits(.isHeader)
+                Text("Sign in with Apple to sync your memories everywhere. Or continue as a guest — you can sign in any time.")
                     .font(OrbitTypography.body)
                     .foregroundStyle(OrbitColor.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -326,22 +415,52 @@ struct OnboardingView: View {
                     account.handle(result)
                     if case .signedIn = account.state {
                         Haptics.play(.success)
-                        onComplete()
+                        goNext()
                     }
                 }
                 .signInWithAppleButtonStyle(.black)
                 .frame(height: 52)
                 .clipShape(.rect(cornerRadius: OrbitRadius.md))
 
-                Button("Continue as guest", action: onComplete)
-                    .font(OrbitTypography.bodyEmphasized)
-                    .foregroundStyle(OrbitColor.textSecondary)
-                    .padding(.top, OrbitSpacing.xs)
+                Button("Continue as guest") {
+                    Haptics.play(.tap)
+                    goNext()
+                }
+                .font(OrbitTypography.bodyEmphasized)
+                .foregroundStyle(OrbitColor.textSecondary)
+                .padding(.top, OrbitSpacing.xs)
             }
             .padding(.bottom, OrbitSpacing.xxxl)
         }
         .padding(.horizontal, OrbitSpacing.pageHorizontal)
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: - 7. Welcome wrap-up (new)
+
+    /// Arrival beat. Three placeholder cards bob gently to preview the
+    /// shape of the welcome-seed memories the user will see on Home a
+    /// moment later. Tapping "Open Orbit" fires `onComplete()`, which
+    /// flips `onboardingComplete` and plants the welcome seed (see
+    /// ContentRoot in OrbitApp.swift).
+    private var welcomeScene: some View {
+        VStack(spacing: 0) {
+            Spacer()
+            WelcomeMotif()
+                .frame(width: 300, height: 220)
+                .accessibilityHidden(true)
+            Spacer().frame(height: OrbitSpacing.xl)
+            explainerCopy(
+                title: "Your Orbit is ready",
+                body: "Three notes are waiting on Home. Add your first whenever a thought lands."
+            )
+            Spacer()
+            primaryButton("Open Orbit") {
+                Haptics.play(.success)
+                onComplete()
+            }
+        }
+        .padding(.bottom, OrbitSpacing.xxxl)
     }
 
     // MARK: - Helpers
@@ -386,12 +505,15 @@ struct OnboardingView: View {
 /// stays hitch-free even when the parent stage transitions in.
 ///
 /// Respects `accessibilityReduceMotion` — when on, only the resolved logo
-/// is rendered.
+/// is rendered. A subtle success haptic fires once at the moment the logo
+/// fully resolves (~2.85s in), so the brand reveal lands physically as
+/// well as visually.
 private struct OrbitMoment: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.orbitTheme) private var orbitTheme
 
     @State private var startedAt = Date()
+    @State private var didHaptic = false
 
     private struct OrbitalDot {
         let radius: CGFloat
@@ -441,6 +563,12 @@ private struct OrbitMoment: View {
                     .shadow(color: orbitTheme.primary.opacity(0.35 * logoReveal), radius: 26)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .onChange(of: logoReveal >= 0.98) { _, fullyResolved in
+                if fullyResolved, !didHaptic, !reduceMotion {
+                    didHaptic = true
+                    Haptics.play(.success)
+                }
+            }
         }
         .onAppear { startedAt = Date() }
     }
@@ -545,53 +673,96 @@ private struct CaptureMotif: View {
     }
 }
 
-// MARK: - IntelligenceMotif
+// MARK: - IntelligenceLiveDemo
 
-/// Compact "what the AI does" illustration: a memory card with category
-/// chips and a soft sparkle fading in around it.
-private struct IntelligenceMotif: View {
+/// "Show, don't tell" demonstration of Orbit's AI. A sample memory text
+/// types in character-by-character, a subtle sparkle fades in (the
+/// "thinking" beat), then three chips animate in around the card — the
+/// category (`health`), the extracted entity (`Pamela`), and a saved
+/// checkmark. Total run time ~3.5s. Driven by `TimelineView(.animation)`
+/// so the typewriter effect is smooth regardless of the parent stage
+/// transition.
+///
+/// The sample text and chip content were locked during the onboarding
+/// copy pass — if those words change, the entity-extraction and category
+/// labels must stay grounded in what `FoundationModelsAdapter` would
+/// actually produce. Lying here breaks the trust that the rest of the
+/// onboarding is building.
+private struct IntelligenceLiveDemo: View {
     @Environment(\.orbitTheme) private var orbitTheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var chipsVisible = false
 
-    var body: some View {
-        ZStack {
-            cardMock
-            // Sparkle hint
-            Image(systemName: "sparkles")
-                .scaledFont(size: 22, weight: .semibold)
-                .foregroundStyle(orbitTheme.primary)
-                .offset(x: 110, y: -75)
-                .opacity(chipsVisible ? 1 : 0)
-                .scaleEffect(chipsVisible ? 1.0 : 0.6)
+    @State private var startedAt = Date()
 
-            floatingChip(text: "travel",   xOffset: -120, yOffset: -38, delay: 0.15)
-            floatingChip(text: "idea",     xOffset:  130, yOffset:  16, delay: 0.30)
-            floatingChip(text: "saved ✓",  xOffset: -110, yOffset:  76, delay: 0.45)
-        }
-        .onAppear {
-            withAnimation(reduceMotion ? .default : .spring(duration: 0.7)) {
-                chipsVisible = true
-            }
-        }
+    private let sampleText = "Run with Pamela this afternoon"
+    /// Each chip's content + the time-offset (seconds since start) at
+    /// which it begins animating in. Spaced ~0.3s apart so the three
+    /// arrivals read as deliberate, not simultaneous.
+    private let chips: [Chip] = [
+        Chip(text: "health", delay: 2.6, position: CGPoint(x: -120, y: -40)),
+        Chip(text: "Pamela", delay: 2.9, position: CGPoint(x:  130, y:  20)),
+        Chip(text: "✓",      delay: 3.2, position: CGPoint(x: -100, y:  80))
+    ]
+
+    private struct Chip {
+        let text: String
+        let delay: TimeInterval
+        let position: CGPoint
     }
 
-    private var cardMock: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Capsule()
-                    .fill(orbitTheme.primary)
-                    .frame(width: 28, height: 4)
-                Capsule()
-                    .fill(OrbitColor.textTertiary.opacity(0.5))
-                    .frame(width: 38, height: 4)
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { timeline in
+            // ReduceMotion: skip straight to the resolved end-state so
+            // the screen still communicates the same idea without motion.
+            let elapsed = reduceMotion ? 4.0 : timeline.date.timeIntervalSince(startedAt)
+            let typeProgress = typingProgress(at: elapsed)
+            let typedChars = Int(typeProgress * CGFloat(sampleText.count))
+            let visible = String(sampleText.prefix(typedChars))
+            let cursorOn = typeProgress < 1 && (Int(elapsed * 2) % 2) == 0
+            let sparkleAlpha = sparkleProgress(at: elapsed)
+
+            ZStack {
+                card(visibleText: visible, cursorOn: cursorOn)
+                Image(systemName: "sparkles")
+                    .scaledFont(size: 18, weight: .semibold)
+                    .foregroundStyle(orbitTheme.primary)
+                    .offset(x: 100, y: -70)
+                    .opacity(sparkleAlpha)
+                    .scaleEffect(0.6 + 0.4 * sparkleAlpha)
+                    .shadow(color: orbitTheme.primary.opacity(0.35 * sparkleAlpha), radius: 8)
+
+                ForEach(chips.indices, id: \.self) { i in
+                    let chip = chips[i]
+                    let progress = chipProgress(at: elapsed, delay: chip.delay)
+                    chipView(text: chip.text)
+                        .opacity(progress)
+                        .scaleEffect(0.6 + 0.4 * progress)
+                        .offset(x: chip.position.x, y: chip.position.y)
+                }
             }
-            Capsule().fill(OrbitColor.textPrimary.opacity(0.85)).frame(height: 9)
-            Capsule().fill(OrbitColor.textPrimary.opacity(0.6)).frame(width: 130, height: 9)
-            Capsule().fill(OrbitColor.textPrimary.opacity(0.35)).frame(width: 90, height: 7)
+        }
+        .onAppear { startedAt = Date() }
+    }
+
+    private func card(visibleText: String, cursorOn: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Capsule().fill(orbitTheme.primary).frame(width: 28, height: 4)
+                Capsule().fill(OrbitColor.textTertiary.opacity(0.5)).frame(width: 38, height: 4)
+            }
+            // iOS 26 deprecated the `Text(_:) + Text(_:)` operator in
+            // favor of inline-Text interpolation. Wrapping the cursor as
+            // an interpolated styled Text preserves the accent color on
+            // just the cursor while letting the outer text inherit the
+            // body font + primary color.
+            Text("\(visibleText)\(Text(cursorOn ? "│" : "").foregroundStyle(orbitTheme.primary))")
+                .font(OrbitTypography.body)
+                .foregroundStyle(OrbitColor.textPrimary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(minHeight: 56, alignment: .topLeading)
         }
         .padding(OrbitSpacing.md)
-        .frame(width: 200, height: 110, alignment: .leading)
+        .frame(width: 220)
         .background(OrbitColor.surface, in: .rect(cornerRadius: OrbitRadius.md))
         .overlay(
             RoundedRectangle(cornerRadius: OrbitRadius.md)
@@ -600,21 +771,96 @@ private struct IntelligenceMotif: View {
         .shadow(color: .black.opacity(0.08), radius: 14, y: 6)
     }
 
-    private func floatingChip(text: String, xOffset: CGFloat, yOffset: CGFloat, delay: Double) -> some View {
+    private func chipView(text: String) -> some View {
         Text(text)
-            .scaledFont(size: 12, weight: .semibold)
+            .scaledFont(size: 13, weight: .semibold)
             .foregroundStyle(orbitTheme.primary)
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
             .background(orbitTheme.primary.opacity(0.12), in: .capsule)
-            .offset(x: xOffset, y: yOffset)
-            .opacity(chipsVisible ? 1 : 0)
-            .scaleEffect(chipsVisible ? 1.0 : 0.6)
-            .animation(
-                reduceMotion
-                    ? .default
-                    : .spring(duration: 0.55).delay(delay),
-                value: chipsVisible
-            )
+    }
+
+    private func typingProgress(at elapsed: TimeInterval) -> CGFloat {
+        let start: TimeInterval = 0.4
+        let duration: TimeInterval = 1.6
+        let raw = (elapsed - start) / duration
+        return CGFloat(max(0, min(1, raw)))
+    }
+
+    private func sparkleProgress(at elapsed: TimeInterval) -> CGFloat {
+        let start: TimeInterval = 2.15
+        let duration: TimeInterval = 0.4
+        let raw = (elapsed - start) / duration
+        return CGFloat(max(0, min(1, raw)))
+    }
+
+    private func chipProgress(at elapsed: TimeInterval, delay: TimeInterval) -> CGFloat {
+        let duration: TimeInterval = 0.35
+        let raw = (elapsed - delay) / duration
+        return CGFloat(max(0, min(1, raw)))
+    }
+}
+
+// MARK: - WelcomeMotif
+
+/// Three placeholder memory cards arranged in a loose stack, each gently
+/// bobbing on its own delay so the group reads as alive rather than
+/// static. Doesn't reveal the *content* of the three welcome-seed
+/// memories — that's a small discovery the user gets on Home a moment
+/// later. Just signals "your timeline is populated and waiting."
+///
+/// Respects `accessibilityReduceMotion` — the bob loop is skipped and
+/// the cards render statically.
+private struct WelcomeMotif: View {
+    @Environment(\.orbitTheme) private var orbitTheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var bob = false
+
+    /// (xOffset, yOffset, rotation) per card. Picked by eye so the three
+    /// silhouettes feel deliberately arranged, not stacked.
+    private let layouts: [(CGFloat, CGFloat, Double)] = [
+        (-80, -55, -4),
+        ( 10,   0,  3),
+        (-30,  62, -1.5)
+    ]
+
+    var body: some View {
+        ZStack {
+            ForEach(layouts.indices, id: \.self) { index in
+                placeholderCard(index: index)
+            }
+        }
+        .onAppear { bob = true }
+    }
+
+    private func placeholderCard(index: Int) -> some View {
+        let layout = layouts[index]
+        let bobOffset: CGFloat = bob && !reduceMotion ? 4 : 0
+        let delay = Double(index) * 0.25
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Capsule().fill(orbitTheme.primary).frame(width: 24, height: 3)
+                Capsule().fill(OrbitColor.textTertiary.opacity(0.5)).frame(width: 32, height: 3)
+            }
+            Capsule().fill(OrbitColor.textPrimary.opacity(0.85)).frame(height: 8)
+            Capsule().fill(OrbitColor.textPrimary.opacity(0.6)).frame(width: 100, height: 8)
+            Capsule().fill(OrbitColor.textPrimary.opacity(0.35)).frame(width: 70, height: 7)
+        }
+        .padding(OrbitSpacing.md)
+        .frame(width: 180, height: 95, alignment: .leading)
+        .background(OrbitColor.surface, in: .rect(cornerRadius: OrbitRadius.md))
+        .overlay(
+            RoundedRectangle(cornerRadius: OrbitRadius.md)
+                .stroke(OrbitColor.separator, lineWidth: 0.5)
+        )
+        .shadow(color: .black.opacity(0.08), radius: 12, y: 5)
+        .rotationEffect(.degrees(layout.2))
+        .offset(x: layout.0, y: layout.1 + bobOffset)
+        .animation(
+            reduceMotion
+                ? .default
+                : .easeInOut(duration: 2.2).repeatForever(autoreverses: true).delay(delay),
+            value: bob
+        )
     }
 }

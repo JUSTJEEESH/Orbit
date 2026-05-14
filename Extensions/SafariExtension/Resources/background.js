@@ -61,7 +61,7 @@ async function clipFromTab(tab, selection = "") {
     capturedAt: new Date().toISOString()
   };
   try {
-    const response = await browser.runtime.sendNativeMessage("com.orbit.app.safari", payload);
+    const response = await browser.runtime.sendNativeMessage("com.joshgreen.orbit.safari", payload);
     return response ?? { ok: false };
   } catch (e) {
     console.log("Orbit: native message failed:", e?.message ?? e);

@@ -9,7 +9,7 @@ import OSLog
 /// log.info("captured memory id=\(id)")
 /// ```
 public enum OrbitLog {
-    private static let subsystem = "com.orbit.app"
+    private static let subsystem = "com.joshgreen.orbit"
 
     public static let app = Logger(subsystem: subsystem, category: "app")
     public static let capture = Logger(subsystem: subsystem, category: "capture")

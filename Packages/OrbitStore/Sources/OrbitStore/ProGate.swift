@@ -8,14 +8,17 @@ import SwiftUI
 /// render the feature normally or present the soft paywall sheet.
 ///
 /// Counted gates (recap, ask) track per-ISO-week usage in
-/// UserDefaults. Boolean gates (voice length, year in review, themes)
-/// just check Pro status.
+/// UserDefaults. Boolean gates (voice length, year in review)
+/// just check Pro status. Themes / icons are intentionally NOT gated —
+/// they're aesthetic surfaces where paywalling generates negligible
+/// upgrade revenue but real brand friction, especially for users who
+/// picked a non-default theme during onboarding and would feel trapped
+/// hitting a paywall to switch back.
 public enum ProGate: String, Sendable, CaseIterable, Identifiable {
     case dailyRecap     = "dailyRecap"
     case askOrbit       = "askOrbit"
     case voiceLength    = "voiceLength"
     case yearInReview   = "yearInReview"
-    case themes         = "themes"
 
     public var id: String { rawValue }
 
@@ -26,7 +29,6 @@ public enum ProGate: String, Sendable, CaseIterable, Identifiable {
         case .askOrbit:      return "Ask Orbit"
         case .voiceLength:   return "Long-form voice"
         case .yearInReview:  return "Year in Review"
-        case .themes:        return "Themes & icons"
         }
     }
 
@@ -38,7 +40,6 @@ public enum ProGate: String, Sendable, CaseIterable, Identifiable {
         case .askOrbit:      return "sparkle"
         case .voiceLength:   return "waveform"
         case .yearInReview:  return "calendar"
-        case .themes:        return "paintpalette"
         }
     }
 
@@ -55,8 +56,6 @@ public enum ProGate: String, Sendable, CaseIterable, Identifiable {
             return "You've got a lot to say."
         case .yearInReview:
             return "Your year is bigger than the preview."
-        case .themes:
-            return "Make Orbit feel like yours."
         }
     }
 
@@ -72,8 +71,6 @@ public enum ProGate: String, Sendable, CaseIterable, Identifiable {
             return "Free voice notes are up to 60 seconds. Pro records up to an hour per note."
         case .yearInReview:
             return "Pro unlocks the full editorial Year in Review: monthly chart, highlights, memory rain."
-        case .themes:
-            return "Pro unlocks Sunset, Cosmic, and Forest themes — and the matching home-screen icons."
         }
     }
 }
@@ -123,7 +120,7 @@ public final class ProGateService {
             return days.count < Self.freeRecapsPerWeek
         case .askOrbit:
             return askCounter() < Self.freeAsksPerWeek
-        case .voiceLength, .yearInReview, .themes:
+        case .voiceLength, .yearInReview:
             // Pure boolean gates — free users see a preview / shortened
             // experience instead of "you've used X of Y."
             return false
@@ -142,7 +139,7 @@ public final class ProGateService {
         case .askOrbit:
             let key = askWeekKey()
             defaults.set(defaults.integer(forKey: key) + 1, forKey: key)
-        case .voiceLength, .yearInReview, .themes:
+        case .voiceLength, .yearInReview:
             break
         }
     }
@@ -158,7 +155,7 @@ public final class ProGateService {
             return max(0, Self.freeRecapsPerWeek - recapDays().count)
         case .askOrbit:
             return max(0, Self.freeAsksPerWeek - askCounter())
-        case .voiceLength, .yearInReview, .themes:
+        case .voiceLength, .yearInReview:
             return nil
         }
     }

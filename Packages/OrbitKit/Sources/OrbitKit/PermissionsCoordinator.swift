@@ -77,13 +77,13 @@ public final class PermissionsCoordinator {
         public var rationale: String {
             switch self {
             case .microphone:
-                return "Record voice notes the moment a thought hits."
+                return "Voice notes the moment a thought hits."
             case .speechRecognition:
                 return "Turn voice into text on-device, so notes become searchable."
             case .photos:
                 return "Save screenshots and photos as memories."
             case .notifications:
-                return "A gentle nudge to revisit your day with Daily Recap."
+                return "A gentle nudge to revisit your day."
             case .reminders:
                 return "Mirror your tasks to iOS Reminders — manage them from Siri, CarPlay, or the Reminders app."
             case .calendar:

@@ -8,6 +8,17 @@ struct OrbitApp: App {
     @State private var environment: AppEnvironment
 
     init() {
+        // Configure RevenueCat first thing — every other system
+        // (paywall, entitlement observer, restore flow) reads through
+        // `Purchases.shared`, and `Purchases.configure(...)` must be
+        // called exactly once before any of those touch the SDK.
+        //
+        // The key below is a development/test key — swap to the
+        // production public API key from the RevenueCat dashboard
+        // before App Store submission, ideally via an xcconfig-fed
+        // Info.plist value so DEBUG and Release pick different keys.
+        RevenueCatConfig.configure(apiKey: "appl_JQnSEPnRagNJeDHJvgeSYJacJiP")
+
         let config = AppConfig.resolveFromBundle()
 
         // Persistence is required to run; if init fails we fall back to an
@@ -53,6 +64,7 @@ private struct ContentRoot: View {
             } else {
                 OnboardingView(
                     account: environment.account,
+                    themeService: environment.themeService,
                     onComplete: {
                         environment.onboardingComplete = true
                         // First-launch wow moment: plant three intro
@@ -115,20 +127,8 @@ private struct ContentRoot: View {
                 Task { await environment.captureInbox.drain() }
             }
         }
-        .onOpenURL { url in
-            guard let link = DeepLink(url: url) else {
-                OrbitLog.app.info("Ignored unrecognized URL: \(url.absoluteString, privacy: .public)")
-                return
-            }
-            switch link {
-            case .capture:
-                environment.requestedModal = .capture
-            case .search:
-                // Tab switching needs RootView access; for now, just
-                // surface intent. The search tab won't auto-switch until
-                // we promote `selectedTab` into the environment.
-                OrbitLog.app.info("Deep link search query received.")
-            }
-        }
+        // Deep links (orbit:// URLs) and Spotlight continue-activities
+        // are handled inside RootView so they have access to selectedTab
+        // + timelinePath. Keep WindowGroup focused on lifecycle hooks.
     }
 }

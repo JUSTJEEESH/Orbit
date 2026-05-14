@@ -20,9 +20,14 @@ public struct AppConfig: Sendable {
             #if DEBUG
             return .debug
             #else
-            if Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt" {
-                return .testflight
-            }
+            // The legacy `Bundle.main.appStoreReceiptURL` check that used
+            // to distinguish TestFlight from production was deprecated in
+            // iOS 18 in favor of `AppTransaction.shared`, which is async.
+            // Since nothing in the app currently branches on `.testflight`,
+            // we just return `.production` in non-DEBUG builds. If we ever
+            // need the distinction (e.g., toggling diagnostic logging in
+            // TestFlight), the async-cached AppTransaction.shared.environment
+            // is the right call to wire in.
             return .production
             #endif
         }
@@ -49,12 +54,12 @@ public struct AppConfig: Sendable {
     /// Resolved from the main bundle. Call once at app launch from the
     /// composition root, never reach for `.bundle` from feature code.
     public static func resolveFromBundle(
-        appGroupIdentifier: String = "group.com.orbit.app",
-        cloudKitContainerIdentifier: String = "iCloud.com.orbit.app"
+        appGroupIdentifier: String = "group.com.joshgreen.orbit",
+        cloudKitContainerIdentifier: String = "iCloud.com.joshgreen.orbit"
     ) -> AppConfig {
         let info = Bundle.main.infoDictionary ?? [:]
         return AppConfig(
-            bundleIdentifier: Bundle.main.bundleIdentifier ?? "com.orbit.app",
+            bundleIdentifier: Bundle.main.bundleIdentifier ?? "com.joshgreen.orbit",
             displayName: info["CFBundleDisplayName"] as? String ?? "Orbit",
             marketingVersion: info["CFBundleShortVersionString"] as? String ?? "0.0.0",
             buildNumber: info["CFBundleVersion"] as? String ?? "0",

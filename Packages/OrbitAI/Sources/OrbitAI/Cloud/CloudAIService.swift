@@ -31,4 +31,8 @@ public actor CloudAIService: AIService {
     public func askOrbit(question: String, memories: [Memory]) async throws -> AskOrbitDraft {
         throw OrbitError.aiUnavailable
     }
+
+    public func explainConnections(anchor: Memory, related: [Memory]) async throws -> [UUID: String] {
+        throw OrbitError.aiUnavailable
+    }
 }

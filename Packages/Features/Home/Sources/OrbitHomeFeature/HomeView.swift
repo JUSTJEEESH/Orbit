@@ -8,6 +8,11 @@ public struct HomeView: View {
     private let listMemories: ListMemoriesUseCase
     private let generateInsights: GenerateInsightsUseCase
     private let listOnThisDay: ListOnThisDayUseCase
+    private let listSuggestions: ListSuggestionsUseCase
+    /// Records that the user picked "Don't suggest again" on a Worth-
+    /// Revisiting card. Synchronous (UserDefaults write) — we kick off
+    /// a reloadSuggestions() right after so the card disappears.
+    private let dismissSuggestion: @MainActor (UUID) -> Void
     private let removeMemory: @MainActor @Sendable (UUID) async throws -> Void
     private let refreshToken: Int
     private let clock: any OrbitClock
@@ -28,6 +33,7 @@ public struct HomeView: View {
     @State private var onThisDay: OnThisDayContent?
     @State private var showOnThisDay: Bool = false
     @State private var gratitudeStatus: GratitudeStatus = .empty
+    @State private var suggestionFeed: MemorySuggestionFeed?
     @Namespace private var heroNamespace
     @Environment(\.orbitTheme) private var orbitTheme
 
@@ -39,6 +45,8 @@ public struct HomeView: View {
         listMemories: ListMemoriesUseCase,
         generateInsights: GenerateInsightsUseCase,
         listOnThisDay: ListOnThisDayUseCase,
+        listSuggestions: ListSuggestionsUseCase,
+        dismissSuggestion: @escaping @MainActor (UUID) -> Void,
         loadGratitudeStatus: LoadGratitudeStatusUseCase,
         removeMemory: @escaping @MainActor @Sendable (UUID) async throws -> Void,
         refreshToken: Int = 0,
@@ -56,6 +64,8 @@ public struct HomeView: View {
         self.listMemories = listMemories
         self.generateInsights = generateInsights
         self.listOnThisDay = listOnThisDay
+        self.listSuggestions = listSuggestions
+        self.dismissSuggestion = dismissSuggestion
         self.loadGratitudeStatus = loadGratitudeStatus
         self.removeMemory = removeMemory
         self.refreshToken = refreshToken
@@ -292,6 +302,29 @@ public struct HomeView: View {
             }
             if let primaryInsight {
                 insightCard(primaryInsight)
+            }
+            if let suggestionFeed {
+                SuggestionSection(
+                    feed: suggestionFeed,
+                    heroNamespace: heroNamespace,
+                    onDismiss: { memoryID in
+                        // Optimistic UI: drop the dismissed card from
+                        // the in-memory feed so it disappears
+                        // immediately, then persist + reload from
+                        // source so the slot fills with the next-best
+                        // candidate. `self.suggestionFeed` is required
+                        // here because the surrounding `if let
+                        // suggestionFeed` shadows the @State property
+                        // with a read-only local constant.
+                        self.suggestionFeed = MemorySuggestionFeed(
+                            anchor: suggestionFeed.anchor,
+                            related: suggestionFeed.related.filter { $0.memory.id != memoryID },
+                            generatedAt: suggestionFeed.generatedAt
+                        )
+                        dismissSuggestion(memoryID)
+                        Task { await reloadSuggestions() }
+                    }
+                )
             }
             recentSection
         }
@@ -690,11 +723,17 @@ public struct HomeView: View {
             OrbitLog.persistence.error("Home load failed: \(String(describing: error), privacy: .public)")
             loadState = .failed("Couldn't load your memories. Try again in a moment.")
         }
-        // Insights + On This Day + gratitude run in parallel with the list;
-        // failures are silent because their absence is the natural fallback.
+        // Insights + On This Day + gratitude + suggestions run in parallel
+        // with the list; failures are silent because their absence is the
+        // natural fallback (the section simply hides).
         await reloadInsights()
         await reloadOnThisDay()
         await reloadGratitudeStatus()
+        await reloadSuggestions()
+    }
+
+    private func reloadSuggestions() async {
+        suggestionFeed = try? await listSuggestions()
     }
 
     private func reloadGratitudeStatus() async {
