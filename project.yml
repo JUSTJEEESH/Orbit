@@ -163,6 +163,8 @@ targets:
         embed: true
       - target: OrbitSafariExtension
         embed: true
+      - target: OrbitWatch
+        embed: true
 
   OrbitShareExtension:
     type: app-extension
