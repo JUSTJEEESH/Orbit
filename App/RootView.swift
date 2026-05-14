@@ -1,4 +1,5 @@
 import SwiftUI
+import CoreSpotlight
 import OrbitDesignSystem
 import OrbitKit
 import OrbitDomain
@@ -21,6 +22,12 @@ struct RootView: View {
     @Environment(AppEnvironment.self) private var env
 
     @State private var selectedTab: AppTab = .home
+    /// Driven from outside the Timeline view when a Spotlight result or
+    /// `orbit://memory/<uuid>` URL needs to land on Memory Detail.
+    /// Timeline reads it via an externalPath binding; ordinary
+    /// tap-a-card-from-the-list flows still use Timeline's own internal
+    /// state, untouched.
+    @State private var timelinePath: [MemoryDetailRoute] = []
 
     var body: some View {
         // `@Bindable` lets external entry points (deep links, AppIntents)
@@ -122,6 +129,11 @@ struct RootView: View {
                     onSeedDemoData: {
                         #if DEBUG
                         await env.seedDemoData()
+                        #endif
+                    },
+                    onWipeDemoData: {
+                        #if DEBUG
+                        await env.wipeDemoData()
                         #endif
                     }
                 )
@@ -252,6 +264,23 @@ struct RootView: View {
             }
         }
         .onAppear { Haptics.prepare() }
+        .onContinueUserActivity(CSSearchableItemActionType) { activity in
+            // The unique identifier we set in SpotlightIndexer is the
+            // memory's UUID string. Reverse it here and route to the
+            // memory deep link, which lands on Timeline → Detail.
+            guard
+                let raw = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String,
+                let id = UUID(uuidString: raw)
+            else { return }
+            handle(.memory(id: id))
+        }
+        .onOpenURL { url in
+            guard let link = DeepLink(url: url) else {
+                OrbitLog.app.info("Ignored unrecognized URL: \(url.absoluteString, privacy: .public)")
+                return
+            }
+            handle(link)
+        }
     }
 
     private var tabContent: some View {
@@ -291,7 +320,8 @@ struct RootView: View {
                 removeMemory: { id in try await env.removeMemory(id: id) },
                 refreshToken: env.memoryListVersion,
                 makeDetailViewModel: makeDetailViewModel,
-                onPresentCapture: { env.requestedModal = .capture }
+                onPresentCapture: { env.requestedModal = .capture },
+                path: $timelinePath
             )
                 .tag(AppTab.timeline)
                 .tabItem { Label(AppTab.timeline.title, systemImage: AppTab.timeline.systemImage) }
@@ -384,13 +414,21 @@ struct RootView: View {
         )
     }
 
-    /// Route an inbound deep link to the appropriate UI surface.
+    /// Route an inbound deep link to the appropriate UI surface. Called
+    /// from both the URL scheme handler (`orbit://...`) and the Spotlight
+    /// `onContinueUserActivity` handler so both paths land memories on
+    /// the same place.
     func handle(_ deepLink: DeepLink) {
         switch deepLink {
         case .capture:
             env.requestedModal = .capture
         case .search:
             selectedTab = .search
+        case .memory(let id):
+            selectedTab = .timeline
+            // Replace the stack rather than appending so a second
+            // Spotlight tap doesn't grow an ever-deeper push history.
+            timelinePath = [MemoryDetailRoute(memoryID: id)]
         }
     }
 }

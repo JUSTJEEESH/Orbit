@@ -115,20 +115,8 @@ private struct ContentRoot: View {
                 Task { await environment.captureInbox.drain() }
             }
         }
-        .onOpenURL { url in
-            guard let link = DeepLink(url: url) else {
-                OrbitLog.app.info("Ignored unrecognized URL: \(url.absoluteString, privacy: .public)")
-                return
-            }
-            switch link {
-            case .capture:
-                environment.requestedModal = .capture
-            case .search:
-                // Tab switching needs RootView access; for now, just
-                // surface intent. The search tab won't auto-switch until
-                // we promote `selectedTab` into the environment.
-                OrbitLog.app.info("Deep link search query received.")
-            }
-        }
+        // Deep links (orbit:// URLs) and Spotlight continue-activities
+        // are handled inside RootView so they have access to selectedTab
+        // + timelinePath. Keep WindowGroup focused on lifecycle hooks.
     }
 }

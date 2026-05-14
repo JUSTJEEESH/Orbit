@@ -238,8 +238,42 @@ extension AppEnvironment {
 
         memoriesDidChange()
 
+        // Persist the seeded UUIDs so a future "Wipe demo data" affordance
+        // can delete just these — leaving any captures the user has made
+        // alongside them intact. Two-step (read existing → union → write)
+        // so re-seeding accumulates rather than replacing, matching the
+        // "tapping it twice produces duplicates" contract documented above.
+        let existing = (UserDefaults.standard.array(forKey: Self.seededDemoIDsKey) as? [String]) ?? []
+        let merged = existing + createdIDs.map(\.uuidString)
+        UserDefaults.standard.set(merged, forKey: Self.seededDemoIDsKey)
+
         OrbitLog.app.notice("Demo data seeded: \(createdIDs.count, privacy: .public) memories + 3 manual tasks.")
     }
+
+    /// Deletes every memory previously created by `seedDemoData()` and
+    /// clears the tracking list. Memories captured by the user (or by the
+    /// welcome seed) are left alone. Safe to call when nothing's been
+    /// seeded — it's a no-op.
+    @MainActor
+    func wipeDemoData() async {
+        let stored = (UserDefaults.standard.array(forKey: Self.seededDemoIDsKey) as? [String]) ?? []
+        let ids = stored.compactMap(UUID.init(uuidString:))
+        guard !ids.isEmpty else {
+            OrbitLog.app.notice("Wipe demo data: nothing to wipe.")
+            return
+        }
+        for id in ids {
+            do {
+                try await removeMemory(id: id)
+            } catch {
+                OrbitLog.app.error("Wipe demo data: failed to remove \(id.uuidString, privacy: .public): \(String(describing: error), privacy: .public)")
+            }
+        }
+        UserDefaults.standard.removeObject(forKey: Self.seededDemoIDsKey)
+        OrbitLog.app.notice("Wiped \(ids.count, privacy: .public) demo memories.")
+    }
+
+    private static let seededDemoIDsKey = "orbit.debug.seededDemoIDs"
 
     // MARK: - Helpers
 

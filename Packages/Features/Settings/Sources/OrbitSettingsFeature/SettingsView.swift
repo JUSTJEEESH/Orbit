@@ -28,6 +28,10 @@ public struct SettingsView: View {
     /// itself is unconditional to keep the init signature identical
     /// across build configurations.
     private let onSeedDemoData: (@MainActor @Sendable () async -> Void)?
+    /// Companion to `onSeedDemoData` that deletes only the memories
+    /// the seeder created — user-captured memories are left alone.
+    /// Same DEBUG-only contract.
+    private let onWipeDemoData: (@MainActor @Sendable () async -> Void)?
 
     /// Reminders sync state surfaced through plain values so this feature
     /// package doesn't have to depend on EventKit. RootView wires the live
@@ -80,7 +84,8 @@ public struct SettingsView: View {
         onToggleCalendarSync: @escaping @MainActor @Sendable (Bool) async -> Void = { _ in },
         onOpenCalendarSettings: @escaping @MainActor () -> Void = {},
         healthKit: HealthKitService? = nil,
-        onSeedDemoData: (@MainActor @Sendable () async -> Void)? = nil
+        onSeedDemoData: (@MainActor @Sendable () async -> Void)? = nil,
+        onWipeDemoData: (@MainActor @Sendable () async -> Void)? = nil
     ) {
         self.appConfig = appConfig
         self.account = account
@@ -106,6 +111,7 @@ public struct SettingsView: View {
         self.onOpenCalendarSettings = onOpenCalendarSettings
         self.healthKit = healthKit
         self.onSeedDemoData = onSeedDemoData
+        self.onWipeDemoData = onWipeDemoData
     }
 
     public var body: some View {
@@ -810,6 +816,8 @@ public struct SettingsView: View {
     #if DEBUG
     @State private var isSeeding: Bool = false
     @State private var didSeed: Bool = false
+    @State private var isWiping: Bool = false
+    @State private var didWipe: Bool = false
 
     /// One-shot button for populating the app with realistic demo
     /// content so screenshots look lived-in. Compiled out of Release
@@ -844,6 +852,35 @@ public struct SettingsView: View {
                         }
                     }
                     .disabled(isSeeding || onSeedDemoData == nil)
+                }
+            }
+            OrbitCard {
+                VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+                    Text("Wipe demo memories")
+                        .font(OrbitTypography.bodyEmphasized)
+                        .foregroundStyle(OrbitColor.textPrimary)
+                    Text("Deletes only the memories created by Seed now. Anything you captured yourself stays put. Use this between screenshot passes.")
+                        .font(OrbitTypography.footnote)
+                        .foregroundStyle(OrbitColor.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    OrbitButton(
+                        didWipe ? "Wiped ✓" : (isWiping ? "Wiping…" : "Wipe now"),
+                        systemImage: "trash",
+                        style: .secondary
+                    ) {
+                        guard let onWipeDemoData, !isWiping else { return }
+                        isWiping = true
+                        Task { @MainActor in
+                            await onWipeDemoData()
+                            isWiping = false
+                            didWipe = true
+                            // Re-arm the seeder button so a wipe → reseed
+                            // cycle reads as a clean reset.
+                            didSeed = false
+                            Haptics.play(.success)
+                        }
+                    }
+                    .disabled(isWiping || onWipeDemoData == nil)
                 }
             }
         }
