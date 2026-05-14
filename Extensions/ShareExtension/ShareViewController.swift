@@ -9,7 +9,7 @@ import OrbitPersistence
 /// compose field is combined with the shared item before saving.
 final class ShareViewController: SLComposeServiceViewController {
 
-    private static let appGroupIdentifier = "group.com.orbit.app"
+    private static let appGroupIdentifier = "group.com.joshgreen.orbit"
 
     override func isContentValid() -> Bool {
         // Allow posting with either user-typed text or at least one

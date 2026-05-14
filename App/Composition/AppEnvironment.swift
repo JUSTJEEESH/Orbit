@@ -461,8 +461,8 @@ extension AppEnvironment {
                 marketingVersion: "0.1.0",
                 buildNumber: "1",
                 environment: .debug,
-                appGroupIdentifier: "group.com.orbit.app",
-                cloudKitContainerIdentifier: "iCloud.com.orbit.app"
+                appGroupIdentifier: "group.com.joshgreen.orbit",
+                cloudKitContainerIdentifier: "iCloud.com.joshgreen.orbit"
             ),
             clock: SystemClock(),
             memories: memoryRepo,

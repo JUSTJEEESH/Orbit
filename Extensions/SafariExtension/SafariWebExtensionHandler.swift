@@ -15,7 +15,7 @@ import os
 /// which then flows through the normal enrichment pipeline.
 final class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
 
-    private static let appGroupIdentifier = "group.com.orbit.app"
+    private static let appGroupIdentifier = "group.com.joshgreen.orbit"
     private static let logger = Logger(subsystem: "com.orbit.app.safari", category: "extension")
 
     func beginRequest(with context: NSExtensionContext) {

@@ -49,8 +49,8 @@ public struct AppConfig: Sendable {
     /// Resolved from the main bundle. Call once at app launch from the
     /// composition root, never reach for `.bundle` from feature code.
     public static func resolveFromBundle(
-        appGroupIdentifier: String = "group.com.orbit.app",
-        cloudKitContainerIdentifier: String = "iCloud.com.orbit.app"
+        appGroupIdentifier: String = "group.com.joshgreen.orbit",
+        cloudKitContainerIdentifier: String = "iCloud.com.joshgreen.orbit"
     ) -> AppConfig {
         let info = Bundle.main.infoDictionary ?? [:]
         return AppConfig(

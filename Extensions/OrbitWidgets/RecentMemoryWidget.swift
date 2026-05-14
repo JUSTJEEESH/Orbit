@@ -65,13 +65,13 @@ struct RecentMemoryProvider: TimelineProvider {
     }
 
     private func fetchLatest() async -> Memory? {
-        let storeURL = ModelContainerFactory.appGroupStoreURL(for: "group.com.orbit.app")
+        let storeURL = ModelContainerFactory.appGroupStoreURL(for: "group.com.joshgreen.orbit")
         if storeURL == nil {
             OrbitLog.app.error("Recent-memory widget: App Group container unresolved. Entitlement missing or sandbox blocked.")
         }
         do {
             let container = try ModelContainerFactory.makeContainer(
-                mode: .appGroup(identifier: "group.com.orbit.app")
+                mode: .appGroup(identifier: "group.com.joshgreen.orbit")
             )
             let repo = SwiftDataMemoryRepository(modelContainer: container)
             let memory = try await repo.list(filter: MemoryFilter(limit: 1, sort: .newestFirst)).first

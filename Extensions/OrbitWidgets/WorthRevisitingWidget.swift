@@ -112,13 +112,13 @@ struct WorthRevisitingProvider: TimelineProvider {
         // the difference between "entitlement missing" (factory falls back
         // to a per-process store the host app can't see) and "container
         // opens but is genuinely empty."
-        let storeURL = ModelContainerFactory.appGroupStoreURL(for: "group.com.orbit.app")
+        let storeURL = ModelContainerFactory.appGroupStoreURL(for: "group.com.joshgreen.orbit")
         if storeURL == nil {
             OrbitLog.app.error("Worth-revisiting widget: App Group container unresolved. Entitlement missing or sandbox blocked.")
         }
         do {
             let container = try ModelContainerFactory.makeContainer(
-                mode: .appGroup(identifier: "group.com.orbit.app")
+                mode: .appGroup(identifier: "group.com.joshgreen.orbit")
             )
             let repo = SwiftDataMemoryRepository(modelContainer: container)
             let memories = try await repo.list(filter: .all)
