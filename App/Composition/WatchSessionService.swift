@@ -51,6 +51,7 @@ final class WatchSessionService {
         }
         WCSession.default.delegate = delegate
         WCSession.default.activate()
+        OrbitLog.app.notice("iPhone: WCSession.activate() called.")
     }
 
     /// Copies the incoming file into managed storage, persists a voice-note
@@ -104,16 +105,26 @@ private final class SessionDelegate: NSObject, WCSessionDelegate, @unchecked Sen
         _ session: WCSession,
         activationDidCompleteWith activationState: WCSessionActivationState,
         error: (any Error)?
-    ) {}
+    ) {
+        if let error {
+            OrbitLog.app.error("iPhone: WCSession activation error: \(String(describing: error), privacy: .public)")
+        } else {
+            OrbitLog.app.notice("iPhone: WCSession activated. state=\(activationState.rawValue, privacy: .public) isPaired=\(session.isPaired, privacy: .public) isWatchAppInstalled=\(session.isWatchAppInstalled, privacy: .public)")
+        }
+    }
 
-    func sessionDidBecomeInactive(_ session: WCSession) {}
+    func sessionDidBecomeInactive(_ session: WCSession) {
+        OrbitLog.app.notice("iPhone: WCSession became inactive.")
+    }
     func sessionDidDeactivate(_ session: WCSession) {
         // The iOS docs require re-activation after deactivation, which
         // happens when the user switches paired watches.
+        OrbitLog.app.notice("iPhone: WCSession deactivated — re-activating.")
         WCSession.default.activate()
     }
 
     func session(_ session: WCSession, didReceive file: WCSessionFile) {
+        OrbitLog.app.notice("iPhone: didReceive file=\(file.fileURL.lastPathComponent, privacy: .public) metadata=\(String(describing: file.metadata), privacy: .public)")
         // Copy the file out of the session-owned temp location before
         // returning — the system reclaims `file.fileURL` as soon as the
         // delegate method returns.
@@ -123,9 +134,9 @@ private final class SessionDelegate: NSObject, WCSessionDelegate, @unchecked Sen
             try FileManager.default.copyItem(at: file.fileURL, to: scratch)
             let duration = (file.metadata?["duration"] as? TimeInterval) ?? 0
             onFileReceived?(scratch, duration)
+            OrbitLog.app.notice("iPhone: file copied to scratch, dispatched to ingest.")
         } catch {
-            // Nothing else to do — log and drop. The watch already
-            // considers the transfer complete.
+            OrbitLog.app.error("iPhone: copy from session temp failed: \(String(describing: error), privacy: .public)")
         }
     }
 }
