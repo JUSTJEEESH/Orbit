@@ -312,8 +312,11 @@ public struct HomeView: View {
                         // the in-memory feed so it disappears
                         // immediately, then persist + reload from
                         // source so the slot fills with the next-best
-                        // candidate.
-                        suggestionFeed = MemorySuggestionFeed(
+                        // candidate. `self.suggestionFeed` is required
+                        // here because the surrounding `if let
+                        // suggestionFeed` shadows the @State property
+                        // with a read-only local constant.
+                        self.suggestionFeed = MemorySuggestionFeed(
                             anchor: suggestionFeed.anchor,
                             related: suggestionFeed.related.filter { $0.memory.id != memoryID },
                             generatedAt: suggestionFeed.generatedAt
