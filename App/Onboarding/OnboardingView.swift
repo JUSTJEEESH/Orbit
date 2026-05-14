@@ -315,8 +315,8 @@ struct OnboardingView: View {
     /// Personalization moment. Tapping a swatch live-previews the
     /// accent across the entire onboarding shell (the dots, primary
     /// buttons, permission icons), so the user sees the change
-    /// instantly. Free for the first pick — the existing ProGate.themes
-    /// in Settings governs *subsequent* switches.
+    /// instantly. Themes ship without a paywall — users can switch
+    /// freely here and any time later in Settings.
     private var themeScene: some View {
         VStack(spacing: 0) {
             Spacer().frame(height: OrbitSpacing.xxxl + 8)

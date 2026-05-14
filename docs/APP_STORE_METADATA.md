@@ -39,7 +39,7 @@ The project's actual deployment target is **iOS 26.0**
 version of the project. Replace with:
 
 > "Orbit requires **iPhone running iOS 26 or later**. The AI surfaces
-> (Daily Recap, Ask Orbit, auto-summaries, themes) use Apple
+> (Daily Recap, Ask Orbit, auto-summaries) use Apple
 > Intelligence, which is available on the iPhone 15 Pro lineup,
 > every iPhone 16 model, and newer. On supported devices everything
 > happens on-device; on older models you'll get lightweight
@@ -268,7 +268,7 @@ sync to iOS Reminders. Your sleep arrives in your Daily Recap.
 
 — ORBIT PRO
 A yearly subscription unlocks unlimited Daily Recaps, unlimited Ask
-Orbit, long-form voice notes, your full Year in Review, and themes.
+Orbit, long-form voice notes, and your full Year in Review.
 Free to try for 7 days.
 
 Subscriptions auto-renew unless cancelled 24 hours before the period
@@ -324,7 +324,7 @@ the in-review form will want:
 - Trial: 7 days
 - Renewal: Yearly
 - Display name: Orbit Pro
-- Description (max 45): "Unlimited Recap, Ask Orbit, voice, themes."
+- Description (max 45): "Unlimited Recap, Ask Orbit, long voice, full Year in Review."
 
 Also: the **privacy URL** and **terms URL** must be set in App Store
 Connect → App Information. Use the orbitbrain2.netlify.app paths
@@ -355,7 +355,7 @@ frames is plenty.
 | 3 | Memory Detail | A voice note opened, showing transcript + AI summary + auto-tags. | "Apple Intelligence writes the titles, the tags, the summaries." |
 | 4 | Daily Recap | A finished recap with one paragraph of reflective prose + linked highlights below. | "A day, read back to you. Each evening." |
 | 5 | Ask Orbit, conversation mid-flow | A question typed, an answer rendered, source memory cards linked underneath. | "Ask anything. Orbit answers from your own memories." |
-| 6 | Year in Review (or Themes) — Pro showcase | Editorial layout, big serif numbers, a memory-rain animation paused on a frame. | "Your year, the way you'd want to remember it." |
+| 6 | Year in Review — Pro showcase | Editorial layout, big serif numbers, a memory-rain animation paused on a frame. | "Your year, the way you'd want to remember it." |
 
 Optional 7th frame if you have room: privacy nutrition label hero
 screen, or the Settings → Account → Delete pane with the calm copy

@@ -102,11 +102,6 @@ public struct PaywallView: View {
                 title: "Year in Review, in full",
                 detail: "Monthly chart, top moments and people, and your memory rain finale."
             )
-            benefit(
-                icon: "paintpalette",
-                title: "Themes & app icons",
-                detail: "Sunset, Cosmic, and Forest — with matching home-screen icons."
-            )
         }
     }
 
