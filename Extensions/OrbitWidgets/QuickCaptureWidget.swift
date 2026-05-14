@@ -41,24 +41,44 @@ struct QuickCaptureWidgetView: View {
     let entry: QuickCaptureEntry
 
     var body: some View {
-        VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
-            Spacer()
-            ZStack {
-                Circle()
-                    .fill(OrbitColor.textPrimary)
-                    .frame(width: 48, height: 48)
-                Image(systemName: "plus")
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(OrbitColor.textInverted)
+        VStack(alignment: .leading, spacing: 0) {
+            eyebrow
+            // The label + glyph are a single visual unit, centered in
+            // the remaining vertical space. Two Spacers around the
+            // stack do the centering — flexible above and below so the
+            // composition rebalances on systemMedium without code.
+            Spacer(minLength: 0)
+            VStack(spacing: 10) {
+                ZStack {
+                    Circle()
+                        .fill(OrbitColor.textPrimary)
+                        .frame(width: 40, height: 40)
+                    Image(systemName: "plus")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(OrbitColor.textInverted)
+                }
+                Text("Capture")
+                    .font(OrbitTypography.bodyEmphasized)
+                    .foregroundStyle(OrbitColor.textPrimary)
             }
-            Text("Capture")
-                .font(OrbitTypography.title3)
-                .foregroundStyle(OrbitColor.textPrimary)
-            Text("Tap to save a thought.")
-                .font(OrbitTypography.footnote)
-                .foregroundStyle(OrbitColor.textSecondary)
+            .frame(maxWidth: .infinity)
+            Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .widgetURL(URL(string: "orbit://capture"))
+    }
+
+    /// Matches the editorial eyebrow on the other two widgets so the
+    /// three feel like one family. Accent dot is theme-tinted.
+    private var eyebrow: some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(OrbitColor.accent)
+                .frame(width: 6, height: 6)
+            Text("QUICK CAPTURE")
+                .font(OrbitTypography.caption)
+                .tracking(0.9)
+                .foregroundStyle(OrbitColor.textTertiary)
+        }
     }
 }
