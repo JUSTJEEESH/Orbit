@@ -189,9 +189,15 @@ targets:
         SKIP_INSTALL: YES
     dependencies:
       - package: OrbitWorkspace
+        product: OrbitKit
+      - package: OrbitWorkspace
+        product: OrbitDesignSystem
+      - package: OrbitWorkspace
         product: OrbitDomain
       - package: OrbitWorkspace
         product: OrbitPersistence
+      - package: OrbitWorkspace
+        product: OrbitMedia
 
   OrbitWidgets:
     type: app-extension
