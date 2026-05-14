@@ -8,6 +8,17 @@ struct OrbitApp: App {
     @State private var environment: AppEnvironment
 
     init() {
+        // Configure RevenueCat first thing — every other system
+        // (paywall, entitlement observer, restore flow) reads through
+        // `Purchases.shared`, and `Purchases.configure(...)` must be
+        // called exactly once before any of those touch the SDK.
+        //
+        // The key below is a development/test key — swap to the
+        // production public API key from the RevenueCat dashboard
+        // before App Store submission, ideally via an xcconfig-fed
+        // Info.plist value so DEBUG and Release pick different keys.
+        RevenueCatConfig.configure(apiKey: "test_jYJreMUEiSTsVUCaduRFOfewdob")
+
         let config = AppConfig.resolveFromBundle()
 
         // Persistence is required to run; if init fails we fall back to an

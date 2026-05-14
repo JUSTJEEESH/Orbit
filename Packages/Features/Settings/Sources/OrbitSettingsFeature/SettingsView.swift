@@ -55,6 +55,9 @@ public struct SettingsView: View {
 
     @State private var showDeleteConfirmation = false
     @State private var deletionError: String?
+    /// Presents the RevenueCat Customer Center sheet for Pro
+    /// subscribers — cancel, refund requests, history, etc.
+    @State private var showCustomerCenter = false
     /// Drives the in-place soft paywall when a free user taps a
     /// Pro-only theme tile. Routed back out to `onPresentPaywall`
     /// when they tap "See Orbit Pro".
@@ -676,13 +679,26 @@ public struct SettingsView: View {
                         OrbitButton("Upgrade to Pro", systemImage: "sparkles", style: .primary) {
                             onPresentPaywall()
                         }
+                        OrbitButton("Restore purchases", style: .secondary) {
+                            Task { await entitlements.restore() }
+                        }
                     } else {
+                        // Pro users get the RevenueCat Customer Center —
+                        // cancel, refund requests, plan switching,
+                        // purchase history. All in a sheet served by
+                        // the SDK; we just present.
+                        OrbitButton("Manage subscription", systemImage: "person.crop.circle.badge.checkmark", style: .primary) {
+                            showCustomerCenter = true
+                        }
                         OrbitButton("Restore purchases", style: .secondary) {
                             Task { await entitlements.restore() }
                         }
                     }
                 }
             }
+        }
+        .sheet(isPresented: $showCustomerCenter) {
+            OrbitCustomerCenterView(onDismiss: { showCustomerCenter = false })
         }
     }
 

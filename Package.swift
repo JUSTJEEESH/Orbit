@@ -38,6 +38,13 @@ let package = Package(
         .library(name: "OrbitWellnessFeature", targets: ["OrbitWellnessFeature"]),
         .library(name: "OrbitShareFeature", targets: ["OrbitShareFeature"]),
     ],
+    dependencies: [
+        // RevenueCat handles StoreKit, receipt validation, paywall UI,
+        // and subscription analytics through their cloud service.
+        // The `RevenueCat` product is the headless SDK; `RevenueCatUI`
+        // ships the prebuilt paywall + customer-center SwiftUI views.
+        .package(url: "https://github.com/RevenueCat/purchases-ios-spm.git", from: "5.0.0"),
+    ],
     targets: [
         // MARK: - Cross-cutting
         .target(
@@ -92,10 +99,15 @@ let package = Package(
             swiftSettings: swiftSettings
         ),
 
-        // MARK: - Store (StoreKit 2 entitlements + paywall view)
+        // MARK: - Store (RevenueCat-backed entitlements + paywall view)
         .target(
             name: "OrbitStore",
-            dependencies: ["OrbitDesignSystem", "OrbitKit"],
+            dependencies: [
+                "OrbitDesignSystem",
+                "OrbitKit",
+                .product(name: "RevenueCat", package: "purchases-ios-spm"),
+                .product(name: "RevenueCatUI", package: "purchases-ios-spm"),
+            ],
             path: "Packages/OrbitStore/Sources/OrbitStore",
             swiftSettings: swiftSettings
         ),
