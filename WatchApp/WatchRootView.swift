@@ -13,6 +13,13 @@ import WatchKit
 struct WatchRootView: View {
     @State private var recorder = WatchRecorder()
     @State private var errorMessage: String?
+    /// Flips true ~6s into a `.sending` state if the transfer hasn't
+    /// completed. The Watch's WCSession.transferFile is fire-and-forget;
+    /// when the iPhone app is suspended the file queues and the Watch
+    /// has no signal beyond "still sending." This hint surfaces the
+    /// one thing the user can do to unblock it without falsely claiming
+    /// failure.
+    @State private var sendingHint: Bool = false
     private let session = WatchSession.shared
 
     var body: some View {
@@ -25,6 +32,20 @@ struct WatchRootView: View {
         }
         .animation(.easeInOut(duration: 0.22), value: recorder.isRecording)
         .animation(.easeInOut(duration: 0.22), value: session.state)
+        .animation(.easeInOut(duration: 0.22), value: sendingHint)
+        .onChange(of: session.state) { _, newState in
+            if case .sending = newState {
+                sendingHint = false
+                Task {
+                    try? await Task.sleep(for: .seconds(6))
+                    if case .sending = session.state {
+                        sendingHint = true
+                    }
+                }
+            } else {
+                sendingHint = false
+            }
+        }
     }
 
     // MARK: - Idle
@@ -35,7 +56,13 @@ struct WatchRootView: View {
         case .idle:
             recordButton
         case .sending:
-            statusView(systemImage: "arrow.up.circle", tint: .secondary, message: "Sending…")
+            statusView(
+                systemImage: "arrow.up.circle",
+                tint: .secondary,
+                message: sendingHint
+                    ? "Sending…\nOpen Orbit on iPhone to finish."
+                    : "Sending…"
+            )
         case .sent:
             statusView(systemImage: "checkmark.circle.fill", tint: .green, message: "Saved to Orbit")
         case .failed(let message):
