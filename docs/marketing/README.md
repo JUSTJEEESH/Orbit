@@ -6,6 +6,7 @@ before App Store submission.
 | File | What it is | Where it goes |
 |------|------------|---------------|
 | `app-store-listing.md` | App name, subtitle, keywords, description, what's new, categories, privacy nutrition answers | App Store Connect (manual entry) |
+| `app-store-resubmission.md` | Where to paste each field in App Store Connect + reviewer notes + Resolution Center templates | Reference during submission |
 | `screenshots.md` | The 8-screenshot sequence + composition spec, revised against ButterKit's 2026 cheatsheet (problem → solution → social proof → features → privacy) | Reference doc |
 | `seed-data.md` | Sample memories, tasks, and capture playbook for populating the simulator | Reference doc |
 | `voice-scripts/` | Voice-memo transcripts + `say` workflow for recording in simulator | Used during screenshot prep |
