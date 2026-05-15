@@ -23,6 +23,17 @@ configs:
 settings:
   base:
     SWIFT_VERSION: "6.0"
+    # User-visible release version shown on the App Store ("1.0.1").
+    # Bump on every TestFlight or App Store submission — Apple closes
+    # the previous "train" once a build is accepted, so resubmitting
+    # the same MARKETING_VERSION returns CFBundleShortVersionString
+    # error 90062.
+    MARKETING_VERSION: "1.0.1"
+    # Internal build number. Must increment with every upload to App
+    # Store Connect, including TestFlight retries within the same
+    # marketing version. Reset to 1 when MARKETING_VERSION changes if
+    # you want, or just keep incrementing — Apple doesn't care which.
+    CURRENT_PROJECT_VERSION: "2"
     # `Scripts/setup-identity.sh` replaces this placeholder with your real
     # Apple developer team id from Config/Identity.xcconfig. xcconfig
     # inheritance alone wasn't reliably propagating the team through
