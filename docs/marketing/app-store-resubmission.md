@@ -342,6 +342,7 @@ the review completes, then again when the app is live in the store.
 
 | Reason | Pre-emptive fix |
 |---|---|
+| 3.1.2(a) — Terms of Use (EULA) link missing from description | Always include the closing block in the description with a functional `https://...` link to the Terms of Use. Apple's bot scans the description text for it. Standalone Privacy Policy URL field is not enough. |
 | 5.1.1(v) — no account deletion | We have this — Settings → Account → Delete account |
 | 5.1.1 — privacy policy missing | Privacy URL is set to your live Netlify route |
 | 4.0 — design feels unfinished | Polish pass complete; empty states are designed, not blank |

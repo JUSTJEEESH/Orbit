@@ -103,12 +103,27 @@ Journaling apps ask too much. Note apps forget everything. The things we want to
 Orbit is what we wished existed — a calm, native, private place where life can quietly accumulate, and an AI that helps you find what matters without taking over the experience.
 
 Welcome to Orbit.
+
+—
+
+Terms of Use (EULA): https://orbitbrain2.netlify.app/terms
+Privacy Policy: https://orbitbrain2.netlify.app/privacy
+
+By downloading Orbit, you agree to the Terms of Use linked above. Subscriptions auto-renew unless cancelled at least 24 hours before the end of the current period — manage or cancel anytime from iOS Settings → Apple ID → Subscriptions.
 ```
 
 > Rationale: first three lines (~250 chars) are what the App Store
 > shows before the "more" tap, so the hook + USP + permission-to-be-lazy
 > all happen up top. The sections use the App Store's accepted
 > em-dash-header pattern (`— HEADER —`) which Apple renders cleanly.
+>
+> **The closing Terms of Use / Privacy Policy block is required by
+> Apple Guideline 3.1.2(a)** for any app with auto-renewable
+> subscriptions. The Terms of Use URL must be a functional link
+> visible in the description body text — putting it only in the
+> App Information → Privacy Policy URL field is not enough. Apple's
+> review bot scans the description text for this and auto-rejects
+> if missing.
 
 ---
 
