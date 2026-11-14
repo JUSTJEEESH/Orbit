@@ -37,6 +37,10 @@ public struct SettingsView: View {
     private let onExportLibrary: (@MainActor @Sendable () async throws -> URL)?
     /// iCloud sync state and toggle. Nil hides the section (previews).
     private let iCloudSync: SettingsSyncState?
+    /// Face ID lock. Nil hides the Privacy section (previews).
+    private let appLock: AppLockService?
+    /// Turns the daily resurfacing notification on/off. Nil hides it.
+    private let onSetResurfacing: (@MainActor (Bool) async -> Void)?
 
     /// Reminders sync state surfaced through plain values so this feature
     /// package doesn't have to depend on EventKit. RootView wires the live
@@ -96,7 +100,9 @@ public struct SettingsView: View {
         onWipeDemoData: (@MainActor @Sendable () async -> Void)? = nil,
         onOpenRecentlyDeleted: (@MainActor () -> Void)? = nil,
         onExportLibrary: (@MainActor @Sendable () async throws -> URL)? = nil,
-        iCloudSync: SettingsSyncState? = nil
+        iCloudSync: SettingsSyncState? = nil,
+        appLock: AppLockService? = nil,
+        onSetResurfacing: (@MainActor (Bool) async -> Void)? = nil
     ) {
         self.appConfig = appConfig
         self.account = account
@@ -126,6 +132,8 @@ public struct SettingsView: View {
         self.onOpenRecentlyDeleted = onOpenRecentlyDeleted
         self.onExportLibrary = onExportLibrary
         self.iCloudSync = iCloudSync
+        self.appLock = appLock
+        self.onSetResurfacing = onSetResurfacing
     }
 
     public var body: some View {
@@ -137,8 +145,14 @@ public struct SettingsView: View {
                         if let iCloudSync {
                             SettingsSyncSection(state: iCloudSync)
                         }
+                        if let appLock {
+                            SettingsPrivacySection(appLock: appLock)
+                        }
                         appearanceSection
                         notificationsSection
+                        if let onSetResurfacing {
+                            SettingsResurfacingSection(notifications: notifications, onSetEnabled: onSetResurfacing)
+                        }
                         remindersSection
                         calendarSection
                         healthSection

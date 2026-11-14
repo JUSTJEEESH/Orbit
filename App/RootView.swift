@@ -153,7 +153,9 @@ struct RootView: View {
                     iCloudSync: SettingsSyncState(
                         status: env.settingsSyncStatus,
                         onSetEnabled: { env.setSyncPreference($0 ? .on : .off) }
-                    )
+                    ),
+                    appLock: env.appLock,
+                    onSetResurfacing: { await env.setResurfacingEnabled($0) }
                 )
                 .presentationDetents([.large])
             case .recentlyDeleted:
@@ -313,6 +315,11 @@ struct RootView: View {
             if env.requestedModal == nil, env.shouldPresentWhatsNew {
                 env.requestedModal = .whatsNew
             }
+        }
+        .onChange(of: env.pendingMemoryLink) { _, id in
+            guard let id else { return }
+            env.pendingMemoryLink = nil
+            handle(.memory(id: id))
         }
         .onContinueUserActivity(CSSearchableItemActionType) { activity in
             // The unique identifier we set in SpotlightIndexer is the

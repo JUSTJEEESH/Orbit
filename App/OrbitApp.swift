@@ -158,6 +158,21 @@ private struct ContentRoot: View {
             if newPhase == .active {
                 Task { await environment.remindersSync.pullCompletionUpdates() }
                 Task { await environment.captureInbox.drain() }
+                if environment.appLock.isLocked {
+                    Task { await environment.appLock.unlock() }
+                }
+            } else if newPhase == .background {
+                environment.appLock.lockIfEnabled()
+            }
+        }
+        // App lock: the lock screen while locked, and a plain cover while
+        // the app is inactive (app switcher, Control Center) so memories
+        // never appear in the switcher snapshot.
+        .overlay {
+            if environment.appLock.isLocked {
+                AppLockView(lock: environment.appLock)
+            } else if environment.appLock.isEnabled && scenePhase != .active {
+                OrbitColor.background.ignoresSafeArea()
             }
         }
         // Deep links (orbit:// URLs) and Spotlight continue-activities

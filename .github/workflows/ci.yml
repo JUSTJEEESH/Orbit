@@ -37,10 +37,15 @@ jobs:
             -scheme OrbitWorkspace-Package \
             -destination "$DESTINATION" \
             -skipPackagePluginValidation \
+            -resultBundlePath TestResults.xcresult \
             CODE_SIGNING_ALLOWED=NO \
             | tee xcodebuild-test.log | grep -E "error:|Test Case.*failed|Test run with|recorded an issue|✘|Failing tests|\*\* TEST" || true
           # grep above only trims the log; the real verdict is xcodebuild's.
           grep -q "\*\* TEST SUCCEEDED \*\*" xcodebuild-test.log
+
+      - name: Show test failures
+        if: failure()
+        run: python3 Scripts/ci/print-test-failures.py TestResults.xcresult
 
       - name: Upload test log
         if: failure()

@@ -26,6 +26,7 @@ extension AppEnvironment {
         await rescueLegacyStoreIfNeeded()
         await completeUnfinishedMemories()
         await purgeExpiredRecentlyDeleted()
+        await refreshResurfacing()
     }
 
     // MARK: - Legacy store rescue

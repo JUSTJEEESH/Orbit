@@ -4,158 +4,160 @@ import SwiftData
 @testable import OrbitPersistence
 import OrbitDomain
 
-@Suite("SwiftData round-trip", .serialized)
-struct MemoryRoundTripTests {
+extension StoreBackedTests {
+    @Suite("SwiftData round-trip", .serialized)
+    struct MemoryRoundTripTests {
 
-    private func makeContainer() throws -> ModelContainer {
-        try ModelContainerFactory.makeContainer(mode: .inMemory)
-    }
-
-    @Test func textMemorySurvivesRoundTrip() async throws {
-        let container = try makeContainer()
-        let repo = SwiftDataMemoryRepository(modelContainer: container)
-        let memory = Memory(
-            content: .text("Renew passport before July"),
-            createdAt: .init(timeIntervalSince1970: 100),
-            updatedAt: .init(timeIntervalSince1970: 100),
-            tags: [Tag(name: "travel")]
-        )
-
-        try await repo.save(memory)
-        let fetched = try await repo.memory(with: memory.id)
-
-        #expect(fetched != nil)
-        #expect(fetched?.content == .text("Renew passport before July"))
-        #expect(fetched?.tags.map(\.name) == ["travel"])
-    }
-
-    @Test func linkMemorySurvivesRoundTrip() async throws {
-        let container = try makeContainer()
-        let repo = SwiftDataMemoryRepository(modelContainer: container)
-        let url = URL(string: "https://orbit.app")!
-        let memory = Memory(
-            content: .link(url: url, title: "Orbit", summary: "AI second brain"),
-            createdAt: .now,
-            updatedAt: .now
-        )
-
-        try await repo.save(memory)
-        let fetched = try await repo.memory(with: memory.id)
-
-        guard case .link(let fetchedURL, let title, let summary) = fetched?.content else {
-            Issue.record("Expected link content")
-            return
+        private func makeContainer() throws -> ModelContainer {
+            try ModelContainerFactory.makeContainer(mode: .inMemory)
         }
-        #expect(fetchedURL == url)
-        #expect(title == "Orbit")
-        #expect(summary == "AI second brain")
-    }
 
-    @Test func listAppliesFilterAndSort() async throws {
-        let container = try makeContainer()
-        let repo = SwiftDataMemoryRepository(modelContainer: container)
+        @Test func textMemorySurvivesRoundTrip() async throws {
+            let container = try makeContainer()
+            let repo = SwiftDataMemoryRepository(modelContainer: container)
+            let memory = Memory(
+                content: .text("Renew passport before July"),
+                createdAt: .init(timeIntervalSince1970: 100),
+                updatedAt: .init(timeIntervalSince1970: 100),
+                tags: [Tag(name: "travel")]
+            )
 
-        let older = Memory(content: .text("older"),
-                           createdAt: Date(timeIntervalSince1970: 100),
-                           updatedAt: Date(timeIntervalSince1970: 100))
-        let newer = Memory(content: .text("newer"),
-                           createdAt: Date(timeIntervalSince1970: 200),
-                           updatedAt: Date(timeIntervalSince1970: 200))
-        try await repo.save(older)
-        try await repo.save(newer)
+            try await repo.save(memory)
+            let fetched = try await repo.memory(with: memory.id)
 
-        let newestFirst = try await repo.list(filter: .all)
-        #expect(newestFirst.map(\.id) == [newer.id, older.id])
+            #expect(fetched != nil)
+            #expect(fetched?.content == .text("Renew passport before July"))
+            #expect(fetched?.tags.map(\.name) == ["travel"])
+        }
 
-        let oldestFirst = try await repo.list(filter: MemoryFilter(sort: .oldestFirst))
-        #expect(oldestFirst.map(\.id) == [older.id, newer.id])
-    }
+        @Test func linkMemorySurvivesRoundTrip() async throws {
+            let container = try makeContainer()
+            let repo = SwiftDataMemoryRepository(modelContainer: container)
+            let url = URL(string: "https://orbit.app")!
+            let memory = Memory(
+                content: .link(url: url, title: "Orbit", summary: "AI second brain"),
+                createdAt: .now,
+                updatedAt: .now
+            )
 
-    @Test func deletingRemovesFromStore() async throws {
-        let container = try makeContainer()
-        let repo = SwiftDataMemoryRepository(modelContainer: container)
-        let memory = Memory(content: .text("temp"), createdAt: .now, updatedAt: .now)
-        try await repo.save(memory)
+            try await repo.save(memory)
+            let fetched = try await repo.memory(with: memory.id)
 
-        try await repo.delete(id: memory.id)
-        let fetched = try await repo.memory(with: memory.id)
-        #expect(fetched == nil)
-    }
+            guard case .link(let fetchedURL, let title, let summary) = fetched?.content else {
+                Issue.record("Expected link content")
+                return
+            }
+            #expect(fetchedURL == url)
+            #expect(title == "Orbit")
+            #expect(summary == "AI second brain")
+        }
 
-    @Test func tagsDedupeAcrossMemories() async throws {
-        let container = try makeContainer()
-        let repo = SwiftDataMemoryRepository(modelContainer: container)
-        let tag = Tag(name: "travel")
+        @Test func listAppliesFilterAndSort() async throws {
+            let container = try makeContainer()
+            let repo = SwiftDataMemoryRepository(modelContainer: container)
 
-        try await repo.save(Memory(content: .text("a"), createdAt: .now, updatedAt: .now, tags: [tag]))
-        try await repo.save(Memory(content: .text("b"), createdAt: .now, updatedAt: .now, tags: [Tag(name: "travel")]))
+            let older = Memory(content: .text("older"),
+                               createdAt: Date(timeIntervalSince1970: 100),
+                               updatedAt: Date(timeIntervalSince1970: 100))
+            let newer = Memory(content: .text("newer"),
+                               createdAt: Date(timeIntervalSince1970: 200),
+                               updatedAt: Date(timeIntervalSince1970: 200))
+            try await repo.save(older)
+            try await repo.save(newer)
 
-        // Inspect storage directly: only one TagEntity for "travel" should exist.
-        let context = ModelContext(container)
-        let descriptor = FetchDescriptor<TagEntity>(predicate: #Predicate { $0.name == "travel" })
-        let tags = try context.fetch(descriptor)
-        #expect(tags.count == 1)
-    }
+            let newestFirst = try await repo.list(filter: .all)
+            #expect(newestFirst.map(\.id) == [newer.id, older.id])
 
-    @Test func queryMatchesText() async throws {
-        let container = try makeContainer()
-        let repo = SwiftDataMemoryRepository(modelContainer: container)
-        try await repo.save(Memory(content: .text("buy sourdough starter"), createdAt: .now, updatedAt: .now))
-        try await repo.save(Memory(content: .text("call mom"), createdAt: .now, updatedAt: .now))
+            let oldestFirst = try await repo.list(filter: MemoryFilter(sort: .oldestFirst))
+            #expect(oldestFirst.map(\.id) == [older.id, newer.id])
+        }
 
-        let hits = try await repo.list(filter: MemoryFilter(query: "sourdough"))
-        #expect(hits.count == 1)
-        #expect(hits.first?.content == .text("buy sourdough starter"))
-    }
+        @Test func deletingRemovesFromStore() async throws {
+            let container = try makeContainer()
+            let repo = SwiftDataMemoryRepository(modelContainer: container)
+            let memory = Memory(content: .text("temp"), createdAt: .now, updatedAt: .now)
+            try await repo.save(memory)
 
-    /// Updates (enrichment does several per memory) must not pile up
-    /// duplicate media rows.
-    @Test func updatesReuseMediaRows() async throws {
-        let container = try makeContainer()
-        let repo = SwiftDataMemoryRepository(modelContainer: container)
-        let asset = MediaAsset(kind: .audio, filename: "note.wav", byteSize: 42, createdAt: .now)
-        var memory = Memory(content: .voiceNote(transcript: nil, duration: 3), createdAt: .now, updatedAt: .now, media: [asset])
-        try await repo.save(memory)
+            try await repo.delete(id: memory.id)
+            let fetched = try await repo.memory(with: memory.id)
+            #expect(fetched == nil)
+        }
 
-        memory.content = .voiceNote(transcript: "hello", duration: 3)
-        try await repo.update(memory)
-        try await repo.update(memory)
+        @Test func tagsDedupeAcrossMemories() async throws {
+            let container = try makeContainer()
+            let repo = SwiftDataMemoryRepository(modelContainer: container)
+            let tag = Tag(name: "travel")
 
-        let context = ModelContext(container)
-        #expect(try context.fetchCount(FetchDescriptor<MediaAssetEntity>()) == 1)
-        let fetched = try await repo.memory(with: memory.id)
-        #expect(fetched?.media.map(\.filename) == ["note.wav"])
-        #expect(fetched?.content == .voiceNote(transcript: "hello", duration: 3))
-    }
+            try await repo.save(Memory(content: .text("a"), createdAt: .now, updatedAt: .now, tags: [tag]))
+            try await repo.save(Memory(content: .text("b"), createdAt: .now, updatedAt: .now, tags: [Tag(name: "travel")]))
 
-    /// The Recent widget asks for `limit: 1`; a newer sealed time capsule
-    /// must not hide the newest visible memory.
-    @Test func limitAppliesAfterHidingSealedMemories() async throws {
-        let container = try makeContainer()
-        let repo = SwiftDataMemoryRepository(modelContainer: container)
-        let visible = Memory(content: .text("visible"), createdAt: Date(timeIntervalSince1970: 100), updatedAt: .now)
-        let sealed = Memory(
-            content: .text("sealed"), createdAt: Date(timeIntervalSince1970: 200), updatedAt: .now,
-            surfaceDate: Date().addingTimeInterval(86_400 * 365)
-        )
-        try await repo.save(visible)
-        try await repo.save(sealed)
+            // Inspect storage directly: only one TagEntity for "travel" should exist.
+            let context = ModelContext(container)
+            let descriptor = FetchDescriptor<TagEntity>(predicate: #Predicate { $0.name == "travel" })
+            let tags = try context.fetch(descriptor)
+            #expect(tags.count == 1)
+        }
 
-        let newest = try await repo.list(filter: MemoryFilter(limit: 1))
-        #expect(newest.map(\.id) == [visible.id])
-    }
+        @Test func queryMatchesText() async throws {
+            let container = try makeContainer()
+            let repo = SwiftDataMemoryRepository(modelContainer: container)
+            try await repo.save(Memory(content: .text("buy sourdough starter"), createdAt: .now, updatedAt: .now))
+            try await repo.save(Memory(content: .text("call mom"), createdAt: .now, updatedAt: .now))
 
-    @Test func recentlyDeletedStateSurvivesRoundTrip() async throws {
-        let container = try makeContainer()
-        let repo = SwiftDataMemoryRepository(modelContainer: container)
-        let deletedAt = Date(timeIntervalSince1970: 1_800_000_000)
-        try await repo.save(Memory(content: .text("kept"), createdAt: .now, updatedAt: .now))
-        let trashed = Memory(content: .text("trashed"), createdAt: .now, updatedAt: .now, deletedAt: deletedAt)
-        try await repo.save(trashed)
+            let hits = try await repo.list(filter: MemoryFilter(query: "sourdough"))
+            #expect(hits.count == 1)
+            #expect(hits.first?.content == .text("buy sourdough starter"))
+        }
 
-        #expect(try await repo.list(filter: .all).map(\.content) == [.text("kept")])
-        #expect(try await repo.count(filter: .all) == 1)
-        #expect(try await repo.list(filter: .recentlyDeleted).map(\.id) == [trashed.id])
-        #expect(try await repo.memory(with: trashed.id)?.deletedAt == deletedAt)
+        /// Updates (enrichment does several per memory) must not pile up
+        /// duplicate media rows.
+        @Test func updatesReuseMediaRows() async throws {
+            let container = try makeContainer()
+            let repo = SwiftDataMemoryRepository(modelContainer: container)
+            let asset = MediaAsset(kind: .audio, filename: "note.wav", byteSize: 42, createdAt: .now)
+            var memory = Memory(content: .voiceNote(transcript: nil, duration: 3), createdAt: .now, updatedAt: .now, media: [asset])
+            try await repo.save(memory)
+
+            memory.content = .voiceNote(transcript: "hello", duration: 3)
+            try await repo.update(memory)
+            try await repo.update(memory)
+
+            let context = ModelContext(container)
+            #expect(try context.fetchCount(FetchDescriptor<MediaAssetEntity>()) == 1)
+            let fetched = try await repo.memory(with: memory.id)
+            #expect(fetched?.media.map(\.filename) == ["note.wav"])
+            #expect(fetched?.content == .voiceNote(transcript: "hello", duration: 3))
+        }
+
+        /// The Recent widget asks for `limit: 1`; a newer sealed time capsule
+        /// must not hide the newest visible memory.
+        @Test func limitAppliesAfterHidingSealedMemories() async throws {
+            let container = try makeContainer()
+            let repo = SwiftDataMemoryRepository(modelContainer: container)
+            let visible = Memory(content: .text("visible"), createdAt: Date(timeIntervalSince1970: 100), updatedAt: .now)
+            let sealed = Memory(
+                content: .text("sealed"), createdAt: Date(timeIntervalSince1970: 200), updatedAt: .now,
+                surfaceDate: Date().addingTimeInterval(86_400 * 365)
+            )
+            try await repo.save(visible)
+            try await repo.save(sealed)
+
+            let newest = try await repo.list(filter: MemoryFilter(limit: 1))
+            #expect(newest.map(\.id) == [visible.id])
+        }
+
+        @Test func recentlyDeletedStateSurvivesRoundTrip() async throws {
+            let container = try makeContainer()
+            let repo = SwiftDataMemoryRepository(modelContainer: container)
+            let deletedAt = Date(timeIntervalSince1970: 1_800_000_000)
+            try await repo.save(Memory(content: .text("kept"), createdAt: .now, updatedAt: .now))
+            let trashed = Memory(content: .text("trashed"), createdAt: .now, updatedAt: .now, deletedAt: deletedAt)
+            try await repo.save(trashed)
+
+            #expect(try await repo.list(filter: .all).map(\.content) == [.text("kept")])
+            #expect(try await repo.count(filter: .all) == 1)
+            #expect(try await repo.list(filter: .recentlyDeleted).map(\.id) == [trashed.id])
+            #expect(try await repo.memory(with: trashed.id)?.deletedAt == deletedAt)
+        }
     }
 }

@@ -22,6 +22,8 @@ import Observation
 public final class NotificationService {
     public nonisolated static let recapNotificationID = "com.orbit.dailyRecap"
     public nonisolated static let sealedDeliveryPrefix = "com.orbit.sealed."
+    public nonisolated static let resurfacingPrefix = "com.orbit.resurface."
+    private static let resurfacingEnabledKey = "orbit.notifications.resurfacing.enabled"
 
     private static let enabledKey = "orbit.notifications.dailyRecap.enabled"
     private static let hourKey = "orbit.notifications.dailyRecap.hour"
@@ -42,6 +44,12 @@ public final class NotificationService {
     /// Invoked on the main actor when the user taps the recap notification.
     /// `AppEnvironment` wires this to flip `requestedModal` to `.dailyRecap`.
     public var onOpenRecap: (@MainActor () -> Void)?
+    /// Invoked when the user taps a notification about one memory (a
+    /// resurfaced memory or an arriving letter / time capsule).
+    public var onOpenMemory: (@MainActor (UUID) -> Void)?
+
+    /// Whether the daily "Worth remembering" notification is on.
+    public private(set) var isResurfacingEnabled: Bool
 
     private let center = UNUserNotificationCenter.current()
     private let delegate: Delegate
@@ -49,6 +57,7 @@ public final class NotificationService {
     public init() {
         let defaults = UserDefaults.standard
         self.isEnabled = defaults.bool(forKey: Self.enabledKey)
+        self.isResurfacingEnabled = defaults.bool(forKey: Self.resurfacingEnabledKey)
         let hour = defaults.object(forKey: Self.hourKey) as? Int ?? Self.defaultHour
         let minute = defaults.object(forKey: Self.minuteKey) as? Int ?? Self.defaultMinute
         self.time = DateComponents(hour: hour, minute: minute)
@@ -56,6 +65,9 @@ public final class NotificationService {
 
         delegate.openRecap = { [weak self] in
             Task { @MainActor in self?.onOpenRecap?() }
+        }
+        delegate.openMemory = { [weak self] id in
+            Task { @MainActor in self?.onOpenMemory?(id) }
         }
         center.delegate = delegate
     }
@@ -195,6 +207,73 @@ public final class NotificationService {
         )
     }
 
+    // MARK: - Resurfacing ("Worth remembering")
+
+    /// One scheduled resurfacing notification.
+    public struct ResurfacingItem: Sendable {
+        public let memoryID: UUID
+        public let preview: String
+        public let fireDate: Date
+
+        public init(memoryID: UUID, preview: String, fireDate: Date) {
+            self.memoryID = memoryID
+            self.preview = preview
+            self.fireDate = fireDate
+        }
+    }
+
+    /// Turns the daily resurfacing notification on or off. Turning it on
+    /// asks for notification permission if needed.
+    /// - Returns: whether it's on afterwards.
+    @discardableResult
+    public func setResurfacingEnabled(_ enabled: Bool) async -> Bool {
+        if enabled {
+            await refreshAuthorizationStatus()
+            if !isAuthorized {
+                guard await requestAuthorization() else { return false }
+            }
+        } else {
+            await cancelResurfacing()
+        }
+        isResurfacingEnabled = enabled
+        UserDefaults.standard.set(enabled, forKey: Self.resurfacingEnabledKey)
+        return enabled
+    }
+
+    /// Replaces the pending resurfacing notifications with `items`. Content
+    /// is fixed when scheduled, so the app re-plans the next few days on
+    /// every launch.
+    public func scheduleResurfacing(_ items: [ResurfacingItem]) async {
+        await cancelResurfacing()
+        await refreshAuthorizationStatus()
+        guard isResurfacingEnabled, isAuthorized else { return }
+        for item in items where item.fireDate > Date() {
+            let content = UNMutableNotificationContent()
+            content.title = "Worth remembering"
+            content.body = String(item.preview.prefix(140))
+            content.sound = nil
+            content.interruptionLevel = .passive
+            content.userInfo = ["kind": "resurface", "memoryID": item.memoryID.uuidString]
+            let comps = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: item.fireDate)
+            let request = UNNotificationRequest(
+                identifier: Self.resurfacingPrefix + item.memoryID.uuidString,
+                content: content,
+                trigger: UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
+            )
+            do {
+                try await center.add(request)
+            } catch {
+                OrbitLog.app.error("Failed to schedule resurfacing: \(String(describing: error), privacy: .public)")
+            }
+        }
+    }
+
+    private func cancelResurfacing() async {
+        let pending = await center.pendingNotificationRequests()
+        let ids = pending.map(\.identifier).filter { $0.hasPrefix(Self.resurfacingPrefix) }
+        center.removePendingNotificationRequests(withIdentifiers: ids)
+    }
+
     private var isAuthorized: Bool {
         authorizationStatus == .authorized || authorizationStatus == .provisional
     }
@@ -232,6 +311,7 @@ public final class NotificationService {
     /// actor before mutating any state.
     private final class Delegate: NSObject, UNUserNotificationCenterDelegate, @unchecked Sendable {
         var openRecap: (@Sendable () -> Void)?
+        var openMemory: (@Sendable (UUID) -> Void)?
 
         func userNotificationCenter(
             _ center: UNUserNotificationCenter,
@@ -244,8 +324,14 @@ public final class NotificationService {
             _ center: UNUserNotificationCenter,
             didReceive response: UNNotificationResponse
         ) async {
-            guard response.notification.request.identifier == NotificationService.recapNotificationID else { return }
-            openRecap?()
+            let request = response.notification.request
+            if request.identifier == NotificationService.recapNotificationID {
+                openRecap?()
+            } else if let raw = request.content.userInfo["memoryID"] as? String, let id = UUID(uuidString: raw) {
+                // Resurfaced memories and arriving letters / capsules open
+                // the memory itself. (1.x ignored taps on these.)
+                openMemory?(id)
+            }
         }
     }
 }

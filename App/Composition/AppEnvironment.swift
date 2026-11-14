@@ -44,6 +44,7 @@ final class AppEnvironment {
     let calendarSync: CalendarSyncService
     let healthKit: HealthKitService
     let reviewPrompts: ReviewPromptService
+    let appLock: AppLockService
     let proGates: ProGateService
 
     let captureMemory: CaptureMemoryUseCase
@@ -96,6 +97,10 @@ final class AppEnvironment {
     /// The most recent deletion, for the Undo toast. Cleared when the toast
     /// times out or Undo is tapped.
     var trashNotice: TrashNotice?
+
+    /// A memory a notification tap asked to open. `RootView` routes it
+    /// through the same path as a deep link, then clears it.
+    var pendingMemoryLink: UUID?
 
     /// Memories 1.x's Siri intent had hidden that this launch recovered.
     /// Observed by What's New ("We found 4 memories you saved with Siri").
@@ -328,10 +333,12 @@ final class AppEnvironment {
         self.calendarSync = CalendarSyncService(tasks: tasks)
         self.healthKit = HealthKitService()
         self.reviewPrompts = ReviewPromptService()
+        self.appLock = AppLockService()
         self.proGates = ProGateService(entitlements: entitlements)
 
-        self.onboardingComplete = UserDefaults.standard.bool(forKey: Self.onboardingKey)
-        self.wasOnboardedAtLaunch = onboardingComplete
+        let alreadyOnboarded = UserDefaults.standard.bool(forKey: Self.onboardingKey)
+        self.onboardingComplete = alreadyOnboarded
+        self.wasOnboardedAtLaunch = alreadyOnboarded
 
         let signals = SignalExtractor()
         let captureMemoryUseCase = CaptureMemoryUseCase(
@@ -431,6 +438,9 @@ final class AppEnvironment {
         // stored property is initialized so `self` is fully formed.
         self.notifications.onOpenRecap = { [weak self] in
             self?.requestRecap()
+        }
+        self.notifications.onOpenMemory = { [weak self] id in
+            self?.pendingMemoryLink = id
         }
 
         // Same pattern for the watch session — the receiver needs to nudge
