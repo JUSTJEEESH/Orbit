@@ -264,7 +264,7 @@ extension AppEnvironment {
         }
         for id in ids {
             do {
-                try await removeMemory(id: id)
+                try await deleteMemoryPermanently(id: id)
             } catch {
                 OrbitLog.app.error("Wipe demo data: failed to remove \(id.uuidString, privacy: .public): \(String(describing: error), privacy: .public)")
             }

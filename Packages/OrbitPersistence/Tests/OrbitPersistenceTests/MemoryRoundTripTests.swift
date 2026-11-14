@@ -144,4 +144,18 @@ struct MemoryRoundTripTests {
         let newest = try await repo.list(filter: MemoryFilter(limit: 1))
         #expect(newest.map(\.id) == [visible.id])
     }
+
+    @Test func recentlyDeletedStateSurvivesRoundTrip() async throws {
+        let container = try makeContainer()
+        let repo = SwiftDataMemoryRepository(modelContainer: container)
+        let deletedAt = Date(timeIntervalSince1970: 1_800_000_000)
+        try await repo.save(Memory(content: .text("kept"), createdAt: .now, updatedAt: .now))
+        let trashed = Memory(content: .text("trashed"), createdAt: .now, updatedAt: .now, deletedAt: deletedAt)
+        try await repo.save(trashed)
+
+        #expect(try await repo.list(filter: .all).map(\.content) == [.text("kept")])
+        #expect(try await repo.count(filter: .all) == 1)
+        #expect(try await repo.list(filter: .recentlyDeleted).map(\.id) == [trashed.id])
+        #expect(try await repo.memory(with: trashed.id)?.deletedAt == deletedAt)
+    }
 }

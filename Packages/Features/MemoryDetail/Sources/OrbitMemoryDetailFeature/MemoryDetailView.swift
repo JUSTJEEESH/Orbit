@@ -10,6 +10,7 @@ public struct MemoryDetailView: View {
     @State private var voicePlayer = VoicePlayer()
     @Environment(\.dismiss) private var dismiss
     @State private var showDeleteConfirmation = false
+    @State private var editingMemory: Memory?
     private let onDeleted: @MainActor () -> Void
 
     public init(
@@ -48,7 +49,12 @@ public struct MemoryDetailView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("This can't be undone.")
+            Text("It moves to Recently Deleted for 30 days.")
+        }
+        .sheet(item: $editingMemory) { memory in
+            EditMemorySheet(memory: memory) { text, tags in
+                try await model.saveEdit(text: text, tags: tags)
+            }
         }
         .task { await model.load() }
     }
@@ -59,6 +65,18 @@ public struct MemoryDetailView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 OrbitShareCardButton(previewTitle: "Memory") {
                     MemoryShareCard(memory: memory)
+                }
+            }
+        }
+        if model.canEdit, let memory = model.memory {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    Haptics.play(.tap)
+                    editingMemory = memory
+                } label: {
+                    Image(systemName: "pencil")
+                        .foregroundStyle(OrbitColor.textPrimary)
+                        .accessibilityLabel("Edit memory")
                 }
             }
         }

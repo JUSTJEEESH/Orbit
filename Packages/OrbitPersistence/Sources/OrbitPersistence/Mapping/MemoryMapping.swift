@@ -31,6 +31,7 @@ extension MemoryEntity {
         self.embedding = memory.embedding
         self.surfaceDate = memory.surfaceDate
         self.isLetter = memory.isLetter
+        self.deletedAt = memory.deletedAt
         self.applyContent(memory.content)
         self.applyAI(memory.ai)
         self.tags = resolvedTags
@@ -57,7 +58,8 @@ extension MemoryEntity {
             linkedTaskIDs: linkedTaskIDs,
             embedding: embedding,
             surfaceDate: surfaceDate,
-            isLetter: isLetter
+            isLetter: isLetter,
+            deletedAt: deletedAt
         )
     }
 

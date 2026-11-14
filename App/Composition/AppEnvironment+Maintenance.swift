@@ -30,6 +30,7 @@ extension AppEnvironment {
     func runLaunchMaintenance() async {
         await rescueLegacyStoreIfNeeded()
         await completeUnfinishedMemories()
+        await purgeExpiredRecentlyDeleted()
     }
 
     // MARK: - Legacy store rescue

@@ -6,7 +6,7 @@ import OrbitKit
 /// Orbit — keep it instantly tappable, instantly responsive.
 public struct OrbitCaptureFAB: View {
     /// Exposed so screens can keep their last rows clear of the button.
-    public static let diameter: CGFloat = 64
+    public nonisolated static let diameter: CGFloat = 64
 
     private let action: @MainActor () -> Void
     @State private var isPressed = false

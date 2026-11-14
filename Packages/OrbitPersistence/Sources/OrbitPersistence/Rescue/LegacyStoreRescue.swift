@@ -40,7 +40,8 @@ public enum LegacyStoreRescue {
     ) async throws -> Outcome {
         var outcome = Outcome.nothing
 
-        for memory in try await sourceMemories.list(filter: .allIncludingSealed) {
+        let everything = MemoryFilter(includeSealed: true, trash: .included)
+        for memory in try await sourceMemories.list(filter: everything) {
             guard try await destinationMemories.memory(with: memory.id) == nil else { continue }
             do {
                 try await destinationMemories.save(memory)

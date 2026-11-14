@@ -23,6 +23,10 @@ public struct Memory: Identifiable, Sendable, Hashable {
     /// detail surfaces can render it with envelope styling instead of the
     /// regular memory card.
     public var isLetter: Bool
+    /// When set, the memory is in Recently Deleted: hidden from every
+    /// surface until it's restored or permanently removed. Deleting from the
+    /// UI only ever sets this, so an accidental swipe is always undoable.
+    public var deletedAt: Date?
 
     public init(
         id: UUID = UUID(),
@@ -35,7 +39,8 @@ public struct Memory: Identifiable, Sendable, Hashable {
         linkedTaskIDs: [UUID] = [],
         embedding: [Float] = [],
         surfaceDate: Date? = nil,
-        isLetter: Bool = false
+        isLetter: Bool = false,
+        deletedAt: Date? = nil
     ) {
         self.id = id
         self.content = content
@@ -48,7 +53,11 @@ public struct Memory: Identifiable, Sendable, Hashable {
         self.embedding = embedding
         self.surfaceDate = surfaceDate
         self.isLetter = isLetter
+        self.deletedAt = deletedAt
     }
+
+    /// True while the memory sits in Recently Deleted.
+    public var isInTrash: Bool { deletedAt != nil }
 
     /// True when the memory is scheduled to surface in the future. Calling
     /// code should treat sealed memories as if they don't exist until this

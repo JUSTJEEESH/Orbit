@@ -54,29 +54,17 @@ public enum LibraryArchiver {
         }
         guard copiedAnything else { throw ArchiveError.nothingToArchive }
 
-        // Coordinated reading with `.forUploading` makes Foundation zip a
-        // directory for us — no third-party archive dependency. The zip only
-        // exists inside the accessor, so it's moved out before returning.
         let destination = fileManager.temporaryDirectory.appendingPathComponent("Orbit-Library-\(stamp).zip")
-        try? fileManager.removeItem(at: destination)
-
-        var coordinationError: NSError?
-        var moveError: (any Error)?
-        NSFileCoordinator().coordinate(readingItemAt: staging, options: .forUploading, error: &coordinationError) { zipURL in
-            do {
-                try fileManager.moveItem(at: zipURL, to: destination)
-            } catch {
-                moveError = error
-            }
-        }
-        if coordinationError != nil || moveError != nil || !fileManager.fileExists(atPath: destination.path) {
+        do {
+            try DirectoryZipper.zip(staging, to: destination, fileManager: fileManager)
+        } catch {
             throw ArchiveError.zipFailed
         }
         return destination
     }
 }
 
-private extension ISO8601DateFormatter {
+extension ISO8601DateFormatter {
     /// `2026-11-14` style stamp: readable in Files, safe in filenames.
     static var archiveStamp: ISO8601DateFormatter {
         let formatter = ISO8601DateFormatter()

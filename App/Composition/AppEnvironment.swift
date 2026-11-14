@@ -50,6 +50,10 @@ final class AppEnvironment {
     let listMemories: ListMemoriesUseCase
     let updateMemory: UpdateMemoryUseCase
     let deleteMemory: DeleteMemoryUseCase
+    let moveMemoryToTrash: MoveMemoryToTrashUseCase
+    let editMemoryUseCase: EditMemoryUseCase
+    let restoreMemoryFromTrash: RestoreMemoryUseCase
+    let purgeExpiredTrash: PurgeExpiredTrashUseCase
     let linkTask: LinkTaskToMemoryUseCase
     let toggleTask: ToggleTaskUseCase
     let enrichMemory: EnrichMemoryUseCase
@@ -88,6 +92,10 @@ final class AppEnvironment {
     /// External entry points (deep links, AppIntents) write here; `RootView`
     /// observes it and presents the corresponding sheet.
     var requestedModal: AppModal?
+
+    /// The most recent deletion, for the Undo toast. Cleared when the toast
+    /// times out or Undo is tapped.
+    var trashNotice: TrashNotice?
 
     /// Mirrors the `orbit.onboarding.completed` UserDefaults flag. We hold
     /// it on the env so the delete-account flow can flip it back to false
@@ -201,17 +209,6 @@ final class AppEnvironment {
         } else {
             requestedModal = .proGate(.dailyRecap)
         }
-    }
-
-    /// Deletes a memory and removes it from Spotlight. Use this from the UI
-    /// instead of `deleteMemory` directly.
-    func removeMemory(id: UUID) async throws {
-        try await deleteMemory(id: id)
-        await spotlight.deindex(memoryID: id)
-        // Drop any pending sealed-delivery notification too — otherwise a
-        // deleted time capsule would still chime on its surface date.
-        notifications.cancelSealedDelivery(memoryID: id)
-        memoriesDidChange()
     }
 
     /// Re-runs enrichment for every memory currently in the repository.
@@ -338,6 +335,10 @@ final class AppEnvironment {
         self.listMemories = ListMemoriesUseCase(repository: memories)
         self.updateMemory = UpdateMemoryUseCase(repository: memories, clock: clock)
         self.deleteMemory = DeleteMemoryUseCase(repository: memories)
+        self.moveMemoryToTrash = MoveMemoryToTrashUseCase(repository: memories, clock: clock)
+        self.editMemoryUseCase = EditMemoryUseCase(repository: memories, clock: clock)
+        self.restoreMemoryFromTrash = RestoreMemoryUseCase(repository: memories)
+        self.purgeExpiredTrash = PurgeExpiredTrashUseCase(repository: memories, clock: clock)
         self.linkTask = LinkTaskToMemoryUseCase(memories: memories, tasks: tasks, clock: clock)
         self.toggleTask = ToggleTaskUseCase(repository: tasks, clock: clock)
         self.enrichMemory = EnrichMemoryUseCase(

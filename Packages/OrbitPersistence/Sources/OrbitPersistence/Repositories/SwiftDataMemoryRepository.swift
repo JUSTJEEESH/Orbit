@@ -67,6 +67,7 @@ public actor SwiftDataMemoryRepository: MemoryRepository {
         // limited first, so `limit: 1` returned nothing whenever the newest
         // memory was a sealed time capsule (blanking the Recent widget).
         let filtersInSwift = !filter.includeSealed
+            || filter.trash != .included
             || !filter.kinds.isEmpty
             || !filter.tagNames.isEmpty
             || filter.dateRange != nil
@@ -77,6 +78,9 @@ public actor SwiftDataMemoryRepository: MemoryRepository {
         // We post-filter complex predicates (kinds set, tag-name set, free text)
         // in Swift because SwiftData predicates around Set membership and
         // joined relationship attributes are still rough.
+        if filter.trash != .included {
+            results = results.filter { filter.admitsTrashState(of: $0.deletedAt) }
+        }
         if !filter.includeSealed {
             let now = Date()
             results = results.filter { entity in

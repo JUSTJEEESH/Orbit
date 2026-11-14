@@ -32,6 +32,9 @@ public struct SettingsView: View {
     /// the seeder created — user-captured memories are left alone.
     /// Same DEBUG-only contract.
     private let onWipeDemoData: (@MainActor @Sendable () async -> Void)?
+    /// Opens Recently Deleted. Nil hides the "Your data" section (previews).
+    private let onOpenRecentlyDeleted: (@MainActor () -> Void)?
+    private let onExportLibrary: (@MainActor @Sendable () async throws -> URL)?
 
     /// Reminders sync state surfaced through plain values so this feature
     /// package doesn't have to depend on EventKit. RootView wires the live
@@ -88,7 +91,9 @@ public struct SettingsView: View {
         onOpenCalendarSettings: @escaping @MainActor () -> Void = {},
         healthKit: HealthKitService? = nil,
         onSeedDemoData: (@MainActor @Sendable () async -> Void)? = nil,
-        onWipeDemoData: (@MainActor @Sendable () async -> Void)? = nil
+        onWipeDemoData: (@MainActor @Sendable () async -> Void)? = nil,
+        onOpenRecentlyDeleted: (@MainActor () -> Void)? = nil,
+        onExportLibrary: (@MainActor @Sendable () async throws -> URL)? = nil
     ) {
         self.appConfig = appConfig
         self.account = account
@@ -115,6 +120,8 @@ public struct SettingsView: View {
         self.healthKit = healthKit
         self.onSeedDemoData = onSeedDemoData
         self.onWipeDemoData = onWipeDemoData
+        self.onOpenRecentlyDeleted = onOpenRecentlyDeleted
+        self.onExportLibrary = onExportLibrary
     }
 
     public var body: some View {
@@ -130,6 +137,13 @@ public struct SettingsView: View {
                         healthSection
                         subscriptionSection
                         aboutSection
+                        if let onOpenRecentlyDeleted {
+                            SettingsDataSection(
+                                accent: currentTheme.primary,
+                                onOpenRecentlyDeleted: onOpenRecentlyDeleted,
+                                onExport: onExportLibrary
+                            )
+                        }
                         dangerSection
                         #if DEBUG
                         demoDataSection
@@ -175,7 +189,7 @@ public struct SettingsView: View {
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("This signs you out and permanently erases every memory on this device. This can't be undone.")
+                Text("This signs you out and permanently erases every memory, task, photo and recording on this device. This can't be undone.")
             }
         }
     }

@@ -26,6 +26,15 @@ public struct MemoryFilter: Sendable, Equatable {
     /// Set to true for maintenance flows (re-enrich, delete-all) that need
     /// to see the full corpus.
     public var includeSealed: Bool
+    /// Whether memories in Recently Deleted are left out (the default),
+    /// included, or the only ones returned.
+    public var trash: TrashScope
+
+    public enum TrashScope: Sendable, Equatable {
+        case excluded
+        case included
+        case only
+    }
 
     public enum Sort: Sendable, Equatable {
         case newestFirst
@@ -40,7 +49,8 @@ public struct MemoryFilter: Sendable, Equatable {
         dateRange: ClosedRange<Date>? = nil,
         limit: Int? = nil,
         sort: Sort = .newestFirst,
-        includeSealed: Bool = false
+        includeSealed: Bool = false,
+        trash: TrashScope = .excluded
     ) {
         self.query = query
         self.kinds = kinds
@@ -49,9 +59,21 @@ public struct MemoryFilter: Sendable, Equatable {
         self.limit = limit
         self.sort = sort
         self.includeSealed = includeSealed
+        self.trash = trash
+    }
+
+    /// True when a memory passes this filter's Recently Deleted rule.
+    public func admitsTrashState(of deletedAt: Date?) -> Bool {
+        switch trash {
+        case .excluded: return deletedAt == nil
+        case .included: return true
+        case .only:     return deletedAt != nil
+        }
     }
 
     public static let all = MemoryFilter()
     /// Convenience for maintenance callers that need to see sealed too.
     public static let allIncludingSealed = MemoryFilter(includeSealed: true)
+    /// Everything in Recently Deleted, most recently created first.
+    public static let recentlyDeleted = MemoryFilter(includeSealed: true, trash: .only)
 }

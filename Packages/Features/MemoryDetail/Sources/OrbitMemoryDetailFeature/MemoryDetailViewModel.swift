@@ -48,6 +48,8 @@ public final class MemoryDetailViewModel {
     /// dismissal and reload the connected list so the slot fills.
     private let dismissSuggestion: (@MainActor (UUID) -> Void)?
     private let removeMemory: @MainActor @Sendable (UUID) async throws -> Void
+    /// Saves an edit (memory id, new text, tag names). Nil hides Edit.
+    private let saveEdits: (@MainActor @Sendable (UUID, String, [String]) async throws -> Void)?
 
     public init(
         memoryID: UUID,
@@ -57,7 +59,8 @@ public final class MemoryDetailViewModel {
         listConnectedMemories: ListConnectedMemoriesUseCase? = nil,
         explainConnections: ExplainConnectionsUseCase? = nil,
         dismissSuggestion: (@MainActor (UUID) -> Void)? = nil,
-        removeMemory: @escaping @MainActor @Sendable (UUID) async throws -> Void
+        removeMemory: @escaping @MainActor @Sendable (UUID) async throws -> Void,
+        saveEdits: (@MainActor @Sendable (UUID, String, [String]) async throws -> Void)? = nil
     ) {
         self.memoryID = memoryID
         self.repository = repository
@@ -67,6 +70,20 @@ public final class MemoryDetailViewModel {
         self.explainConnections = explainConnections
         self.dismissSuggestion = dismissSuggestion
         self.removeMemory = removeMemory
+        self.saveEdits = saveEdits
+    }
+
+    /// Whether the Edit button should show.
+    public var canEdit: Bool { saveEdits != nil && memory != nil }
+
+    /// Persists an edit from `EditMemorySheet`, then reloads so the detail
+    /// shows the saved version (and its refreshed AI metadata later).
+    func saveEdit(text: String, tags: [String]) async throws {
+        guard let saveEdits else { return }
+        try await saveEdits(memoryID, text, tags)
+        if let refreshed = try await repository.memory(with: memoryID) {
+            memory = refreshed
+        }
     }
 
     /// Called by the view when the user dismisses a Connected card.

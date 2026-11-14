@@ -38,7 +38,7 @@ jobs:
             -destination "$DESTINATION" \
             -skipPackagePluginValidation \
             CODE_SIGNING_ALLOWED=NO \
-            | tee xcodebuild-test.log | grep -E "error:|warning: .*deprecated|Test Suite|Test Case.*(passed|failed)|\*\* TEST" || true
+            | tee xcodebuild-test.log | grep -E "error:|Test Case.*failed|Test run with|recorded an issue|✘|Failing tests|\*\* TEST" || true
           # grep above only trims the log; the real verdict is xcodebuild's.
           grep -q "\*\* TEST SUCCEEDED \*\*" xcodebuild-test.log
 

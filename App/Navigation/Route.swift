@@ -41,6 +41,7 @@ enum AppModal: Hashable, Identifiable {
     case letter
     case yearInReview
     case gratitude
+    case recentlyDeleted
     /// Soft contextual paywall — presented when a free user lands on a
     /// gated surface. Carries the specific gate so the sheet can lead
     /// with feature-aware copy ("you've savored your free recaps").

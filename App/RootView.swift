@@ -20,6 +20,7 @@ import OrbitWellnessFeature
 
 struct RootView: View {
     @Environment(AppEnvironment.self) private var env
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var selectedTab: AppTab = .home
     /// Driven from outside the Timeline view when a Spotlight result or
@@ -37,7 +38,9 @@ struct RootView: View {
         ZStack(alignment: .bottom) {
             tabContent
             captureFAB
+            undoToast
         }
+        .animation(OrbitMotion.respectfully(OrbitMotion.smooth, reduceMotion: reduceMotion), value: env.trashNotice)
         .orbitTheme(env.themeService.theme)
         .sheet(item: $bindableEnv.requestedModal) { modal in
             switch modal {
@@ -135,9 +138,20 @@ struct RootView: View {
                         #if DEBUG
                         await env.wipeDemoData()
                         #endif
-                    }
+                    },
+                    onOpenRecentlyDeleted: {
+                        env.requestedModal = nil
+                        Task { @MainActor in
+                            try? await Task.sleep(for: .milliseconds(280))
+                            env.requestedModal = .recentlyDeleted
+                        }
+                    },
+                    onExportLibrary: { try await env.exportLibrary() }
                 )
                 .presentationDetents([.large])
+            case .recentlyDeleted:
+                RecentlyDeletedView(onDismiss: { env.requestedModal = nil })
+                    .presentationDetents([.large])
             case .paywall:
                 PaywallView(
                     entitlements: env.entitlements,
@@ -400,6 +414,29 @@ struct RootView: View {
         static let contentClearance: CGFloat = OrbitCaptureFAB.diameter + OrbitSpacing.md
     }
 
+    /// Undo for the most recent delete. Sits just above the capture button
+    /// and disappears on its own after `undoToastLifetime`.
+    @ViewBuilder
+    private var undoToast: some View {
+        if let notice = env.trashNotice {
+            UndoDeleteToast {
+                Task { try? await env.restoreMemory(id: notice.memoryID) }
+            }
+            .padding(.bottom, FABLayout.tabBarClearance + OrbitCaptureFAB.diameter + OrbitSpacing.md)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .task(id: notice.id) {
+                AccessibilityNotification.Announcement("Memory deleted. Undo available.").post()
+                try? await Task.sleep(for: Self.undoToastLifetime)
+                guard env.trashNotice?.id == notice.id else { return }
+                withAnimation(OrbitMotion.respectfully(OrbitMotion.smooth, reduceMotion: reduceMotion)) {
+                    env.trashNotice = nil
+                }
+            }
+        }
+    }
+
+    private static let undoToastLifetime: Duration = .seconds(6)
+
     private var captureFAB: some View {
         OrbitCaptureFAB {
             env.requestedModal = .capture
@@ -418,7 +455,8 @@ struct RootView: View {
             listConnectedMemories: env.listConnectedMemories,
             explainConnections: env.explainConnections,
             dismissSuggestion: { id in env.dismissSuggestion(memoryID: id) },
-            removeMemory: { id in try await env.removeMemory(id: id) }
+            removeMemory: { id in try await env.removeMemory(id: id) },
+            saveEdits: { id, text, tags in try await env.editMemory(id: id, text: text, tagNames: tags) }
         )
     }
 
