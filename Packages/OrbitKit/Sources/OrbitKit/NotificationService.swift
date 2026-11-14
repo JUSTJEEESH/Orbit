@@ -23,6 +23,7 @@ public final class NotificationService {
     public nonisolated static let recapNotificationID = "com.orbit.dailyRecap"
     public nonisolated static let sealedDeliveryPrefix = "com.orbit.sealed."
     public nonisolated static let resurfacingPrefix = "com.orbit.resurface."
+    public nonisolated static let taskReminderPrefix = "com.orbit.task."
     private static let resurfacingEnabledKey = "orbit.notifications.resurfacing.enabled"
 
     private static let enabledKey = "orbit.notifications.dailyRecap.enabled"
@@ -205,6 +206,40 @@ public final class NotificationService {
         center.removePendingNotificationRequests(
             withIdentifiers: [Self.sealedDeliveryIdentifier(for: memoryID)]
         )
+    }
+
+    // MARK: - Task reminders
+
+    /// Schedules (or replaces) the alert for a task due at `fireDate`.
+    /// Asks for notification permission the first time.
+    public func scheduleTaskReminder(taskID: UUID, title: String, fireDate: Date, linkedMemoryID: UUID?) async {
+        await refreshAuthorizationStatus()
+        if authorizationStatus == .notDetermined {
+            _ = await requestAuthorization()
+        }
+        guard isAuthorized, fireDate > Date() else { return }
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = "Reminder from Orbit"
+        content.sound = .default
+        var info: [String: String] = ["kind": "task", "taskID": taskID.uuidString]
+        if let linkedMemoryID { info["memoryID"] = linkedMemoryID.uuidString }
+        content.userInfo = info
+        let comps = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: fireDate)
+        let request = UNNotificationRequest(
+            identifier: Self.taskReminderPrefix + taskID.uuidString,
+            content: content,
+            trigger: UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
+        )
+        do {
+            try await center.add(request)
+        } catch {
+            OrbitLog.app.error("Failed to schedule task reminder: \(String(describing: error), privacy: .public)")
+        }
+    }
+
+    public func cancelTaskReminder(taskID: UUID) {
+        center.removePendingNotificationRequests(withIdentifiers: [Self.taskReminderPrefix + taskID.uuidString])
     }
 
     // MARK: - Resurfacing ("Worth remembering")

@@ -44,17 +44,23 @@ public struct TaskHint: Codable, Sendable, Hashable, Identifiable {
     /// A nearby date if the extractor found one (e.g. "by Friday").
     /// Optional — task hints without dates are still useful.
     public var dueDate: Date?
+    /// Whether `dueDate` came with a time of day ("tomorrow at 5") rather
+    /// than just a day ("on Friday"). Optional so signals stored before
+    /// 2.0 (which lack the key) still decode.
+    public var dueDateHasTime: Bool?
 
     public init(
         id: UUID = UUID(),
         phrase: String,
         rawText: String,
-        dueDate: Date? = nil
+        dueDate: Date? = nil,
+        dueDateHasTime: Bool? = nil
     ) {
         self.id = id
         self.phrase = phrase
         self.rawText = rawText
         self.dueDate = dueDate
+        self.dueDateHasTime = dueDateHasTime
     }
 }
 

@@ -25,6 +25,12 @@ struct SuggestionCard: View {
                     .foregroundStyle(OrbitColor.textPrimary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)
+                if let due = suggestion.hint.dueDate {
+                    Label(Self.dueText(due, hasTime: suggestion.hint.dueDateHasTime ?? false), systemImage: "bell")
+                        .font(OrbitTypography.footnote)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(orbitTheme.primary)
+                }
                 Text("From: \(snippet)")
                     .font(OrbitTypography.footnote)
                     .foregroundStyle(OrbitColor.textSecondary)
@@ -36,9 +42,9 @@ struct SuggestionCard: View {
                         onPromote()
                     } label: {
                         HStack(spacing: 6) {
-                            Image(systemName: "plus")
+                            Image(systemName: suggestion.hint.dueDate == nil ? "plus" : "bell")
                                 .scaledFont(size: 13, weight: .semibold)
-                            Text("Add task")
+                            Text(suggestion.hint.dueDate == nil ? "Add task" : "Remind me")
                                 .font(OrbitTypography.footnote)
                                 .fontWeight(.semibold)
                         }
@@ -52,6 +58,23 @@ struct SuggestionCard: View {
                 }
             }
         }
+    }
+
+    /// "Tomorrow at 5:00 PM", "Friday", "Dec 3 at 9:00 AM".
+    static func dueText(_ date: Date, hasTime: Bool) -> String {
+        let calendar = Calendar.current
+        let day: String
+        if calendar.isDateInToday(date) {
+            day = "Today"
+        } else if calendar.isDateInTomorrow(date) {
+            day = "Tomorrow"
+        } else if let week = calendar.date(byAdding: .day, value: 6, to: Date()), date < week {
+            day = date.formatted(.dateTime.weekday(.wide))
+        } else {
+            day = date.formatted(.dateTime.month(.abbreviated).day())
+        }
+        guard hasTime else { return day }
+        return "\(day) at \(date.formatted(date: .omitted, time: .shortened))"
     }
 
     private var snippet: String {

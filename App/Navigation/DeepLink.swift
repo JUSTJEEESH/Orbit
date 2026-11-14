@@ -7,10 +7,12 @@ import Foundation
 /// - `orbit://search?q=text` → opens the search tab with a prefilled query
 /// - `orbit://memory/<uuid>` → opens Memory Detail for that memory, pushed
 ///                              onto the Timeline tab's NavigationStack
+/// - `orbit://year-in-review` → opens Year in Review (App Store in-app event)
 enum DeepLink: Equatable {
     case capture
     case search(query: String)
     case memory(id: UUID)
+    case yearInReview
 
     init?(url: URL) {
         guard url.scheme == "orbit" else { return nil }
@@ -22,6 +24,8 @@ enum DeepLink: Equatable {
             let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
             let q = components?.queryItems?.first(where: { $0.name == "q" })?.value ?? ""
             self = .search(query: q)
+        case "year-in-review":
+            self = .yearInReview
         case "memory":
             // Path looks like "/<uuid>"; drop the leading slash before parsing.
             let raw = url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))

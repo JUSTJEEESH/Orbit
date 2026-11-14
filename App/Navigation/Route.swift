@@ -43,6 +43,7 @@ enum AppModal: Hashable, Identifiable {
     case gratitude
     case recentlyDeleted
     case whatsNew
+    case widgetHowTo
     /// Soft contextual paywall — presented when a free user lands on a
     /// gated surface. Carries the specific gate so the sheet can lead
     /// with feature-aware copy ("you've savored your free recaps").

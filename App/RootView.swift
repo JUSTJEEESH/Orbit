@@ -150,6 +150,7 @@ struct RootView: View {
                         }
                     },
                     onExportLibrary: { try await env.exportLibrary() },
+                    onImportFiles: { urls in try await env.importLibrary(from: urls) },
                     iCloudSync: SettingsSyncState(
                         status: env.settingsSyncStatus,
                         onSetEnabled: { env.setSyncPreference($0 ? .on : .off) }
@@ -161,6 +162,12 @@ struct RootView: View {
             case .recentlyDeleted:
                 RecentlyDeletedView(onDismiss: { env.requestedModal = nil })
                     .presentationDetents([.large])
+            case .widgetHowTo:
+                WidgetHowToView(onDone: {
+                    env.requestedModal = nil
+                    env.dismissWidgetNudge()
+                })
+                .presentationDetents([.medium, .large])
             case .whatsNew:
                 WhatsNewView(
                     audience: env.whatsNewAudience,
@@ -364,7 +371,13 @@ struct RootView: View {
                     onPresentYearInReview: { env.requestedModal = .yearInReview },
                     onPresentGratitude: { env.requestedModal = .gratitude },
                     onPresentCapture: { env.requestedModal = .capture },
-                    shouldShowYearInReviewBanner: env.shouldOfferYearInReview()
+                    shouldShowYearInReviewBanner: env.shouldOfferYearInReview(),
+                    widgetNudge: env.showsWidgetNudge
+                        ? HomeWidgetNudge(
+                            onShowHow: { env.requestedModal = .widgetHowTo },
+                            onDismiss: { env.dismissWidgetNudge() }
+                        )
+                        : nil
                 )
                 .navigationTitle("")
                 .navigationBarTitleDisplayMode(.inline)
@@ -402,10 +415,12 @@ struct RootView: View {
                     onTaskMutated: { task in
                         await env.remindersSync.mirror(task)
                         await env.calendarSync.mirror(task)
+                        await env.syncTaskReminder(for: task)
                     },
                     onTaskDeleted: { task in
                         await env.remindersSync.removeMirror(for: task)
                         await env.calendarSync.removeMirror(for: task)
+                        env.cancelTaskReminder(for: task)
                     }
                 ),
                 readingViewModel: ReadingListViewModel(
@@ -425,7 +440,9 @@ struct RootView: View {
                 SearchView(
                     viewModel: SearchViewModel(
                         searchMemories: env.searchMemories,
-                        removeMemory: { id in try await env.removeMemory(id: id) }
+                        removeMemory: { id in try await env.removeMemory(id: id) },
+                        listEntities: ListMentionedEntitiesUseCase(repository: env.memories),
+                        listMentioning: ListMemoriesMentioningUseCase(repository: env.memories)
                     ),
                     makeDetailViewModel: makeDetailViewModel,
                     onPresentCapture: { env.requestedModal = .capture }
@@ -537,6 +554,8 @@ struct RootView: View {
             env.requestedModal = .capture
         case .search:
             selectedTab = .search
+        case .yearInReview:
+            env.requestedModal = .yearInReview
         case .memory(let id):
             selectedTab = .timeline
             // Replace the stack rather than appending so a second

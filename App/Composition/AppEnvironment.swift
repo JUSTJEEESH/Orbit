@@ -102,6 +102,9 @@ final class AppEnvironment {
     /// through the same path as a deep link, then clears it.
     var pendingMemoryLink: UUID?
 
+    /// Whether Home should suggest adding the Orbit widget.
+    var showsWidgetNudge = false
+
     /// Memories 1.x's Siri intent had hidden that this launch recovered.
     /// Observed by What's New ("We found 4 memories you saved with Siri").
     var rescuedLegacyMemoryCount = 0

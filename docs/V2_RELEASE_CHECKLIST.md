@@ -123,6 +123,37 @@ This is the test that proves current users keep their data.
 - [ ] **Phased release: ON** (7 days). Watch Crashes (Xcode → Organizer) and
       reviews daily. Pause the rollout if anything looks wrong.
 
+## 7. No-code growth steps (App Store Connect)
+
+**Family Sharing for Orbit Pro** (5 minutes; lets one purchase cover up to
+six family members, which App Store search and reviewers reward):
+1. appstoreconnect.apple.com → Apps → Orbit → **Subscriptions** (under
+   *Monetization*) → open the Orbit Pro group.
+2. For **Monthly** and **Yearly**: open each → **Family Sharing** → **Turn On**
+   → Save. ⚠️ This can't be turned off later for that product.
+3. For **Lifetime** (in-app purchase): Apps → Orbit → **In-App Purchases** →
+   Lifetime → **Family Sharing** → Turn On.
+4. RevenueCat handles shared entitlements automatically. No code change.
+
+**"Your Year in Orbit" In-App Event** (December; shows in App Store search
+and on your product page):
+1. App Store Connect → Orbit → **In-App Events** → **Create**.
+2. Reference name: `Year in Review 2026`. Event name (30 chars):
+   `Your Year in Orbit`. Badge: **Special Event**.
+3. Short description (50): `Look back on everything you saved this year.`
+4. Long description (120): `Orbit turns your year of memories into a calm,
+   beautiful review — your moments, people and places. Free for everyone.`
+5. Start: Dec 15 · End: Jan 14 (matches when Orbit shows the Year in Review
+   banner). Publish start: ~Dec 8 so it appears early.
+6. Event card image 1920×1080 and details image 1080×1920. Use a Year in
+   Review share card on a solid background.
+7. Deep link: `orbit://year-in-review` (supported from 2.0).
+8. Submit for review at least a week before the publish date.
+
+**Rating requests** (outside the app): send the review-link message from
+`docs/marketing/phase-0-app-store-growth.md` §10 to people who use Orbit.
+Never offer anything in return.
+
 ---
 
 ## If something goes wrong after release

@@ -83,3 +83,35 @@ struct SignalExtractorTests {
         #expect(result.isEmpty)
     }
 }
+
+@Suite("Due date parsing")
+struct DueDateParserTests {
+    @Test func splitsDateAndTimeOutOfTheTitle() throws {
+        let result = try #require(DueDateParser.parse("call mom tomorrow at 5pm"))
+        #expect(result.remainder == "call mom")
+        #expect(result.hasTime)
+        let tomorrow = try #require(Calendar.current.date(byAdding: .day, value: 1, to: Date()))
+        #expect(Calendar.current.isDate(result.date, inSameDayAs: tomorrow))
+        #expect(Calendar.current.component(.hour, from: result.date) == 17)
+    }
+
+    @Test func dayWithoutTimeIsMarkedUntimed() throws {
+        let result = try #require(DueDateParser.parse("renew passport next Friday"))
+        #expect(result.remainder == "renew passport")
+        #expect(!result.hasTime)
+    }
+
+    @Test func phraseWithoutDateReturnsNil() {
+        #expect(DueDateParser.parse("buy groceries") == nil)
+    }
+
+    @Test func extractorUsesTheTasksOwnDate() {
+        let memory = Memory(
+            content: .text("Big week. Remind me to call mom tomorrow at 5pm."),
+            createdAt: .now, updatedAt: .now
+        )
+        let hint = SignalExtractor().extract(from: memory).taskHints.first
+        #expect(hint?.phrase == "call mom")
+        #expect(hint?.dueDateHasTime == true)
+    }
+}

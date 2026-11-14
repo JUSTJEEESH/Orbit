@@ -62,6 +62,8 @@ public struct SignalExtractor: SignalExtracting {
         #"(?i)\bI\s+(?:should|need\s+to|must|have\s+to|gotta|ought\s+to)\s+([^.!?\n]+)"#,
         // "remember to X" / "remind me to X"
         #"(?i)\b(?:remember|remind\s+me)\s+to\s+([^.!?\n]+)"#,
+        // "don't forget to X"
+        #"(?i)\b(?:don'?t|do\s+not)\s+forget\s+to\s+([^.!?\n]+)"#,
         // "TODO: X" / "TODO X"
         #"(?i)\bTODO[:\s]+([^.!?\n]+)"#
     ]
@@ -76,14 +78,19 @@ public struct SignalExtractor: SignalExtracting {
                 guard match.numberOfRanges >= 2,
                       let phraseRange = Range(match.range(at: 1), in: text),
                       let fullRange = Range(match.range(at: 0), in: text) else { continue }
-                let phrase = String(text[phraseRange])
+                let rawPhrase = String(text[phraseRange])
                     .trimmingCharacters(in: .whitespacesAndNewlines)
                     .trimmingCharacters(in: CharacterSet(charactersIn: ",.;"))
-                guard !phrase.isEmpty, phrase.count < 140 else { continue }
+                guard !rawPhrase.isEmpty, rawPhrase.count < 140 else { continue }
+                // A date inside the task's own words wins over the first
+                // date anywhere in the memory, and comes out of the title:
+                // "call mom tomorrow at 5" → "call mom", due tomorrow 5pm.
+                let when = DueDateParser.parse(rawPhrase)
                 hints.append(TaskHint(
-                    phrase: phrase,
+                    phrase: when?.remainder ?? rawPhrase,
                     rawText: String(text[fullRange]),
-                    dueDate: fallbackDate
+                    dueDate: when?.date ?? fallbackDate,
+                    dueDateHasTime: when?.hasTime
                 ))
             }
         }

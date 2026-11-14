@@ -26,6 +26,8 @@ public struct HomeView: View {
     private let onPresentCapture: @MainActor () -> Void
     private let loadGratitudeStatus: LoadGratitudeStatusUseCase
     private let shouldShowYearInReviewBanner: Bool
+    /// The "Add a widget" card, when it should show.
+    private let widgetNudge: HomeWidgetNudge?
 
     @State private var memories: [Memory] = []
     @State private var loadState: LoadState = .idle
@@ -59,7 +61,8 @@ public struct HomeView: View {
         onPresentYearInReview: @escaping @MainActor () -> Void,
         onPresentGratitude: @escaping @MainActor () -> Void,
         onPresentCapture: @escaping @MainActor () -> Void,
-        shouldShowYearInReviewBanner: Bool = false
+        shouldShowYearInReviewBanner: Bool = false,
+        widgetNudge: HomeWidgetNudge? = nil
     ) {
         self.listMemories = listMemories
         self.generateInsights = generateInsights
@@ -79,6 +82,7 @@ public struct HomeView: View {
         self.onPresentGratitude = onPresentGratitude
         self.onPresentCapture = onPresentCapture
         self.shouldShowYearInReviewBanner = shouldShowYearInReviewBanner
+        self.widgetNudge = widgetNudge
     }
 
     public var body: some View {
@@ -294,6 +298,9 @@ public struct HomeView: View {
                 yearInReviewBanner
             }
             todaySection
+            if let widgetNudge {
+                WidgetNudgeCard(nudge: widgetNudge, accent: themeAccent)
+            }
             if let onThisDay, !onThisDay.isEmpty {
                 onThisDayCard(onThisDay)
             }

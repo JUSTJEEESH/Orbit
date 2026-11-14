@@ -63,6 +63,12 @@ public struct SearchView: View {
                 .contentShape(Rectangle())
                 .onTapGesture { fieldFocus = false }
         )
+        .task { await model.loadBrowse() }
+        .navigationDestination(for: MentionedEntity.self) { entity in
+            EntityMemoriesView(entity: entity) {
+                try await model.listMentioning?(entity) ?? []
+            }
+        }
         .navigationDestination(for: MemoryDetailRoute.self) { route in
             MemoryDetailView(
                 viewModel: makeDetailViewModel(route.memoryID),
@@ -107,6 +113,12 @@ public struct SearchView: View {
 
     private var suggestions: some View {
         VStack(alignment: .leading, spacing: OrbitSpacing.md) {
+            if !model.people.isEmpty {
+                entityRow(title: "People", entities: model.people, systemImage: "person")
+            }
+            if !model.places.isEmpty {
+                entityRow(title: "Places", entities: model.places, systemImage: "mappin")
+            }
             OrbitSectionHeader("Try")
             FlowSuggestions(
                 queries: [
@@ -124,6 +136,35 @@ public struct SearchView: View {
             )
         }
         .padding(.top, OrbitSpacing.lg)
+    }
+
+    /// A horizontally scrolling row of people or places; each opens a page
+    /// of every memory that mentions it.
+    private func entityRow(title: String, entities: [MentionedEntity], systemImage: String) -> some View {
+        VStack(alignment: .leading, spacing: OrbitSpacing.xs) {
+            OrbitSectionHeader(title)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: OrbitSpacing.xs) {
+                    ForEach(entities) { entity in
+                        NavigationLink(value: entity) {
+                            Label {
+                                Text("\(entity.name) · \(entity.memoryCount)")
+                            } icon: {
+                                Image(systemName: systemImage)
+                            }
+                            .font(OrbitTypography.callout)
+                            .foregroundStyle(OrbitColor.textPrimary)
+                            .padding(.horizontal, OrbitSpacing.sm)
+                            .frame(minHeight: OrbitHitTarget.minimum)
+                            .background(OrbitColor.surfaceMuted, in: .capsule)
+                        }
+                        .buttonStyle(.plain)
+                        .simultaneousGesture(TapGesture().onEnded { Haptics.play(.selection) })
+                        .accessibilityLabel("\(entity.name), \(entity.memoryCount) memories")
+                    }
+                }
+            }
+        }
     }
 
     private var searchingState: some View {
@@ -228,7 +269,7 @@ private struct FlowSuggestions: View {
     }
 }
 
-private struct SearchResultRow: View {
+struct SearchResultRow: View {
     let result: SearchMemoriesUseCase.Result
 
     var body: some View {

@@ -35,6 +35,7 @@ public struct SettingsView: View {
     /// Opens Recently Deleted. Nil hides the "Your data" section (previews).
     private let onOpenRecentlyDeleted: (@MainActor () -> Void)?
     private let onExportLibrary: (@MainActor @Sendable () async throws -> URL)?
+    private let onImportFiles: (@MainActor ([URL]) async throws -> String)?
     /// iCloud sync state and toggle. Nil hides the section (previews).
     private let iCloudSync: SettingsSyncState?
     /// Face ID lock. Nil hides the Privacy section (previews).
@@ -100,6 +101,7 @@ public struct SettingsView: View {
         onWipeDemoData: (@MainActor @Sendable () async -> Void)? = nil,
         onOpenRecentlyDeleted: (@MainActor () -> Void)? = nil,
         onExportLibrary: (@MainActor @Sendable () async throws -> URL)? = nil,
+        onImportFiles: (@MainActor ([URL]) async throws -> String)? = nil,
         iCloudSync: SettingsSyncState? = nil,
         appLock: AppLockService? = nil,
         onSetResurfacing: (@MainActor (Bool) async -> Void)? = nil
@@ -131,6 +133,7 @@ public struct SettingsView: View {
         self.onWipeDemoData = onWipeDemoData
         self.onOpenRecentlyDeleted = onOpenRecentlyDeleted
         self.onExportLibrary = onExportLibrary
+        self.onImportFiles = onImportFiles
         self.iCloudSync = iCloudSync
         self.appLock = appLock
         self.onSetResurfacing = onSetResurfacing
@@ -162,7 +165,8 @@ public struct SettingsView: View {
                             SettingsDataSection(
                                 accent: currentTheme.primary,
                                 onOpenRecentlyDeleted: onOpenRecentlyDeleted,
-                                onExport: onExportLibrary
+                                onExport: onExportLibrary,
+                                onImport: onImportFiles
                             )
                         }
                         dangerSection

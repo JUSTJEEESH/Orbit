@@ -43,16 +43,36 @@ public final class SearchViewModel {
     public private(set) var results: [SearchMemoriesUseCase.Result] = []
     public private(set) var state: LoadState = .idle
 
+    /// Most-mentioned people and places, for browsing without typing.
+    public private(set) var people: [MentionedEntity] = []
+    public private(set) var places: [MentionedEntity] = []
+
     private let searchMemories: SearchMemoriesUseCase
     private let removeMemory: @MainActor @Sendable (UUID) async throws -> Void
+    private let listEntities: ListMentionedEntitiesUseCase?
+    let listMentioning: ListMemoriesMentioningUseCase?
     private var pendingSearch: Task<Void, Never>?
+
+    /// How many people / places to offer on the idle screen.
+    private static let browseLimit = 12
 
     public init(
         searchMemories: SearchMemoriesUseCase,
-        removeMemory: @escaping @MainActor @Sendable (UUID) async throws -> Void
+        removeMemory: @escaping @MainActor @Sendable (UUID) async throws -> Void,
+        listEntities: ListMentionedEntitiesUseCase? = nil,
+        listMentioning: ListMemoriesMentioningUseCase? = nil
     ) {
         self.searchMemories = searchMemories
         self.removeMemory = removeMemory
+        self.listEntities = listEntities
+        self.listMentioning = listMentioning
+    }
+
+    /// Loads the People and Places rows for the idle screen.
+    public func loadBrowse() async {
+        guard let listEntities else { return }
+        people = (try? await listEntities(kind: .person, limit: Self.browseLimit)) ?? []
+        places = (try? await listEntities(kind: .place, limit: Self.browseLimit)) ?? []
     }
 
     /// Debounced search. Cancels the previous in-flight query each time the

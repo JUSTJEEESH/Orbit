@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 import OrbitDesignSystem
 import OrbitKit
 
@@ -9,10 +10,15 @@ struct SettingsDataSection: View {
     let onOpenRecentlyDeleted: @MainActor () -> Void
     /// Builds the export archive and returns its file URL.
     let onExport: (@MainActor @Sendable () async throws -> URL)?
+    /// Imports the chosen files and returns a one-line summary.
+    let onImport: (@MainActor ([URL]) async throws -> String)?
 
     @State private var isExporting = false
     @State private var exportURL: URL?
     @State private var exportFailed = false
+    @State private var showsImporter = false
+    @State private var isImporting = false
+    @State private var importMessage: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: OrbitSpacing.md) {
@@ -32,6 +38,10 @@ struct SettingsDataSection: View {
                     if onExport != nil {
                         OrbitDivider()
                         exportRow
+                    }
+                    if onImport != nil {
+                        OrbitDivider()
+                        importRow
                     }
                 }
             }
@@ -65,6 +75,40 @@ struct SettingsDataSection: View {
             }
             .buttonStyle(.plain)
             .disabled(isExporting)
+        }
+    }
+
+    private var importRow: some View {
+        Button {
+            showsImporter = true
+        } label: {
+            row(
+                title: isImporting ? "Importing…" : "Import Memories",
+                detail: importMessage ?? "From Day One (Journal.json), text or Markdown files, or an Orbit export. From Apple Notes, share a note to Orbit.",
+                systemImage: "square.and.arrow.down",
+                trailing: nil,
+                showsProgress: isImporting
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(isImporting)
+        .fileImporter(
+            isPresented: $showsImporter,
+            allowedContentTypes: [.json, .plainText, .text, UTType(filenameExtension: "md") ?? .plainText],
+            allowsMultipleSelection: true
+        ) { result in
+            guard case .success(let urls) = result, !urls.isEmpty, let onImport else { return }
+            isImporting = true
+            Task {
+                do {
+                    importMessage = try await onImport(urls)
+                    Haptics.play(.success)
+                } catch {
+                    importMessage = "Couldn’t import those files. Nothing in your library was changed."
+                    Haptics.play(.failure)
+                }
+                isImporting = false
+            }
         }
     }
 
