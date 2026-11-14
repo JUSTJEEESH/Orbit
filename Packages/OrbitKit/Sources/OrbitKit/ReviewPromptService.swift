@@ -21,6 +21,10 @@ public final class ReviewPromptService {
     public enum ValueEvent: String, Sendable, CaseIterable {
         case dailyRecapViewed
         case yearInReviewCompleted
+        /// A memory was captured and saved.
+        case memoryCaptured
+        /// Ask Orbit answered a question from the user's own memories.
+        case askAnswered
     }
 
     private let defaults: UserDefaults
@@ -34,10 +38,11 @@ public final class ReviewPromptService {
         "orbit.review.event.\(event.rawValue).count"
     }
 
-    /// Earliest moment we'll consider prompting at all. Sub-48h users
-    /// haven't built any feeling about the app yet; a prompt now reads
-    /// as desperate.
-    private let minimumInstallAge: TimeInterval = 48 * 60 * 60
+    /// Earliest moment we'll consider prompting at all. Same-day users
+    /// haven't built any feeling about the app yet; a prompt now reads as
+    /// desperate. (1.x waited 48 hours *and* three recaps, so most people
+    /// left before Orbit ever asked — it shipped with a single rating.)
+    private let minimumInstallAge: TimeInterval = 24 * 60 * 60
     /// Quiet period between prompts, used to spread the 3/year budget.
     private let cooldown: TimeInterval = 90 * 24 * 60 * 60
     /// Apple enforces a 3/365 ceiling at the system level; we mirror
@@ -94,8 +99,10 @@ public final class ReviewPromptService {
     /// enough.
     private func minimumEvents(for event: ValueEvent) -> Int {
         switch event {
-        case .dailyRecapViewed:       return 3
+        case .dailyRecapViewed:       return 2
         case .yearInReviewCompleted:  return 1
+        case .memoryCaptured:         return 5
+        case .askAnswered:            return 2
         }
     }
 

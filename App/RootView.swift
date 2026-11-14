@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreSpotlight
+import StoreKit
 import OrbitDesignSystem
 import OrbitKit
 import OrbitDomain
@@ -21,6 +22,7 @@ import OrbitWellnessFeature
 struct RootView: View {
     @Environment(AppEnvironment.self) private var env
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.requestReview) private var requestReview
 
     @State private var selectedTab: AppTab = .home
     /// Driven from outside the Timeline view when a Spotlight result or
@@ -64,6 +66,7 @@ struct RootView: View {
                         env.scheduleEnrichment(for: memoryID)
                         env.scheduleSealedDeliveryIfNeeded(for: memoryID)
                         env.requestedModal = nil
+                        considerReviewPrompt(after: .memoryCaptured)
                     },
                     onCancel: { env.requestedModal = nil },
                     onPresentPaywall: {
@@ -215,7 +218,10 @@ struct RootView: View {
                         memories: env.memories,
                         // Free-tier quota is spent only on questions that
                         // were answered — a failure never costs a credit.
-                        onAnswered: { env.proGates.recordUsage(.askOrbit) }
+                        onAnswered: {
+                            env.proGates.recordUsage(.askOrbit)
+                            env.reviewPrompts.recordValueEvent(.askAnswered)
+                        }
                     ),
                     makeDetailViewModel: makeDetailViewModel,
                     proGateCheck: {
@@ -231,7 +237,10 @@ struct RootView: View {
                             env.requestedModal = .paywall
                         }
                     },
-                    onDismiss: { env.requestedModal = nil }
+                    onDismiss: {
+                        env.requestedModal = nil
+                        requestReviewIfAppropriate(for: .askAnswered)
+                    }
                 )
                 .presentationDetents([.large])
             case .letter:
@@ -468,6 +477,25 @@ struct RootView: View {
     }
 
     private static let undoToastLifetime: Duration = .seconds(6)
+
+    /// Records a value moment and, when `ReviewPromptService` agrees it's a
+    /// good time, asks for an App Store rating once the sheet has settled.
+    private func considerReviewPrompt(after event: ReviewPromptService.ValueEvent) {
+        env.reviewPrompts.recordValueEvent(event)
+        requestReviewIfAppropriate(for: event)
+    }
+
+    /// Asks for a rating if enough `event` moments have happened (and the
+    /// install-age, cooldown and yearly-cap rules allow it).
+    private func requestReviewIfAppropriate(for event: ReviewPromptService.ValueEvent) {
+        guard env.reviewPrompts.shouldRequestReview(for: event) else { return }
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(1.2))
+            guard env.requestedModal == nil else { return }
+            requestReview()
+            env.reviewPrompts.didRequestReview()
+        }
+    }
 
     private var captureFAB: some View {
         OrbitCaptureFAB {

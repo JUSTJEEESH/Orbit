@@ -775,6 +775,8 @@ public struct SettingsView: View {
     private static let privacyURL = URL(string: "https://orbitbrain2.netlify.app/privacy")!
     private static let termsURL   = URL(string: "https://orbitbrain2.netlify.app/terms")!
     private static let supportURL = URL(string: "https://orbitbrain2.netlify.app/support")!
+    /// Opens the App Store's "Write a Review" sheet for Orbit.
+    private static let writeReviewURL = URL(string: "https://apps.apple.com/app/id6769115384?action=write-review")!
 
     private var aboutSection: some View {
         VStack(alignment: .leading, spacing: OrbitSpacing.md) {
@@ -788,6 +790,8 @@ public struct SettingsView: View {
                     linkRow(title: "Terms of Use", systemImage: "doc.text", url: Self.termsURL)
                     OrbitDivider()
                     linkRow(title: "Contact Support", systemImage: "envelope", url: Self.supportURL)
+                    OrbitDivider()
+                    linkRow(title: "Rate Orbit", systemImage: "star", url: Self.writeReviewURL)
                 }
             }
         }
