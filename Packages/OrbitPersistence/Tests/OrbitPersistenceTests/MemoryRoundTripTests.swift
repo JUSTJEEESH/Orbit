@@ -127,4 +127,21 @@ struct MemoryRoundTripTests {
         #expect(fetched?.media.map(\.filename) == ["note.wav"])
         #expect(fetched?.content == .voiceNote(transcript: "hello", duration: 3))
     }
+
+    /// The Recent widget asks for `limit: 1`; a newer sealed time capsule
+    /// must not hide the newest visible memory.
+    @Test func limitAppliesAfterHidingSealedMemories() async throws {
+        let container = try makeContainer()
+        let repo = SwiftDataMemoryRepository(modelContainer: container)
+        let visible = Memory(content: .text("visible"), createdAt: Date(timeIntervalSince1970: 100), updatedAt: .now)
+        let sealed = Memory(
+            content: .text("sealed"), createdAt: Date(timeIntervalSince1970: 200), updatedAt: .now,
+            surfaceDate: Date().addingTimeInterval(86_400 * 365)
+        )
+        try await repo.save(visible)
+        try await repo.save(sealed)
+
+        let newest = try await repo.list(filter: MemoryFilter(limit: 1))
+        #expect(newest.map(\.id) == [visible.id])
+    }
 }

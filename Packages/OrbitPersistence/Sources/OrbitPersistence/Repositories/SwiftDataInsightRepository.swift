@@ -27,4 +27,9 @@ public actor SwiftDataInsightRepository: InsightRepository {
         modelContext.insert(entity)
         try modelContext.save()
     }
+
+    public func deleteAll() async throws {
+        try modelContext.delete(model: AIInsightEntity.self)
+        try modelContext.save()
+    }
 }

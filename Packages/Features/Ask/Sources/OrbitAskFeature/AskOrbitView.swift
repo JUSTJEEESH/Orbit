@@ -13,9 +13,8 @@ public struct AskOrbitView: View {
 
     private let makeDetailViewModel: @MainActor (UUID) -> MemoryDetailViewModel
     /// Returns the gate that's currently blocking the user, or nil when
-    /// submission is allowed. The check side-effects: it also records
-    /// usage when allowed, so this is one atomic step instead of a
-    /// check-then-record race.
+    /// submission is allowed. Pure check: usage is recorded by the view
+    /// model's `onAnswered`, only once an answer actually arrives.
     private let proGateCheck: @MainActor () -> ProGate?
     /// Hand-off to the global paywall. Called when the user taps "See
     /// Orbit Pro" inside the in-place gate sheet.

@@ -248,20 +248,24 @@ final class ShareViewController: UIViewController {
     /// source format — keeps the App Group footprint reasonable for
     /// HEIC sources and matches `MediaStorage.Kind.image` which uses
     /// `.jpg` as its file extension.
+    ///
+    /// Decoding goes through `ImageDownsampler` rather than `UIImage`:
+    /// a full-resolution decode of a large photo can exceed the Share
+    /// Extension's memory limit and kill the save.
     private func loadImageData(from provider: NSItemProvider) async -> Data? {
         await withCheckedContinuation { continuation in
             provider.loadItem(forTypeIdentifier: UTType.image.identifier, options: nil) { item, _ in
                 let data: Data? = {
-                    if let url = item as? URL,
-                       let raw = try? Data(contentsOf: url),
-                       let image = UIImage(data: raw) {
-                        return image.jpegData(compressionQuality: 0.85)
+                    if let url = item as? URL {
+                        return ImageDownsampler.jpegData(contentsOf: url)
                     }
-                    if let image = item as? UIImage {
-                        return image.jpegData(compressionQuality: 0.85)
+                    if let raw = item as? Data {
+                        return ImageDownsampler.jpegData(from: raw)
                     }
-                    if let raw = item as? Data, let image = UIImage(data: raw) {
-                        return image.jpegData(compressionQuality: 0.85)
+                    if let image = item as? UIImage, let raw = image.jpegData(compressionQuality: 1) {
+                        // Already decoded by the host app; re-run through the
+                        // downsampler so the stored file is capped like the rest.
+                        return ImageDownsampler.jpegData(from: raw)
                     }
                     return nil
                 }()

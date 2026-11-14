@@ -43,8 +43,8 @@ public actor LocalSearchService: SearchService {
                 guard !queryVector.isEmpty, !memory.embedding.isEmpty else { return 0 }
                 return SearchScoring.cosineSimilarity(queryVector, memory.embedding)
             }()
-            let combined = SearchScoring.combined(lexical: lexical, semantic: semantic)
-            if combined >= 0.05 {
+            if SearchScoring.isRelevant(lexical: lexical, semantic: semantic) {
+                let combined = SearchScoring.combined(lexical: lexical, semantic: semantic)
                 scored.append(
                     Scored(
                         memory: memory,

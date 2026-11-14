@@ -8,6 +8,7 @@ import OrbitMedia
 import OrbitAI
 import OrbitAccount
 import OrbitStore
+import OrbitCaptureFeature
 
 /// The composition root. Holds long-lived services (repositories, clocks,
 /// media services, AI) and pre-constructed use cases ready to be invoked by
@@ -231,11 +232,34 @@ final class AppEnvironment {
         memoriesDidChange()
     }
 
-    /// Wipes every memory, clears Spotlight, signs the user out, and resets
+    /// Erases everything Orbit stores — memories, tasks, insights, photos and
+    /// audio, pre-update snapshots, the 1.x per-app store and the unsent
+    /// capture draft — clears Spotlight, signs the user out, and resets
     /// onboarding so the next render starts from a clean slate. Used by the
-    /// in-app account-deletion flow (Apple 5.1.1(v) requirement).
+    /// in-app account-deletion flow (Apple 5.1.1(v) requirement). 1.x deleted
+    /// only memories, leaving the rest behind.
+    ///
+    /// Tasks mirrored into the iOS Reminders / Calendar apps are left there:
+    /// they live in the user's own lists, outside Orbit.
     func wipeAccountAndData() async throws {
         try await memories.deleteAll()
+        try await tasks.deleteAll()
+        try await insights.deleteAll()
+        // Files go after the rows that reference them. Best-effort: a file
+        // that can't be removed must not stop the account deletion.
+        do {
+            try await mediaStorage.deleteAll()
+        } catch {
+            OrbitLog.persistence.error("Wipe: media removal incomplete: \(String(describing: error), privacy: .public)")
+        }
+        if let backups = ModelContainerFactory.backupsDirectory(for: appConfig.appGroupIdentifier) {
+            try? FileManager.default.removeItem(at: backups)
+        }
+        let legacyStore = ModelContainerFactory.localStoreURL().path
+        for suffix in ["", "-wal", "-shm"] {
+            try? FileManager.default.removeItem(atPath: legacyStore + suffix)
+        }
+        DraftStore.userDefaults.clearTextDraft()
         await spotlight.deindexAll()
         account.signOut()
         onboardingComplete = false

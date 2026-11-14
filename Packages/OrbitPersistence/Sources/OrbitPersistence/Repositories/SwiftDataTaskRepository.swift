@@ -32,6 +32,11 @@ public actor SwiftDataTaskRepository: TaskRepository {
         try modelContext.save()
     }
 
+    public func deleteAll() async throws {
+        try modelContext.delete(model: MemoryTaskEntity.self)
+        try modelContext.save()
+    }
+
     public func task(with id: UUID) async throws -> MemoryTask? {
         var descriptor = FetchDescriptor<MemoryTaskEntity>(predicate: #Predicate { $0.id == id })
         descriptor.fetchLimit = 1

@@ -4,8 +4,11 @@ import Foundation
 /// in a tight loop and easy to unit-test.
 public enum SearchScoring {
 
-    /// Cosine similarity, clamped to [0, 1]. Returns 0 if either vector is
-    /// empty or zero-magnitude.
+    /// Cosine similarity, clamped to [0, 1] (opposite or unrelated vectors
+    /// score 0). Returns 0 if either vector is empty or zero-magnitude.
+    ///
+    /// 1.x remapped [-1, 1] onto [0, 1], so unrelated text scored ~0.5 and
+    /// cleared the result cutoff: nearly every embedded memory "matched".
     public static func cosineSimilarity(_ lhs: [Float], _ rhs: [Float]) -> Double {
         guard !lhs.isEmpty, lhs.count == rhs.count else { return 0 }
         var dot: Float = 0
@@ -19,7 +22,7 @@ public enum SearchScoring {
         let magnitude = (lhsMag * rhsMag).squareRoot()
         guard magnitude > 0 else { return 0 }
         let raw = Double(dot / magnitude)
-        return max(0, min(1, (raw + 1) / 2)) // map [-1, 1] -> [0, 1]
+        return max(0, min(1, raw))
     }
 
     /// Simple lexical relevance: counts query-token hits and rewards earlier
@@ -56,11 +59,34 @@ public enum SearchScoring {
         return min(1, 0.8 * recall + earlinessBonus)
     }
 
-    /// Linearly blends lexical and semantic scores. Phase 4 ranking — we'll
-    /// upgrade to reciprocal rank fusion once we have query benchmarks.
+    /// Sentence embeddings place even unrelated text at a modest positive
+    /// cosine, so similarity below this floor carries no meaning and is
+    /// rescaled to zero.
+    static let semanticFloor = 0.35
+    /// A memory with no word overlap must be at least this semantically
+    /// relevant (after rescaling) to be shown at all.
+    static let minimumSemanticOnlyRelevance = 0.25
+    /// Every literal match outranks every meaning-only match: the user
+    /// typed those words, so memories containing them come first.
+    private static let lexicalTierBase = 0.5
+
+    /// Rescales cosine similarity so the meaningless band below
+    /// `semanticFloor` becomes 0 and a perfect match stays 1.
+    public static func semanticRelevance(cosine: Double) -> Double {
+        max(0, (cosine - semanticFloor) / (1 - semanticFloor))
+    }
+
+    /// Whether a memory belongs in the results at all.
+    public static func isRelevant(lexical: Double, semantic: Double) -> Bool {
+        lexical > 0 || semanticRelevance(cosine: semantic) >= minimumSemanticOnlyRelevance
+    }
+
+    /// Ranks a memory. Literal matches land in [0.5, 1], ordered mostly by
+    /// lexical quality with semantic similarity as a tie-breaker;
+    /// meaning-only matches land below 0.5.
     public static func combined(lexical: Double, semantic: Double) -> Double {
-        // When semantic is unavailable (empty embedding -> 0), the formula
-        // still produces useful ordering from the lexical signal alone.
-        0.45 * lexical + 0.55 * semantic
+        let meaning = semanticRelevance(cosine: semantic)
+        guard lexical > 0 else { return 0.45 * meaning }
+        return lexicalTierBase + 0.35 * lexical + 0.15 * meaning
     }
 }

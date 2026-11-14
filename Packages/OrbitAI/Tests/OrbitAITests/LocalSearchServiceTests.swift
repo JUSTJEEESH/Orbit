@@ -48,4 +48,14 @@ struct LocalSearchServiceTests {
         #expect(hits.count == 1)
         #expect(hits.first?.memoryID == link.id)
     }
+
+    @Test func excludesMemoriesWithNoOverlap() async throws {
+        let target = makeMemory("Renew passport before the July Guatemala trip")
+        let distractor = makeMemory("Pick up milk and eggs")
+        let repo = InMemoryMemoryRepository(seed: [target, distractor])
+        let service = LocalSearchService(memories: repo, embeddings: EmbeddingService())
+
+        let hits = try await service.search(SearchQuery(text: "passport", limit: 10))
+        #expect(!hits.contains { $0.memoryID == distractor.id })
+    }
 }

@@ -20,6 +20,10 @@ public actor InMemoryTaskRepository: TaskRepository {
         storage.removeValue(forKey: id)
     }
 
+    public func deleteAll() async throws {
+        storage.removeAll()
+    }
+
     public func task(with id: UUID) async throws -> MemoryTask? {
         storage[id]
     }

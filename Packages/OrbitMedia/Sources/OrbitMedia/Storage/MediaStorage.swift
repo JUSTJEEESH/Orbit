@@ -72,6 +72,15 @@ public actor MediaStorage {
         root.appendingPathComponent(filename)
     }
 
+    /// Removes every stored attachment. Only for the account-deletion flow,
+    /// after the memories referencing them are gone.
+    public func deleteAll() throws {
+        let entries = try FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: nil)
+        for entry in entries {
+            try FileManager.default.removeItem(at: entry)
+        }
+    }
+
     public func delete(filename: String) throws {
         let url = root.appendingPathComponent(filename)
         try? FileManager.default.removeItem(at: url)

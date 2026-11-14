@@ -62,7 +62,16 @@ public actor SwiftDataMemoryRepository: MemoryRepository {
     private func fetchEntities(filter: MemoryFilter) throws -> [MemoryEntity] {
         var descriptor = FetchDescriptor<MemoryEntity>()
         descriptor.sortBy = sortDescriptors(for: filter.sort)
-        if let limit = filter.limit { descriptor.fetchLimit = limit }
+        // The limit can only go to the store when no Swift-side filter runs
+        // afterwards. Otherwise it must apply to the *filtered* rows: 1.x
+        // limited first, so `limit: 1` returned nothing whenever the newest
+        // memory was a sealed time capsule (blanking the Recent widget).
+        let filtersInSwift = !filter.includeSealed
+            || !filter.kinds.isEmpty
+            || !filter.tagNames.isEmpty
+            || filter.dateRange != nil
+            || !(filter.query ?? "").isEmpty
+        if let limit = filter.limit, !filtersInSwift { descriptor.fetchLimit = limit }
         var results = try modelContext.fetch(descriptor)
 
         // We post-filter complex predicates (kinds set, tag-name set, free text)
@@ -93,6 +102,9 @@ public actor SwiftDataMemoryRepository: MemoryRepository {
                 let haystack = entity.searchableText.lowercased()
                 return haystack.contains(query)
             }
+        }
+        if let limit = filter.limit, filtersInSwift, results.count > limit {
+            results = Array(results.prefix(limit))
         }
         return results
     }

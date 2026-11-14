@@ -19,7 +19,7 @@ struct SignalExtractorTests {
         let result = extractor.extract(from: memory(
             text: "I should call mom tomorrow. Also remember to buy groceries."
         ))
-        let phrases = result.taskHints.map(\.phrase.lowercased())
+        let phrases = result.taskHints.map { $0.phrase.lowercased() }
         #expect(phrases.contains { $0.contains("call mom") })
         #expect(phrases.contains { $0.contains("buy groceries") })
     }
@@ -29,7 +29,7 @@ struct SignalExtractorTests {
         let result = extractor.extract(from: memory(
             text: "I should call mom. Remember to call mom."
         ))
-        let phrases = result.taskHints.map(\.phrase.lowercased())
+        let phrases = result.taskHints.map { $0.phrase.lowercased() }
         let callMoms = phrases.filter { $0.contains("call mom") }
         #expect(callMoms.count == 1)
     }

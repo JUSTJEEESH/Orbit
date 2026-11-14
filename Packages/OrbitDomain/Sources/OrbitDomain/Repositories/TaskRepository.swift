@@ -4,6 +4,8 @@ public protocol TaskRepository: Sendable {
     func save(_ task: MemoryTask) async throws
     func update(_ task: MemoryTask) async throws
     func delete(id: UUID) async throws
+    /// Removes every task. Only for the account-deletion flow.
+    func deleteAll() async throws
     func task(with id: UUID) async throws -> MemoryTask?
     func openTasks() async throws -> [MemoryTask]
     /// Every task in the store, completed and open. The Tasks UI uses this

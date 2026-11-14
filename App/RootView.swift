@@ -176,19 +176,14 @@ struct RootView: View {
                 AskOrbitView(
                     viewModel: AskOrbitViewModel(
                         ask: env.askOrbit,
-                        memories: env.memories
+                        memories: env.memories,
+                        // Free-tier quota is spent only on questions that
+                        // were answered — a failure never costs a credit.
+                        onAnswered: { env.proGates.recordUsage(.askOrbit) }
                     ),
                     makeDetailViewModel: makeDetailViewModel,
-                    // Atomic check-and-record so we never miss a usage
-                    // event when a question slips through, and so the
-                    // view can't accidentally check twice for one
-                    // submission.
                     proGateCheck: {
-                        if env.proGates.canAccess(.askOrbit) {
-                            env.proGates.recordUsage(.askOrbit)
-                            return nil
-                        }
-                        return .askOrbit
+                        env.proGates.canAccess(.askOrbit) ? nil : .askOrbit
                     },
                     // Match the .proGate(...) pattern: dismiss askOrbit
                     // first so SwiftUI's item-based sheet can re-present
@@ -313,6 +308,7 @@ struct RootView: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar { profileToolbar }
             }
+            .safeAreaPadding(.bottom, FABLayout.contentClearance)
             .tag(AppTab.home)
             .tabItem { Label(AppTab.home.title, systemImage: AppTab.home.systemImage) }
 
@@ -324,6 +320,7 @@ struct RootView: View {
                 onPresentCapture: { env.requestedModal = .capture },
                 path: $timelinePath
             )
+                .safeAreaPadding(.bottom, FABLayout.contentClearance)
                 .tag(AppTab.timeline)
                 .tabItem { Label(AppTab.timeline.title, systemImage: AppTab.timeline.systemImage) }
                 .toolbar { profileToolbar }
@@ -357,6 +354,7 @@ struct RootView: View {
                 refreshToken: env.memoryListVersion,
                 makeDetailViewModel: makeDetailViewModel
             )
+                .safeAreaPadding(.bottom, FABLayout.contentClearance)
                 .tag(AppTab.tasks)
                 .tabItem { Label(AppTab.tasks.title, systemImage: AppTab.tasks.systemImage) }
                 .toolbar { profileToolbar }
@@ -393,12 +391,20 @@ struct RootView: View {
         }
     }
 
+    private enum FABLayout {
+        /// Lifts the button clear of the system tab bar.
+        static let tabBarClearance: CGFloat = 72
+        /// Extra bottom safe area for tab content, so the last rows (and
+        /// their swipe actions) can scroll above the button instead of
+        /// sitting underneath it.
+        static let contentClearance: CGFloat = OrbitCaptureFAB.diameter + OrbitSpacing.md
+    }
+
     private var captureFAB: some View {
         OrbitCaptureFAB {
             env.requestedModal = .capture
         }
-        // Clears the system tab bar; sits in the safe area above it.
-        .padding(.bottom, 72)
+        .padding(.bottom, FABLayout.tabBarClearance)
         .allowsHitTesting(true)
     }
 

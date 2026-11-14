@@ -5,6 +5,9 @@ import OrbitKit
 /// recede behind chrome. This is the most important interactive surface in
 /// Orbit — keep it instantly tappable, instantly responsive.
 public struct OrbitCaptureFAB: View {
+    /// Exposed so screens can keep their last rows clear of the button.
+    public static let diameter: CGFloat = 64
+
     private let action: @MainActor () -> Void
     @State private var isPressed = false
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
@@ -24,7 +27,7 @@ public struct OrbitCaptureFAB: View {
                 // mode and stays high-contrast against whatever is
                 // refracting through the glass.
                 .foregroundStyle(OrbitColor.textPrimary)
-                .frame(width: 64, height: 64)
+                .frame(width: Self.diameter, height: Self.diameter)
                 .modifier(FABBackground(reduceTransparency: reduceTransparency))
                 .orbitShadow(.lifted)
         }

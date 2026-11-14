@@ -23,11 +23,20 @@ public final class AskOrbitViewModel {
 
     private let ask: AskOrbitUseCase
     private let memories: any MemoryRepository
+    /// Called once per question that actually produced an answer. The free
+    /// tier's weekly quota is recorded here — not at submission — so a
+    /// failed or cancelled question never costs the user a credit.
+    private let onAnswered: @MainActor () -> Void
     private var inflight: Task<Void, Never>?
 
-    public init(ask: AskOrbitUseCase, memories: any MemoryRepository) {
+    public init(
+        ask: AskOrbitUseCase,
+        memories: any MemoryRepository,
+        onAnswered: @escaping @MainActor () -> Void = {}
+    ) {
         self.ask = ask
         self.memories = memories
+        self.onAnswered = onAnswered
     }
 
     public func submit() {
@@ -43,6 +52,7 @@ public final class AskOrbitViewModel {
             do {
                 let answer = try await ask(question: trimmed)
                 guard !Task.isCancelled else { return }
+                self.onAnswered()
                 self.state = .answered(answer)
                 self.sourceMemories = await self.fetchSources(answer.sourceMemoryIDs)
                 Haptics.play(.success)

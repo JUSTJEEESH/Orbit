@@ -23,4 +23,8 @@ public actor InMemoryInsightRepository: InsightRepository {
     public func save(_ insight: AIInsight) async throws {
         storage[insight.id] = insight
     }
+
+    public func deleteAll() async throws {
+        storage.removeAll()
+    }
 }
