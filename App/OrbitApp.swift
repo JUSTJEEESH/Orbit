@@ -40,6 +40,14 @@ struct OrbitApp: App {
             switch launch {
             case .ready(let environment):
                 ContentRoot(environment: environment)
+                    // A reopened library is a new environment: give it a
+                    // fresh view tree so launch tasks and state start over.
+                    .id(ObjectIdentifier(environment))
+                    .onAppear {
+                        // Lets a settings change (iCloud sync) reopen the
+                        // library with the new configuration.
+                        environment.reopenLibrary = { launch = Self.openLibrary(config: config) }
+                    }
             case .libraryUnavailable(let reason):
                 StoreRecoveryView(
                     appGroupIdentifier: config.appGroupIdentifier,

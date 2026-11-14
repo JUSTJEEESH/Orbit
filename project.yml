@@ -98,6 +98,10 @@ targets:
         # Enables ActivityKit Live Activities so the voice-capture session
         # surfaces in the Dynamic Island, Lock Screen, and StandBy mode.
         NSSupportsLiveActivities: true
+        # Silent pushes let iCloud sync deliver changes made on the user's
+        # other devices while Orbit is in the background (2.0+).
+        UIBackgroundModes:
+          - remote-notification
         NSMicrophoneUsageDescription: Orbit uses the microphone to capture voice notes you record.
         NSSpeechRecognitionUsageDescription: Orbit transcribes your voice notes on-device so they become searchable.
         NSPhotoLibraryUsageDescription: Orbit lets you save screenshots and photos as memories.

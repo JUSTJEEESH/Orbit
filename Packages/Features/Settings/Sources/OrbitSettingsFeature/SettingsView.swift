@@ -35,6 +35,8 @@ public struct SettingsView: View {
     /// Opens Recently Deleted. Nil hides the "Your data" section (previews).
     private let onOpenRecentlyDeleted: (@MainActor () -> Void)?
     private let onExportLibrary: (@MainActor @Sendable () async throws -> URL)?
+    /// iCloud sync state and toggle. Nil hides the section (previews).
+    private let iCloudSync: SettingsSyncState?
 
     /// Reminders sync state surfaced through plain values so this feature
     /// package doesn't have to depend on EventKit. RootView wires the live
@@ -93,7 +95,8 @@ public struct SettingsView: View {
         onSeedDemoData: (@MainActor @Sendable () async -> Void)? = nil,
         onWipeDemoData: (@MainActor @Sendable () async -> Void)? = nil,
         onOpenRecentlyDeleted: (@MainActor () -> Void)? = nil,
-        onExportLibrary: (@MainActor @Sendable () async throws -> URL)? = nil
+        onExportLibrary: (@MainActor @Sendable () async throws -> URL)? = nil,
+        iCloudSync: SettingsSyncState? = nil
     ) {
         self.appConfig = appConfig
         self.account = account
@@ -122,6 +125,7 @@ public struct SettingsView: View {
         self.onWipeDemoData = onWipeDemoData
         self.onOpenRecentlyDeleted = onOpenRecentlyDeleted
         self.onExportLibrary = onExportLibrary
+        self.iCloudSync = iCloudSync
     }
 
     public var body: some View {
@@ -130,6 +134,9 @@ public struct SettingsView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: OrbitSpacing.xl) {
                         accountSection
+                        if let iCloudSync {
+                            SettingsSyncSection(state: iCloudSync)
+                        }
                         appearanceSection
                         notificationsSection
                         remindersSection
@@ -214,7 +221,7 @@ public struct SettingsView: View {
                     Text("Guest")
                         .font(OrbitTypography.bodyEmphasized)
                         .foregroundStyle(OrbitColor.textPrimary)
-                    Text("Sign in with Apple to keep your memories yours — backed up to your iCloud, available across your devices.")
+                    Text("Sign in with Apple to keep your account yours. To have your memories on all your devices, turn on iCloud sync below.")
                         .font(OrbitTypography.footnote)
                         .foregroundStyle(OrbitColor.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)

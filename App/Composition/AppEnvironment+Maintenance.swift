@@ -21,11 +21,6 @@ extension AppEnvironment {
         static let transcriptionAttempted = "orbit.maintenance.transcriptionAttempted"
     }
 
-    /// How many memories 1.x's Siri intent had hidden that 2.0 recovered.
-    var rescuedLegacyMemoryCount: Int {
-        UserDefaults.standard.integer(forKey: MaintenanceKeys.rescuedCount)
-    }
-
     /// Entry point, called from the root view's launch task.
     func runLaunchMaintenance() async {
         await rescueLegacyStoreIfNeeded()
@@ -62,6 +57,7 @@ extension AppEnvironment {
             )
             await copyLegacyMedia(outcome.mediaFilenames)
             defaults.set(outcome.rescuedMemoryIDs.count, forKey: MaintenanceKeys.rescuedCount)
+            rescuedLegacyMemoryCount = outcome.rescuedMemoryIDs.count
             defaults.set(true, forKey: MaintenanceKeys.rescueCompleted)
             OrbitLog.persistence.notice("Legacy rescue: \(outcome.rescuedMemoryIDs.count, privacy: .public) memories, \(outcome.rescuedTaskIDs.count, privacy: .public) tasks.")
 

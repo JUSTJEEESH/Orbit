@@ -147,7 +147,7 @@ struct OnboardingView: View {
             Spacer().frame(height: OrbitSpacing.xl)
             explainerCopy(
                 title: "Quiet intelligence",
-                body: "On-device AI sorts, summarizes, and resurfaces what matters. Nothing ever leaves your phone."
+                body: "On-device AI sorts, summarizes, and resurfaces what matters. It runs privately on your iPhone with Apple Intelligence."
             )
             Spacer()
             primaryButton("Continue") { goNext() }
@@ -402,7 +402,7 @@ struct OnboardingView: View {
                     .font(OrbitTypography.largeTitle)
                     .foregroundStyle(OrbitColor.textPrimary)
                     .accessibilityAddTraits(.isHeader)
-                Text("Sign in with Apple to sync your memories everywhere. Or continue as a guest — you can sign in any time.")
+                Text("Sign in with Apple to make Orbit yours — then choose whether your memories sync through your own iCloud. Or continue as a guest; you can sign in any time.")
                     .font(OrbitTypography.body)
                     .foregroundStyle(OrbitColor.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)

@@ -28,8 +28,12 @@ public actor SwiftDataInsightRepository: InsightRepository {
         try modelContext.save()
     }
 
+    /// Object by object, not `delete(model:)`, so the deletion reaches
+    /// iCloud when sync is on (see `SwiftDataMemoryRepository.deleteAll`).
     public func deleteAll() async throws {
-        try modelContext.delete(model: AIInsightEntity.self)
+        for entity in try modelContext.fetch(FetchDescriptor<AIInsightEntity>()) {
+            modelContext.delete(entity)
+        }
         try modelContext.save()
     }
 }

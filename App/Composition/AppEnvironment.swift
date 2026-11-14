@@ -97,6 +97,17 @@ final class AppEnvironment {
     /// times out or Undo is tapped.
     var trashNotice: TrashNotice?
 
+    /// Memories 1.x's Siri intent had hidden that this launch recovered.
+    /// Observed by What's New ("We found 4 memories you saved with Siri").
+    var rescuedLegacyMemoryCount = 0
+
+    /// Whether this session's store is mirrored to iCloud.
+    let syncStatus: SyncStatus
+
+    /// Reopens the library with current settings (e.g. after the user
+    /// changes their iCloud choice). Installed by `OrbitApp`.
+    var reopenLibrary: (@MainActor () -> Void)?
+
     /// Mirrors the `orbit.onboarding.completed` UserDefaults flag. We hold
     /// it on the env so the delete-account flow can flip it back to false
     /// and the app re-presents onboarding on the next render without a
@@ -106,6 +117,10 @@ final class AppEnvironment {
             UserDefaults.standard.set(onboardingComplete, forKey: Self.onboardingKey)
         }
     }
+
+    /// Whether onboarding was already done when this launch began — i.e.
+    /// an existing user rather than someone onboarding right now.
+    let wasOnboardedAtLaunch: Bool
 
     private static let onboardingKey = "orbit.onboarding.completed"
     private static let yearInReviewLastSeenKey = "orbit.yearInReview.lastSeenYear"
@@ -288,10 +303,12 @@ final class AppEnvironment {
         themeService: ThemeService = ThemeService(),
         iconService: IconService = IconService(),
         notifications: NotificationService = NotificationService(),
-        watchSession: WatchSessionService? = nil
+        watchSession: WatchSessionService? = nil,
+        syncStatus: SyncStatus = .off
     ) {
         self.appConfig = appConfig
         self.clock = clock
+        self.syncStatus = syncStatus
         self.memories = memories
         self.tasks = tasks
         self.insights = insights
@@ -314,6 +331,7 @@ final class AppEnvironment {
         self.proGates = ProGateService(entitlements: entitlements)
 
         self.onboardingComplete = UserDefaults.standard.bool(forKey: Self.onboardingKey)
+        self.wasOnboardedAtLaunch = onboardingComplete
 
         let signals = SignalExtractor()
         let captureMemoryUseCase = CaptureMemoryUseCase(
@@ -439,9 +457,7 @@ extension AppEnvironment {
     /// the share extension and widgets see the same store. If the group
     /// entitlement isn't active the factory degrades to per-app storage.
     static func makeProduction(appConfig: AppConfig) throws -> AppEnvironment {
-        let container = try ModelContainerFactory.makeContainer(
-            mode: .appGroup(identifier: appConfig.appGroupIdentifier)
-        )
+        let (container, syncStatus) = try openStore(appConfig: appConfig)
         let storage = try MediaStorage.sharedAcrossExtensions(
             appGroupIdentifier: appConfig.appGroupIdentifier
         )
@@ -465,8 +481,32 @@ extension AppEnvironment {
             search: LocalSearchService(memories: memoryRepo, embeddings: embeddings),
             spotlight: SpotlightIndexer(),
             account: AccountService(),
-            entitlements: EntitlementService()
+            entitlements: EntitlementService(),
+            syncStatus: syncStatus
         )
+    }
+
+    /// Opens the App Group store, mirrored to iCloud when the user turned
+    /// sync on. If iCloud can't be used (capability missing, account
+    /// restricted), the *same* store opens local-only and the failure is
+    /// reported through `syncStatus` — never an empty or temporary store.
+    private static func openStore(appConfig: AppConfig) throws -> (ModelContainer, SyncStatus) {
+        let local = ModelContainerFactory.Mode.appGroup(identifier: appConfig.appGroupIdentifier)
+        guard SyncPreference.load(appGroupIdentifier: appConfig.appGroupIdentifier) == .on else {
+            return (try ModelContainerFactory.makeContainer(mode: local), .off)
+        }
+        do {
+            let synced = try ModelContainerFactory.makeContainer(
+                mode: .appGroup(
+                    identifier: appConfig.appGroupIdentifier,
+                    cloudKitContainer: appConfig.cloudKitContainerIdentifier
+                )
+            )
+            return (synced, .on)
+        } catch {
+            OrbitLog.sync.error("iCloud store unavailable, opening local-only: \(String(describing: error), privacy: .public)")
+            return (try ModelContainerFactory.makeContainer(mode: local), .unavailable)
+        }
     }
 
     static func makePreview(seed: [Memory] = []) -> AppEnvironment {

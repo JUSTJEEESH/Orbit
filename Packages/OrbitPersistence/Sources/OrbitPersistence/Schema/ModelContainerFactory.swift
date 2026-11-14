@@ -12,13 +12,16 @@ import SwiftData
 /// container isn't accessible (entitlement not provisioned, simulator
 /// misconfig) the factory falls back to on-disk so the app still launches.
 ///
-/// CloudKit mode requires an iCloud container provisioned in App Store
-/// Connect; flip to it once that's wired up.
+/// iCloud sync is opt-in: `.appGroup` with a `cloudKitContainer` mirrors
+/// the same store file to the user's private CloudKit database. Turning it
+/// on never moves or deletes local rows — SwiftData uploads what's there.
+/// Only the main app passes a container; extensions keep opening the store
+/// local-only, and their writes are uploaded by the app afterwards.
 public enum ModelContainerFactory {
     public enum Mode: Sendable, Equatable {
         case inMemory
         case onDisk
-        case appGroup(identifier: String)
+        case appGroup(identifier: String, cloudKitContainer: String? = nil)
         case cloudKit(containerIdentifier: String)
         /// A store at an explicit file URL. Used by migration tests and by
         /// the legacy-store rescue, which must open a specific file.
@@ -58,7 +61,7 @@ public enum ModelContainerFactory {
         case .onDisk:
             return localConfiguration(schema: schema)
 
-        case .appGroup(let identifier):
+        case .appGroup(let identifier, let cloudKitContainer):
             guard let url = appGroupStoreURL(for: identifier) else {
                 // The entitlement isn't active. Fall back to on-disk so the
                 // main app still works; extensions will see an empty store
@@ -70,7 +73,7 @@ public enum ModelContainerFactory {
                 schema: schema,
                 url: url,
                 allowsSave: true,
-                cloudKitDatabase: .none
+                cloudKitDatabase: cloudKitContainer.map { .private($0) } ?? .none
             )
 
         case .cloudKit(let identifier):
@@ -123,7 +126,7 @@ public enum ModelContainerFactory {
     /// those rows out without modifying that file's contents beyond the
     /// lightweight upgrade, and keeps the file.)
     private static func snapshotBeforeOpening(mode: Mode) {
-        guard case .appGroup(let identifier) = mode,
+        guard case .appGroup(let identifier, _) = mode,
               let storeURL = appGroupStoreURL(for: identifier),
               let backups = backupsDirectory(for: identifier)
         else { return }

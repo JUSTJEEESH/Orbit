@@ -36,10 +36,19 @@ public actor SwiftDataMemoryRepository: MemoryRepository {
         try modelContext.save()
     }
 
+    /// Deletes object by object rather than with `delete(model:)`: bulk
+    /// deletes bypass iCloud mirroring, so with sync on the rows would come
+    /// back from iCloud (and account deletion wouldn't reach the cloud copy).
     public func deleteAll() async throws {
-        try modelContext.delete(model: MemoryEntity.self)
-        try modelContext.delete(model: TagEntity.self)
-        try modelContext.delete(model: MediaAssetEntity.self)
+        for entity in try modelContext.fetch(FetchDescriptor<MemoryEntity>()) {
+            modelContext.delete(entity)
+        }
+        for entity in try modelContext.fetch(FetchDescriptor<TagEntity>()) {
+            modelContext.delete(entity)
+        }
+        for entity in try modelContext.fetch(FetchDescriptor<MediaAssetEntity>()) {
+            modelContext.delete(entity)
+        }
         try modelContext.save()
     }
 

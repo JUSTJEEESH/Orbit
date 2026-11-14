@@ -32,8 +32,12 @@ public actor SwiftDataTaskRepository: TaskRepository {
         try modelContext.save()
     }
 
+    /// Object by object, not `delete(model:)`, so the deletion reaches
+    /// iCloud when sync is on (see `SwiftDataMemoryRepository.deleteAll`).
     public func deleteAll() async throws {
-        try modelContext.delete(model: MemoryTaskEntity.self)
+        for entity in try modelContext.fetch(FetchDescriptor<MemoryTaskEntity>()) {
+            modelContext.delete(entity)
+        }
         try modelContext.save()
     }
 

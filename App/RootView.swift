@@ -146,12 +146,34 @@ struct RootView: View {
                             env.requestedModal = .recentlyDeleted
                         }
                     },
-                    onExportLibrary: { try await env.exportLibrary() }
+                    onExportLibrary: { try await env.exportLibrary() },
+                    iCloudSync: SettingsSyncState(
+                        status: env.settingsSyncStatus,
+                        onSetEnabled: { env.setSyncPreference($0 ? .on : .off) }
+                    )
                 )
                 .presentationDetents([.large])
             case .recentlyDeleted:
                 RecentlyDeletedView(onDismiss: { env.requestedModal = nil })
                     .presentationDetents([.large])
+            case .whatsNew:
+                WhatsNewView(
+                    audience: env.whatsNewAudience,
+                    rescuedMemoryCount: env.rescuedLegacyMemoryCount,
+                    asksAboutSync: env.syncPreference == .undecided,
+                    onChooseSync: { turnOn in
+                        // Seen first: choosing sync reopens the library,
+                        // and the new session must not show this again.
+                        env.markWhatsNewSeen()
+                        env.requestedModal = nil
+                        env.setSyncPreference(turnOn ? .on : .off)
+                    },
+                    onContinue: {
+                        env.markWhatsNewSeen()
+                        env.requestedModal = nil
+                    }
+                )
+                .presentationDetents([.large])
             case .paywall:
                 PaywallView(
                     entitlements: env.entitlements,
@@ -273,6 +295,16 @@ struct RootView: View {
             }
         }
         .onAppear { Haptics.prepare() }
+        .task {
+            // What's New after updating (or the iCloud question after
+            // onboarding). A beat after launch so it lands on a settled UI,
+            // and never over a sheet a deep link already opened.
+            guard env.shouldPresentWhatsNew else { return }
+            try? await Task.sleep(for: .milliseconds(600))
+            if env.requestedModal == nil, env.shouldPresentWhatsNew {
+                env.requestedModal = .whatsNew
+            }
+        }
         .onContinueUserActivity(CSSearchableItemActionType) { activity in
             // The unique identifier we set in SpotlightIndexer is the
             // memory's UUID string. Reverse it here and route to the
