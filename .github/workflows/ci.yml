@@ -1,0 +1,86 @@
+# Builds Orbit and runs the unit tests on every push and pull request.
+#
+# Two jobs, so a failing test never hides a broken app build (or vice versa):
+#   - package-tests: `xcodebuild test` on the OrbitWorkspace Swift package,
+#     including the persistence migration tests that guard user data.
+#   - app-build: generates Orbit.xcodeproj with XcodeGen (exactly as a
+#     developer does locally) and builds every target for the simulator
+#     with code signing disabled.
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package-tests:
+    name: Package tests
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select newest Xcode
+        run: Scripts/ci/select-xcode.sh
+
+      - name: Run package tests
+        run: |
+          set -o pipefail
+          DESTINATION="$(Scripts/ci/simulator-destination.sh)"
+          echo "Testing on: $DESTINATION"
+          xcodebuild test \
+            -scheme OrbitWorkspace-Package \
+            -destination "$DESTINATION" \
+            -skipPackagePluginValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            | tee xcodebuild-test.log | grep -E "error:|warning: .*deprecated|Test Suite|Test Case.*(passed|failed)|\*\* TEST" || true
+          # grep above only trims the log; the real verdict is xcodebuild's.
+          grep -q "\*\* TEST SUCCEEDED \*\*" xcodebuild-test.log
+
+      - name: Upload test log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-test-log
+          path: xcodebuild-test.log
+
+  app-build:
+    name: App build
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select newest Xcode
+        run: Scripts/ci/select-xcode.sh
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate project
+        run: xcodegen generate
+
+      - name: Build app (simulator, unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project Orbit.xcodeproj \
+            -scheme Orbit \
+            -configuration Debug \
+            -destination "generic/platform=iOS Simulator" \
+            -skipPackagePluginValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            | tee xcodebuild-build.log | grep -E "error:|\*\* BUILD" || true
+          grep -q "\*\* BUILD SUCCEEDED \*\*" xcodebuild-build.log
+
+      - name: Upload build log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-build-log
+          path: xcodebuild-build.log
