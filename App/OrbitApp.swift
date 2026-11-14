@@ -5,7 +5,17 @@ import OrbitStore
 
 @main
 struct OrbitApp: App {
-    @State private var environment: AppEnvironment
+    /// Either a working environment or the reason the library couldn't be
+    /// opened. There is deliberately no third "fallback" state: Orbit never
+    /// runs against a stand-in store, because anything captured there would
+    /// be silently lost.
+    enum LaunchState {
+        case ready(AppEnvironment)
+        case libraryUnavailable(String)
+    }
+
+    @State private var launch: LaunchState
+    private let config: AppConfig
 
     init() {
         // Configure RevenueCat first thing — every other system
@@ -20,33 +30,44 @@ struct OrbitApp: App {
         RevenueCatConfig.configure(apiKey: "appl_JQnSEPnRagNJeDHJvgeSYJacJiP")
 
         let config = AppConfig.resolveFromBundle()
-
-        // Persistence is required to run; if init fails we fall back to an
-        // in-memory environment so the app still launches and the failure is
-        // surfaced through logs and Settings.
-        //
-        // Wrapped in a signpost so the cold-launch critical path shows up
-        // in Instruments → Points of Interest under "AppEnvironment init",
-        // making it cheap to measure the impact of any future deferral
-        // work (or to catch regressions if something slow gets re-added).
-        let env: AppEnvironment
-        do {
-            env = try OrbitSignpost.measureSync("AppEnvironment init") {
-                try AppEnvironment.makeProduction(appConfig: config)
-            }
-            OrbitLog.persistence.notice("Persistence: SwiftData ready (App Group=\(config.appGroupIdentifier, privacy: .public)).")
-        } catch {
-            OrbitLog.persistence.fault("Persistence init failed, falling back to in-memory: \(String(describing: error), privacy: .public)")
-            env = AppEnvironment.makePreview()
-        }
-
-        self._environment = State(initialValue: env)
+        self.config = config
+        self._launch = State(initialValue: Self.openLibrary(config: config))
         OrbitLog.app.notice("Orbit launched — env=\(config.environment.rawValue, privacy: .public)")
     }
 
     var body: some Scene {
         WindowGroup {
-            ContentRoot(environment: environment)
+            switch launch {
+            case .ready(let environment):
+                ContentRoot(environment: environment)
+            case .libraryUnavailable(let reason):
+                StoreRecoveryView(
+                    appGroupIdentifier: config.appGroupIdentifier,
+                    errorDescription: reason,
+                    onRetry: { launch = Self.openLibrary(config: config) }
+                )
+            }
+        }
+    }
+
+    /// Opens the production library. Persistence is required to run: if it
+    /// fails, the Recovery screen is shown and the store files are left
+    /// exactly as they are on disk.
+    ///
+    /// Wrapped in a signpost so the cold-launch critical path shows up in
+    /// Instruments → Points of Interest under "AppEnvironment init", making
+    /// it cheap to measure the impact of any future deferral work (or to
+    /// catch regressions if something slow gets re-added).
+    private static func openLibrary(config: AppConfig) -> LaunchState {
+        do {
+            let environment = try OrbitSignpost.measureSync("AppEnvironment init") {
+                try AppEnvironment.makeProduction(appConfig: config)
+            }
+            OrbitLog.persistence.notice("Persistence: SwiftData ready (App Group=\(config.appGroupIdentifier, privacy: .public)).")
+            return .ready(environment)
+        } catch {
+            OrbitLog.persistence.fault("Persistence init failed; showing Recovery: \(String(describing: error), privacy: .public)")
+            return .libraryUnavailable(String(describing: error))
         }
     }
 }
@@ -118,6 +139,10 @@ private struct ContentRoot: View {
             // Safari clips that arrived while we were off-screen.
             environment.captureInbox.start()
             await environment.captureInbox.drain()
+            // Repair pass: rescue 1.x Siri captures, transcribe voice notes
+            // that arrived without a transcript, and finish enrichment that
+            // was interrupted. Last, so it never delays the work above.
+            await environment.runLaunchMaintenance()
         }
         .onChange(of: scenePhase) { _, newPhase in
             // Re-pull on every foreground so completions + clips surface

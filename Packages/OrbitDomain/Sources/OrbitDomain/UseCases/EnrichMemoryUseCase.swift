@@ -24,12 +24,20 @@ public struct EnrichMemoryUseCase: Sendable {
 
     /// Best-effort enrichment. Never throws — failures are recorded on the
     /// memory's status so the UI can show a retry affordance later.
+    ///
+    /// The model can take seconds, and the user can edit (or delete) the
+    /// memory meanwhile. So the result is merged into a *fresh* read of the
+    /// memory, touching only AI-owned fields — never written back over the
+    /// copy that was read before the model ran. If the content itself
+    /// changed mid-flight, the result describes stale text: the memory goes
+    /// back to `.pending` for the next pass instead.
     public func callAsFunction(memoryID: UUID) async {
         guard var memory = try? await memories.memory(with: memoryID) else { return }
 
         memory.ai.status = .processing
         try? await memories.update(memory)
 
+        let enrichedContent = memory.content
         let raw = RawCapture(memory: memory)
         // Re-run signal extraction during enrichment so older memories
         // captured before the SignalExtractor existed pick up signals via
@@ -37,7 +45,7 @@ public struct EnrichMemoryUseCase: Sendable {
         let refreshedSignals = signalExtractor.extract(from: memory)
         do {
             let result = try await ai.classify(raw)
-            memory.ai = MemoryAIMetadata(
+            let metadata = MemoryAIMetadata(
                 status: .complete,
                 summary: result.summary,
                 category: result.category,
@@ -47,24 +55,35 @@ public struct EnrichMemoryUseCase: Sendable {
                 extractedLocations: result.extractedLocations,
                 signals: refreshedSignals
             )
-            let existingTagNames = Set(memory.tags.map(\.name))
-            let aiTags = result.suggestedTags
-                .filter { !existingTagNames.contains($0) }
-                .map { Tag(name: $0, origin: .ai) }
-            memory.tags.append(contentsOf: aiTags)
 
             // Index for semantic search. Embedding failure isn't fatal —
             // the memory still saves with lexical-only ranking available.
+            var embedding: [Float]?
             if let indexable = Self.indexableText(memory: memory, classification: result) {
-                memory.embedding = (try? await ai.embed(indexable)) ?? []
+                embedding = (try? await ai.embed(indexable)) ?? []
             }
 
-            memory.updatedAt = clock.now()
-            try? await memories.update(memory)
+            // Deleted while the model ran: nothing to write.
+            guard var latest = try? await memories.memory(with: memoryID) else { return }
+            guard latest.content == enrichedContent else {
+                latest.ai.status = .pending
+                try? await memories.update(latest)
+                return
+            }
+            latest.ai = metadata
+            let existingTagNames = Set(latest.tags.map(\.name))
+            let aiTags = result.suggestedTags
+                .filter { !existingTagNames.contains($0) }
+                .map { Tag(name: $0, origin: .ai) }
+            latest.tags.append(contentsOf: aiTags)
+            if let embedding { latest.embedding = embedding }
+            latest.updatedAt = clock.now()
+            try? await memories.update(latest)
         } catch {
-            memory.ai.status = .failed
-            memory.updatedAt = clock.now()
-            try? await memories.update(memory)
+            guard var latest = try? await memories.memory(with: memoryID) else { return }
+            latest.ai.status = .failed
+            latest.updatedAt = clock.now()
+            try? await memories.update(latest)
         }
     }
 

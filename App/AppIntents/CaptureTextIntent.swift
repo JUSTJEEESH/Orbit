@@ -7,6 +7,12 @@ import OrbitKit
 /// or anywhere `AppIntent` is surfaced. Spins up a short-lived SwiftData
 /// container so capture works without the app having to be in the
 /// foreground.
+///
+/// The container must be the App Group store — the one the app, widgets and
+/// Share Extension read. Orbit 1.x opened the per-app `.onDisk` store here,
+/// so Siri captures were saved where nothing ever displayed them; 2.0's
+/// `LegacyStoreRescue` recovers those. Enrichment for intent captures runs
+/// in the app's launch maintenance pass.
 struct CaptureTextIntent: AppIntent {
     static let title: LocalizedStringResource = "Capture to Orbit"
     static let description = IntentDescription(
@@ -34,7 +40,8 @@ struct CaptureTextIntent: AppIntent {
         }
 
         do {
-            let container = try ModelContainerFactory.makeContainer(mode: .onDisk)
+            let appGroup = AppConfig.resolveFromBundle().appGroupIdentifier
+            let container = try ModelContainerFactory.makeContainer(mode: .appGroup(identifier: appGroup))
             let repository = SwiftDataMemoryRepository(modelContainer: container)
             let capture = CaptureMemoryUseCase(repository: repository, clock: SystemClock())
             _ = try await capture(content: .text(trimmed))

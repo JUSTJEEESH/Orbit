@@ -21,7 +21,7 @@ public actor SwiftDataMemoryRepository: MemoryRepository {
             throw OrbitError.notFound
         }
         let tags = resolveTags(memory.tags)
-        let media = buildMedia(memory.media)
+        let media = buildMedia(memory.media, reusing: entity.media ?? [])
         entity.apply(from: memory, resolvedTags: tags, resolvedMedia: media)
         try modelContext.save()
     }
@@ -119,8 +119,21 @@ public actor SwiftDataMemoryRepository: MemoryRepository {
         }
     }
 
-    private func buildMedia(_ assets: [MediaAsset]) -> [MediaAssetEntity] {
-        assets.map { asset in
+    /// Resolves media rows for a save/update. Rows already attached to the
+    /// memory are reused by `id`: creating fresh ones on every update (as
+    /// 1.x did) left an orphaned duplicate row per update — enrichment alone
+    /// updates each memory two or three times. Detached rows are left in
+    /// place rather than deleted; they still name files on disk.
+    private func buildMedia(_ assets: [MediaAsset], reusing existing: [MediaAssetEntity] = []) -> [MediaAssetEntity] {
+        let existingByID = Dictionary(existing.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        return assets.map { asset in
+            if let reused = existingByID[asset.id] {
+                reused.kind = asset.kind.rawValue
+                reused.filename = asset.filename
+                reused.byteSize = asset.byteSize
+                reused.createdAt = asset.createdAt
+                return reused
+            }
             let entity = MediaAssetEntity(
                 id: asset.id,
                 kind: asset.kind.rawValue,

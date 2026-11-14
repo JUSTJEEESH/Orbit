@@ -107,4 +107,24 @@ struct MemoryRoundTripTests {
         #expect(hits.count == 1)
         #expect(hits.first?.content == .text("buy sourdough starter"))
     }
+
+    /// Updates (enrichment does several per memory) must not pile up
+    /// duplicate media rows.
+    @Test func updatesReuseMediaRows() async throws {
+        let container = try makeContainer()
+        let repo = SwiftDataMemoryRepository(modelContainer: container)
+        let asset = MediaAsset(kind: .audio, filename: "note.wav", byteSize: 42, createdAt: .now)
+        var memory = Memory(content: .voiceNote(transcript: nil, duration: 3), createdAt: .now, updatedAt: .now, media: [asset])
+        try await repo.save(memory)
+
+        memory.content = .voiceNote(transcript: "hello", duration: 3)
+        try await repo.update(memory)
+        try await repo.update(memory)
+
+        let context = ModelContext(container)
+        #expect(try context.fetchCount(FetchDescriptor<MediaAssetEntity>()) == 1)
+        let fetched = try await repo.memory(with: memory.id)
+        #expect(fetched?.media.map(\.filename) == ["note.wav"])
+        #expect(fetched?.content == .voiceNote(transcript: "hello", duration: 3))
+    }
 }

@@ -54,6 +54,13 @@ public final class MemoryEntity {
     /// to nil so existing CloudKit rows decode cleanly.
     public var signalsJSON: Data?
 
+    // MARK: - Lifecycle (added in schema V2)
+    /// Set when the user deletes the memory. Soft-deleted memories live in
+    /// Recently Deleted until they're restored or purged, so an accidental
+    /// swipe is never permanent. Optional so every V1 row migrates as "not
+    /// deleted" without a custom migration stage.
+    public var deletedAt: Date?
+
     // MARK: - Relationships (must be optional for CloudKit)
     @Relationship(deleteRule: .cascade, inverse: \MediaAssetEntity.memory)
     public var media: [MediaAssetEntity]? = []

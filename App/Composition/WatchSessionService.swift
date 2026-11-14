@@ -6,9 +6,9 @@ import OrbitKit
 
 /// iPhone-side `WCSession` host. Activates on launch, listens for files
 /// transferred from the watch app, copies the audio into the shared media
-/// store, persists the memory as a voice note, and kicks off transcription
-/// + enrichment via the supplied callback so the watch capture flows
-/// through the same downstream pipeline as on-device captures.
+/// store, persists the memory as a voice note, and hands it to the supplied
+/// callback, which transcribes + enriches it through the same pipeline as
+/// every other voice memory (`AppEnvironment.completeVoiceMemory`).
 ///
 /// Queued behavior: `WCSession.transferFile` survives termination — files
 /// initiated by the watch while the iPhone is asleep arrive when the user
@@ -17,22 +17,20 @@ import OrbitKit
 final class WatchSessionService {
     private let mediaStorage: MediaStorage
     private let captureMemory: CaptureMemoryUseCase
-    private let speechTranscriber: SpeechTranscriber
     /// Invoked on the main actor after a watch capture lands. AppEnvironment
-    /// wires this to bump the memory-list version + schedule enrichment so
-    /// the timeline picks up the new row and AI metadata fills in.
+    /// wires this to bump the memory-list version, transcribe the audio and
+    /// schedule enrichment so the timeline picks up the new row and its
+    /// transcript + AI metadata fill in.
     var onCapture: (@MainActor (UUID) -> Void)?
 
     private let delegate: SessionDelegate
 
     init(
         mediaStorage: MediaStorage,
-        captureMemory: CaptureMemoryUseCase,
-        speechTranscriber: SpeechTranscriber
+        captureMemory: CaptureMemoryUseCase
     ) {
         self.mediaStorage = mediaStorage
         self.captureMemory = captureMemory
-        self.speechTranscriber = speechTranscriber
         self.delegate = SessionDelegate()
         // `[String: Any]?` isn't Sendable, so the delegate extracts the only
         // metadata field we actually use (duration) before crossing isolation
@@ -54,11 +52,12 @@ final class WatchSessionService {
         OrbitLog.app.notice("iPhone: WCSession.activate() called.")
     }
 
-    /// Copies the incoming file into managed storage, persists a voice-note
-    /// memory, then runs transcription in the background so the user sees
-    /// the row land immediately. Failures are logged but never surface to
-    /// the user — a watch capture happens out of band, the iPhone hasn't
-    /// asked permission to interrupt.
+    /// Copies the incoming file into managed storage and persists a
+    /// voice-note memory so the user sees the row land immediately;
+    /// transcription runs afterwards via `onCapture`. The audio is saved
+    /// first, so a failed transcription never loses the recording. Failures
+    /// are logged but never surface to the user — a watch capture happens
+    /// out of band, the iPhone hasn't asked permission to interrupt.
     private func ingest(fileAt incomingURL: URL, duration: TimeInterval) async {
         do {
             let data = try Data(contentsOf: incomingURL)
@@ -76,20 +75,6 @@ final class WatchSessionService {
             )
             onCapture?(memory.id)
             OrbitLog.app.notice("Captured watch voice note: \(memory.id, privacy: .public)")
-
-            // Transcription runs separately so the row lands in the timeline
-            // immediately. If transcription fails we keep the audio-only
-            // memory rather than discarding the user's recording.
-            Task {
-                do {
-                    _ = try await speechTranscriber.transcribe(fileAt: stored.url)
-                    // TODO: persist the transcript onto the existing memory
-                    // once UpdateMemoryUseCase exposes a transcript-only
-                    // path. For now, enrichment will pick up the audio.
-                } catch {
-                    OrbitLog.app.error("Watch capture transcription failed: \(String(describing: error), privacy: .public)")
-                }
-            }
         } catch {
             OrbitLog.app.error("Failed to ingest watch capture: \(String(describing: error), privacy: .public)")
         }

@@ -303,8 +303,7 @@ final class AppEnvironment {
         self.captureMemory = captureMemoryUseCase
         self.watchSession = watchSession ?? WatchSessionService(
             mediaStorage: mediaStorage,
-            captureMemory: captureMemoryUseCase,
-            speechTranscriber: speechTranscriber
+            captureMemory: captureMemoryUseCase
         )
         self.captureInbox = CaptureInboxService(
             appGroupIdentifier: appConfig.appGroupIdentifier,
@@ -396,7 +395,7 @@ final class AppEnvironment {
         self.watchSession.onCapture = { [weak self] memoryID in
             guard let self else { return }
             self.memoriesDidChange()
-            self.scheduleEnrichment(for: memoryID)
+            Task { await self.completeVoiceMemory(memoryID) }
         }
 
         // Lock-Screen camera + Safari Web Extension drop captures into

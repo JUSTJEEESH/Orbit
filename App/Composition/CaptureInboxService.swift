@@ -33,6 +33,11 @@ final class CaptureInboxService {
     var onCapture: (@MainActor (UUID) -> Void)?
 
     private var lockCameraObserver: Task<Void, Never>?
+    /// `drain()` runs from both the launch task and every foreground, and it
+    /// suspends per envelope. Without this guard two overlapping drains can
+    /// read the same envelope before either deletes it, saving the clip
+    /// twice.
+    private var isDrainingSafariInbox = false
 
     init(
         appGroupIdentifier: String,
@@ -61,6 +66,9 @@ final class CaptureInboxService {
     /// One-shot drain of the Safari inbox. The lock-camera channel runs
     /// continuously via `start()` so it doesn't need a poke here.
     func drain() async {
+        guard !isDrainingSafariInbox else { return }
+        isDrainingSafariInbox = true
+        defer { isDrainingSafariInbox = false }
         await drainSafariInbox()
     }
 
