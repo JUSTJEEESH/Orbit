@@ -1,5 +1,6 @@
 import SwiftUI
 import LockedCameraCapture
+import ExtensionKit
 
 /// Lock Screen + Action Button + Control Center camera entry point.
 ///

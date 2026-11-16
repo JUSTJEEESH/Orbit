@@ -43,7 +43,9 @@ let package = Package(
         // and subscription analytics through their cloud service.
         // The `RevenueCat` product is the headless SDK; `RevenueCatUI`
         // ships the prebuilt paywall + customer-center SwiftUI views.
-        .package(url: "https://github.com/RevenueCat/purchases-ios-spm.git", from: "5.0.0"),
+        // Recent minimum: older 5.x releases fail to compile with newer Swift
+        // compilers, and a stale local package cache would otherwise keep them.
+        .package(url: "https://github.com/RevenueCat/purchases-ios-spm.git", from: "5.100.0"),
     ],
     targets: [
         // MARK: - Cross-cutting
