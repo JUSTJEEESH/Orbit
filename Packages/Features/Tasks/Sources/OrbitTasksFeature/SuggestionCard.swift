@@ -93,7 +93,8 @@ struct SuggestionCard: View {
     }
 }
 
-private extension String {
+/// Shared by the suggestion and promise cards.
+extension String {
     func capitalizingFirstLetter() -> String {
         guard let first = first else { return self }
         return first.uppercased() + dropFirst()
