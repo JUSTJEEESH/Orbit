@@ -43,6 +43,7 @@ public struct SettingsView: View {
     private let appLock: AppLockService?
     /// Turns the daily resurfacing notification on/off. Nil hides it.
     private let onSetResurfacing: (@MainActor (Bool) async -> Void)?
+    private let screenshotInbox: SettingsToggleState?
 
     /// Reminders sync state surfaced through plain values so this feature
     /// package doesn't have to depend on EventKit. RootView wires the live
@@ -105,7 +106,8 @@ public struct SettingsView: View {
         onImportFiles: (@MainActor ([URL]) async throws -> String)? = nil,
         iCloudSync: SettingsSyncState? = nil,
         appLock: AppLockService? = nil,
-        onSetResurfacing: (@MainActor (Bool) async -> Void)? = nil
+        onSetResurfacing: (@MainActor (Bool) async -> Void)? = nil,
+        screenshotInbox: SettingsToggleState? = nil
     ) {
         self.appConfig = appConfig
         self.account = account
@@ -138,6 +140,7 @@ public struct SettingsView: View {
         self.iCloudSync = iCloudSync
         self.appLock = appLock
         self.onSetResurfacing = onSetResurfacing
+        self.screenshotInbox = screenshotInbox
     }
 
     public var body: some View {
@@ -155,7 +158,11 @@ public struct SettingsView: View {
                         appearanceSection
                         notificationsSection
                         if let onSetResurfacing {
-                            SettingsResurfacingSection(notifications: notifications, onSetEnabled: onSetResurfacing)
+                            SettingsResurfacingSection(
+                                notifications: notifications,
+                                onSetEnabled: onSetResurfacing,
+                                screenshotInbox: screenshotInbox
+                            )
                         }
                         remindersSection
                         calendarSection

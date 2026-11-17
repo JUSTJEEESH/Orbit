@@ -12,7 +12,7 @@ struct QuickCaptureWidget: Widget {
         }
         .configurationDisplayName("Quick Capture")
         .description("Open Orbit straight to capture.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular, .accessoryRectangular])
     }
 }
 
@@ -39,8 +39,67 @@ struct QuickCaptureProvider: TimelineProvider {
 
 struct QuickCaptureWidgetView: View {
     let entry: QuickCaptureEntry
+    @Environment(\.widgetFamily) private var family
 
     var body: some View {
+        switch family {
+        case .accessoryCircular:
+            // Lock Screen: one tap to start talking.
+            ZStack {
+                AccessoryWidgetBackground()
+                Image(systemName: "mic.fill")
+                    .font(.title3)
+            }
+            .widgetURL(OrbitCaptureLinks.record)
+            .accessibilityLabel("Record a memory")
+        case .accessoryRectangular:
+            HStack(spacing: 6) {
+                Image(systemName: "mic.fill")
+                Text("Record a memory")
+                    .font(.headline)
+                    .widgetAccentable()
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .widgetURL(OrbitCaptureLinks.record)
+        case .systemMedium:
+            mediumCapture
+        default:
+            homeScreenCapture
+        }
+    }
+
+    /// Medium: two buttons — write or talk — each a deep link.
+    private var mediumCapture: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            eyebrow
+            Spacer(minLength: 0)
+            HStack(spacing: 12) {
+                captureButton(title: "Write", systemImage: "square.and.pencil", url: OrbitCaptureLinks.write)
+                captureButton(title: "Talk", systemImage: "mic.fill", url: OrbitCaptureLinks.record)
+            }
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+    }
+
+    private func captureButton(title: String, systemImage: String, url: URL) -> some View {
+        Link(destination: url) {
+            VStack(spacing: 8) {
+                Image(systemName: systemImage)
+                    .font(.title3.weight(.semibold))
+                    .foregroundStyle(OrbitColor.textInverted)
+                    .frame(width: 44, height: 44)
+                    .background(OrbitColor.textPrimary, in: .circle)
+                Text(title)
+                    .font(OrbitTypography.bodyEmphasized)
+                    .foregroundStyle(OrbitColor.textPrimary)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .accessibilityLabel(title == "Talk" ? "Record a memory" : "Write a memory")
+    }
+
+    private var homeScreenCapture: some View {
         VStack(alignment: .leading, spacing: 0) {
             eyebrow
             // The label + glyph are a single visual unit, centered in

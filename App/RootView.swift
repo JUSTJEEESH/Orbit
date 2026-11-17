@@ -41,13 +41,19 @@ struct RootView: View {
         ZStack(alignment: .top) {
             tabContent
             undoToast
+            if env.quickVoice.isActive {
+                QuickVoiceOverlay(state: env.quickVoice.state)
+                    .padding(.top, OrbitSpacing.xxl)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
         }
+        .animation(OrbitMotion.respectfully(OrbitMotion.snap, reduceMotion: reduceMotion), value: env.quickVoice.isActive)
         .animation(OrbitMotion.respectfully(OrbitMotion.smooth, reduceMotion: reduceMotion), value: env.trashNotice)
         .orbitTheme(env.themeService.theme)
         .sheet(item: $bindableEnv.requestedModal) { modal in
             switch modal {
-            case .capture, .captureVoice:
-                captureSheet(startInVoice: modal == .captureVoice)
+            case .capture, .captureVoice, .recordVoiceNow:
+                captureSheet(startInVoice: modal != .capture, startRecording: modal == .recordVoiceNow)
             case .settings:
                 SettingsView(
                     appConfig: env.appConfig,
@@ -125,11 +131,20 @@ struct RootView: View {
                         onSetEnabled: { env.setSyncPreference($0 ? .on : .off) }
                     ),
                     appLock: env.appLock,
-                    onSetResurfacing: { await env.setResurfacingEnabled($0) }
+                    onSetResurfacing: { await env.setResurfacingEnabled($0) },
+                    screenshotInbox: SettingsToggleState(
+                        isOn: env.screenshotInbox.isEnabled,
+                        onSet: { on in
+                            if on { await env.screenshotInbox.enable() } else { env.screenshotInbox.disable() }
+                        }
+                    )
                 )
                 .presentationDetents([.large])
             case .recentlyDeleted:
                 RecentlyDeletedView(onDismiss: { env.requestedModal = nil })
+                    .presentationDetents([.large])
+            case .screenshotInbox:
+                ScreenshotInboxView(inbox: env.screenshotInbox, onDone: { env.requestedModal = nil })
                     .presentationDetents([.large])
             case .widgetHowTo:
                 WidgetHowToView(onDone: {
@@ -342,6 +357,11 @@ struct RootView: View {
                     onPresentGratitude: { env.requestedModal = .gratitude },
                     onPresentCapture: { env.requestedModal = .capture },
                     shouldShowYearInReviewBanner: env.shouldOfferYearInReview(),
+                    screenshotNudge: env.screenshotInbox.pending.isEmpty
+                        ? nil
+                        : HomeScreenshotNudge(count: env.screenshotInbox.pending.count) {
+                            env.requestedModal = .screenshotInbox
+                        },
                     widgetNudge: env.showsWidgetNudge
                         ? HomeWidgetNudge(
                             onShowHow: { env.requestedModal = .widgetHowTo },
@@ -427,7 +447,9 @@ struct RootView: View {
         .tabViewBottomAccessory {
             CaptureAccessory(
                 onCapture: { env.requestedModal = .capture },
-                onVoiceCapture: { env.requestedModal = .captureVoice }
+                onVoiceCapture: { env.requestedModal = .captureVoice },
+                onHoldStart: { Task { await env.quickVoice.begin() } },
+                onHoldEnd: { Task { await env.quickVoice.finish() } }
             )
         }
         .tint(OrbitColor.textPrimary)
@@ -491,8 +513,9 @@ struct RootView: View {
     }
 
     /// The capture sheet. `startInVoice` opens it ready to record (the
-    /// capture accessory's mic button).
-    private func captureSheet(startInVoice: Bool) -> some View {
+    /// capture accessory's mic button); `startRecording` also starts the
+    /// recording immediately (the Control Center / Action Button control).
+    private func captureSheet(startInVoice: Bool, startRecording: Bool = false) -> some View {
         let model = CaptureViewModel(
             captureMemory: env.captureMemory,
             mediaStorage: env.mediaStorage,
@@ -507,6 +530,7 @@ struct RootView: View {
             }
         )
         if startInVoice { model.mode = .voice }
+        if startRecording { Task { await model.startRecording() } }
         return CaptureView(
             viewModel: model,
             onCompleted: { memoryID in
@@ -552,6 +576,8 @@ struct RootView: View {
         switch deepLink {
         case .capture:
             env.requestedModal = .capture
+        case .recordVoice:
+            env.requestedModal = .recordVoiceNow
         case .search:
             selectedTab = .search
         case .yearInReview:

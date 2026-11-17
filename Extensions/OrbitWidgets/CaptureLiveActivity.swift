@@ -46,6 +46,7 @@ struct CaptureLiveActivity: Widget {
                             .font(.system(size: 13))
                             .foregroundStyle(OrbitColor.textSecondary)
                         Spacer(minLength: 0)
+                        StopButton()
                     }
                     .padding(.horizontal, 6)
                     .padding(.top, 2)
@@ -91,6 +92,7 @@ struct CaptureLiveActivity: Widget {
                     .layoutPriority(1)
                 WaveformBars(height: 22)
                 Spacer(minLength: 0)
+                StopButton()
             }
         }
         .padding(.horizontal, 18)
@@ -173,5 +175,21 @@ private struct WaveformBars: View {
         }
         .frame(height: height)
         .onAppear { animate = true }
+    }
+}
+
+/// Stops and saves the recording without opening Orbit.
+private struct StopButton: View {
+    var body: some View {
+        Button(intent: StopRecordingIntent()) {
+            Label("Stop", systemImage: "stop.fill")
+                .labelStyle(.iconOnly)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(OrbitColor.textInverted)
+                .frame(width: 36, height: 36)
+                .background(Color.red, in: .circle)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Stop recording")
     }
 }

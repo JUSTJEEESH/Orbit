@@ -8,8 +8,11 @@ import Foundation
 /// - `orbit://memory/<uuid>` → opens Memory Detail for that memory, pushed
 ///                              onto the Timeline tab's NavigationStack
 /// - `orbit://year-in-review` → opens Year in Review (App Store in-app event)
+/// - `orbit://record` → opens capture already recording a voice note
+///                      (Control Center, Lock Screen, Action Button, widgets)
 enum DeepLink: Equatable {
     case capture
+    case recordVoice
     case search(query: String)
     case memory(id: UUID)
     case yearInReview
@@ -20,6 +23,8 @@ enum DeepLink: Equatable {
         switch url.host {
         case "capture":
             self = .capture
+        case "record":
+            self = .recordVoice
         case "search":
             let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
             let q = components?.queryItems?.first(where: { $0.name == "q" })?.value ?? ""

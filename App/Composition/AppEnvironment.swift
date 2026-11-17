@@ -46,6 +46,10 @@ final class AppEnvironment {
     let healthKit: HealthKitService
     let reviewPrompts: ReviewPromptService
     let appLock: AppLockService
+    /// Hold-to-talk from the capture bar.
+    let quickVoice: QuickVoiceCapture
+    /// Turns recent screenshots into memories (opt-in).
+    let screenshotInbox: ScreenshotInbox
     let proGates: ProGateService
 
     let captureMemory: CaptureMemoryUseCase
@@ -338,7 +342,8 @@ final class AppEnvironment {
         self.healthKit = HealthKitService()
         self.reviewPrompts = ReviewPromptService()
         self.appLock = AppLockService()
-        self.proGates = ProGateService(entitlements: entitlements)
+        let proGates = ProGateService(entitlements: entitlements)
+        self.proGates = proGates
 
         let alreadyOnboarded = UserDefaults.standard.bool(forKey: Self.onboardingKey)
         self.onboardingComplete = alreadyOnboarded
@@ -350,7 +355,13 @@ final class AppEnvironment {
             clock: clock,
             signalExtractor: signals
         )
+        self.quickVoice = QuickVoiceCapture(
+            storage: mediaStorage,
+            capture: captureMemoryUseCase,
+            voiceCap: { proGates.canAccess(.voiceLength) ? nil : ProGateService.freeVoiceSeconds }
+        )
         self.captureMemory = captureMemoryUseCase
+        self.screenshotInbox = ScreenshotInbox(storage: mediaStorage, ocr: ocr, capture: captureMemoryUseCase, tasks: tasks)
         self.watchSession = watchSession ?? WatchSessionService(
             mediaStorage: mediaStorage,
             captureMemory: captureMemoryUseCase
@@ -449,6 +460,23 @@ final class AppEnvironment {
 
         // Same pattern for the watch session — the receiver needs to nudge
         // the timeline + schedule enrichment after each watch capture.
+        self.screenshotInbox.onSaved = { [weak self] memoryID, task in
+            guard let self else { return }
+            self.memoriesDidChange()
+            self.scheduleEnrichment(for: memoryID)
+            if let task {
+                Task {
+                    await self.remindersSync.mirror(task)
+                    await self.calendarSync.mirror(task)
+                    await self.syncTaskReminder(for: task)
+                }
+            }
+        }
+        self.quickVoice.onSaved = { [weak self] memoryID in
+            guard let self else { return }
+            self.memoriesDidChange()
+            self.scheduleEnrichment(for: memoryID)
+        }
         self.watchSession.onCapture = { [weak self] memoryID in
             guard let self else { return }
             self.memoriesDidChange()

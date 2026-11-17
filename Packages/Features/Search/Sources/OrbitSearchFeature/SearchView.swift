@@ -72,6 +72,7 @@ public struct SearchView: View {
         .navigationDestination(for: MemoryDetailRoute.self) { route in
             MemoryDetailView(
                 viewModel: makeDetailViewModel(route.memoryID),
+                searchQuery: route.searchQuery,
                 onDeleted: {}
             )
             .navigationTransition(.zoom(sourceID: route.memoryID, in: heroNamespace))
@@ -203,7 +204,7 @@ public struct SearchView: View {
         ScrollView {
             LazyVStack(spacing: OrbitSpacing.sm) {
                 ForEach(model.results) { result in
-                    NavigationLink(value: MemoryDetailRoute(memoryID: result.memory.id)) {
+                    NavigationLink(value: MemoryDetailRoute(memoryID: result.memory.id, searchQuery: model.query)) {
                         SearchResultRow(result: result)
                     }
                     .buttonStyle(OrbitBloomButtonStyle(

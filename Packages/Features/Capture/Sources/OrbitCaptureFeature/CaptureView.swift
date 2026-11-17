@@ -178,11 +178,12 @@ public struct CaptureView: View {
     private var voiceTranscriptPreview: some View {
         switch model.voiceState {
         case .idle:
-            Text("Tap the mic to start recording. Up to 30 seconds works best.")
+            Text("Tap the mic and talk. Your words appear as you speak.")
                 .font(OrbitTypography.callout)
                 .foregroundStyle(OrbitColor.textSecondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
         case .recording(let elapsed, _):
+            VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
             HStack(spacing: OrbitSpacing.sm) {
                 RecordingIndicator(isActive: true)
                 Text(Self.formatDuration(elapsed))
@@ -199,6 +200,18 @@ public struct CaptureView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .animation(OrbitMotion.snap, value: model.voiceRemainingSeconds.map { Int($0) })
+                // Live, on-device transcript as you speak.
+                if !model.liveTranscript.isEmpty {
+                    Text(model.liveTranscript)
+                        .font(OrbitTypography.body)
+                        .foregroundStyle(OrbitColor.textPrimary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .contentTransition(.opacity)
+                        .animation(OrbitMotion.smooth, value: model.liveTranscript)
+                        .accessibilityLabel("Heard so far: \(model.liveTranscript)")
+                }
+            }
         case .transcribing(_, let duration, _):
             HStack(spacing: OrbitSpacing.sm) {
                 ProgressView()

@@ -29,6 +29,8 @@ public struct HomeView: View {
     private let shouldShowYearInReviewBanner: Bool
     /// The "Add a widget" card, when it should show.
     private let widgetNudge: HomeWidgetNudge?
+    /// "N new screenshots to sort", when the Screenshot Inbox has some.
+    private let screenshotNudge: HomeScreenshotNudge?
 
     @State private var memories: [Memory] = []
     @State private var loadState: LoadState = .idle
@@ -63,6 +65,7 @@ public struct HomeView: View {
         onPresentGratitude: @escaping @MainActor () -> Void,
         onPresentCapture: @escaping @MainActor () -> Void,
         shouldShowYearInReviewBanner: Bool = false,
+        screenshotNudge: HomeScreenshotNudge? = nil,
         widgetNudge: HomeWidgetNudge? = nil
     ) {
         self.listMemories = listMemories
@@ -84,6 +87,7 @@ public struct HomeView: View {
         self.onPresentCapture = onPresentCapture
         self.shouldShowYearInReviewBanner = shouldShowYearInReviewBanner
         self.widgetNudge = widgetNudge
+        self.screenshotNudge = screenshotNudge
     }
 
     public var body: some View {
@@ -310,6 +314,9 @@ public struct HomeView: View {
                 yearInReviewBanner
             }
             todaySection
+            if let screenshotNudge {
+                ScreenshotNudgeCard(nudge: screenshotNudge, accent: themeAccent)
+            }
             if let widgetNudge {
                 WidgetNudgeCard(nudge: widgetNudge, accent: themeAccent)
             }

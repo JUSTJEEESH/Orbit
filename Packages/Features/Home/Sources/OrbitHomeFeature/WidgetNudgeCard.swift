@@ -63,3 +63,51 @@ struct WidgetNudgeCard: View {
         }
     }
 }
+
+/// What Home needs to show the Screenshot Inbox card.
+public struct HomeScreenshotNudge {
+    public let count: Int
+    public let onOpen: @MainActor () -> Void
+
+    public init(count: Int, onOpen: @escaping @MainActor () -> Void) {
+        self.count = count
+        self.onOpen = onOpen
+    }
+}
+
+/// "3 new screenshots to sort" — opens the Screenshot Inbox.
+struct ScreenshotNudgeCard: View {
+    let nudge: HomeScreenshotNudge
+    let accent: Color
+
+    var body: some View {
+        Button {
+            Haptics.play(.tap)
+            nudge.onOpen()
+        } label: {
+            OrbitCard {
+                HStack(spacing: OrbitSpacing.md) {
+                    Image(systemName: "rectangle.on.rectangle")
+                        .font(OrbitTypography.title3)
+                        .foregroundStyle(accent)
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: OrbitSpacing.xxs) {
+                        Text(nudge.count == 1 ? "1 new screenshot to sort" : "\(nudge.count) new screenshots to sort")
+                            .font(OrbitTypography.bodyEmphasized)
+                            .foregroundStyle(OrbitColor.textPrimary)
+                            .contentTransition(.numericText(value: Double(nudge.count)))
+                        Text("Keep what matters, with reminders for anything dated.")
+                            .font(OrbitTypography.footnote)
+                            .foregroundStyle(OrbitColor.textSecondary)
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right")
+                        .font(OrbitTypography.footnote)
+                        .foregroundStyle(OrbitColor.textTertiary)
+                        .accessibilityHidden(true)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+}

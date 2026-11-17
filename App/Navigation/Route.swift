@@ -35,6 +35,8 @@ enum AppModal: Hashable, Identifiable {
     case capture
     /// Capture, opened ready to record a voice note.
     case captureVoice
+    /// Capture, already recording (from a Control or widget).
+    case recordVoiceNow
     case settings
     case paywall
     case dailyRecap
@@ -46,6 +48,7 @@ enum AppModal: Hashable, Identifiable {
     case recentlyDeleted
     case whatsNew
     case widgetHowTo
+    case screenshotInbox
     /// Soft contextual paywall — presented when a free user lands on a
     /// gated surface. Carries the specific gate so the sheet can lead
     /// with feature-aware copy ("you've savored your free recaps").

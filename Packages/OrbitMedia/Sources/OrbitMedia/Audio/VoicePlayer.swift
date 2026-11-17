@@ -71,6 +71,14 @@ public final class VoicePlayer {
         beginTicking(player: player)
     }
 
+    /// Plays the file at `url` starting `time` seconds in (search hits in a
+    /// voice note jump straight to the moment the words were said).
+    public func play(url: URL, from time: TimeInterval) {
+        play(url: url)
+        guard let player, loadedURL == url else { return }
+        player.currentTime = max(0, min(time, player.duration))
+    }
+
     public func pause() {
         guard let player else { return }
         player.pause()

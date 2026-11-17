@@ -29,6 +29,7 @@ extension AppEnvironment {
         await purgeExpiredRecentlyDeleted()
         await refreshResurfacing()
         await evaluateWidgetNudge()
+        await screenshotInbox.scan()
     }
 
     // MARK: - Legacy store rescue

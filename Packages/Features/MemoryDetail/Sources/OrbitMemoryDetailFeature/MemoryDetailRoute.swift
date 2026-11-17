@@ -6,8 +6,12 @@ import Foundation
 /// repository.
 public struct MemoryDetailRoute: Hashable, Sendable {
     public let memoryID: UUID
+    /// What the user searched for, when they arrived from Search. Voice
+    /// notes use it to offer playback from the moment the words were said.
+    public let searchQuery: String?
 
-    public init(memoryID: UUID) {
+    public init(memoryID: UUID, searchQuery: String? = nil) {
         self.memoryID = memoryID
+        self.searchQuery = searchQuery
     }
 }

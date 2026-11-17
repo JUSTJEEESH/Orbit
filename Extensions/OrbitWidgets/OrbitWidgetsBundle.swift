@@ -8,5 +8,7 @@ struct OrbitWidgetsBundle: WidgetBundle {
         RecentMemoryWidget()
         WorthRevisitingWidget()
         CaptureLiveActivity()
+        RecordMemoryControl()
+        WriteMemoryControl()
     }
 }

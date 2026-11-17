@@ -78,8 +78,16 @@ public final class CaptureViewModel {
     /// immediately.
     private let voiceCapProvider: @MainActor () -> TimeInterval?
 
-    private var recorder: VoiceRecorder?
+    private var recorder: LiveVoiceRecorder?
+    /// Timed transcript pieces from live transcription, saved with the memory
+    /// so search can jump to the moment something was said.
+    private var recordedSegments: [TranscriptSegment] = []
+
+    /// What's been heard so far while recording, shown as you speak.
+    public private(set) var liveTranscript = ""
     private var recordTask: Task<Void, Never>?
+    /// Listens for Stop on the recording Live Activity.
+    private var stopRequestTask: Task<Void, Never>?
     private var draftSaveTask: Task<Void, Never>?
 
     public init(
@@ -167,9 +175,12 @@ public final class CaptureViewModel {
                     content: .voiceNote(transcript: transcript, duration: duration),
                     media: [asset],
                     surfaceDate: surfaceDate,
-                    isLetter: isLetter
+                    isLetter: isLetter,
+                    transcriptSegments: recordedSegments
                 )
                 voiceState = .idle
+                recordedSegments = []
+                liveTranscript = ""
 
             case .photo:
                 guard let data = photoData else { throw CaptureError.invalidState }
@@ -217,20 +228,27 @@ public final class CaptureViewModel {
     // MARK: - Voice recording
 
     public func startRecording() async {
-        // Pre-flight both mic and speech permissions before we open the
-        // audio session. Catching denials up-front means the user can't
-        // talk into a recording that will never transcribe — they get
-        // a clear "open Settings" path instead.
+        // Pre-flight permissions before opening the audio session: the
+        // microphone is required (with an "open Settings" path if denied);
+        // speech recognition is only requested.
         guard await ensureVoicePermissions() else { return }
 
-        let recorder = VoiceRecorder(storage: mediaStorage)
+        let recorder = LiveVoiceRecorder(storage: mediaStorage)
         self.recorder = recorder
+        liveTranscript = ""
+        recordedSegments = []
         do {
             let stream = try await recorder.start()
             voiceState = .recording(elapsed: 0, levels: [])
             // Surface the recording in the Dynamic Island + Lock Screen.
             // Silently no-ops if Live Activities are off in iOS Settings.
             liveActivity.start()
+            stopRequestTask = Task { @MainActor [weak self] in
+                for await _ in NotificationCenter.default.notifications(named: .orbitStopRecordingRequested) {
+                    await self?.stopRecording()
+                    break
+                }
+            }
             recordTask = Task { @MainActor [weak self] in
                 guard let self else { return }
                 var collected: [Float] = []
@@ -239,6 +257,9 @@ public final class CaptureViewModel {
                     collected.append(event.level)
                     if collected.count > 600 { collected.removeFirst(collected.count - 600) }
                     self.voiceState = .recording(elapsed: event.elapsed, levels: collected)
+                    if event.transcript != self.liveTranscript {
+                        self.liveTranscript = event.transcript
+                    }
 
                     // Free-tier cap. Evaluating the closure every tick
                     // lets a Pro upgrade mid-recording lift the cap
@@ -274,6 +295,8 @@ public final class CaptureViewModel {
         guard let recorder else { return }
         recordTask?.cancel()
         recordTask = nil
+        stopRequestTask?.cancel()
+        stopRequestTask = nil
         // End the activity as soon as the user stops capturing, regardless
         // of what comes next (transcription, silent-clip cleanup, error).
         liveActivity.end()
@@ -290,6 +313,14 @@ public final class CaptureViewModel {
                 voiceState = .idle
                 errorMessage = "We didn't hear anything. Check your microphone, then try again."
                 Haptics.play(.failure)
+                return
+            }
+
+            // Live transcription already produced the text: no waiting.
+            if let transcript = result.transcript {
+                recordedSegments = result.segments
+                voiceState = .recorded(file: result.file, duration: result.duration, transcript: transcript)
+                Haptics.play(.success)
                 return
             }
 
@@ -323,6 +354,8 @@ public final class CaptureViewModel {
         // Ensure the activity is gone if the user discards mid-recording too.
         liveActivity.end()
         voiceState = .idle
+        recordedSegments = []
+        liveTranscript = ""
     }
 
     /// Re-runs transcription against the already-recorded audio file.
@@ -368,15 +401,11 @@ public final class CaptureViewModel {
             return false
         }
 
-        // Speech recognition.
+        // Speech recognition is requested but not required: live on-device
+        // transcription doesn't need it, and without any transcription the
+        // voice note still saves as audio (1.x refused to record at all).
         if SpeechPermission.current == .undetermined {
             _ = await SpeechPermission.request()
-        }
-        if SpeechPermission.current != .granted {
-            errorMessage = "Speech recognition is off. Turn it on in Settings so Orbit can transcribe voice notes."
-            errorOffersSettings = true
-            Haptics.play(.warning)
-            return false
         }
 
         errorMessage = nil

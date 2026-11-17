@@ -14,11 +14,16 @@ public struct MemoryDetailView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private let onDeleted: @MainActor () -> Void
 
+    /// The search that led here, if any (for "play from the moment").
+    private let searchQuery: String?
+
     public init(
         viewModel: MemoryDetailViewModel,
+        searchQuery: String? = nil,
         onDeleted: @escaping @MainActor () -> Void
     ) {
         self._model = State(initialValue: viewModel)
+        self.searchQuery = searchQuery
         self.onDeleted = onDeleted
     }
 
@@ -272,6 +277,7 @@ public struct MemoryDetailView: View {
             OrbitCard {
                 VStack(alignment: .leading, spacing: OrbitSpacing.md) {
                     voicePlaybackBar(duration: duration)
+                    jumpToMomentButton
                     Text(transcript.flatMap { $0.isEmpty ? nil : $0 } ?? "No transcript yet")
                         .font(OrbitTypography.body)
                         .foregroundStyle(transcript?.isEmpty == false
@@ -451,6 +457,27 @@ public struct MemoryDetailView: View {
                         .foregroundStyle(OrbitColor.textTertiary)
                 }
             }
+        }
+    }
+
+    /// When the user found this voice note by searching, offer to play from
+    /// the moment their words were said, instead of from the start.
+    @ViewBuilder
+    private var jumpToMomentButton: some View {
+        if let query = searchQuery,
+           let url = model.voiceFileURL,
+           let start = model.memory?.transcriptSegments.startTime(of: query) {
+            Button {
+                Haptics.play(.tap)
+                voicePlayer.play(url: url, from: start)
+            } label: {
+                Label("Play from “\(query)” · \(Self.formatDuration(start))", systemImage: "text.magnifyingglass")
+                    .font(OrbitTypography.callout)
+                    .foregroundStyle(OrbitColor.textPrimary)
+                    .frame(minHeight: OrbitHitTarget.minimum)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Play from where you said \(query), at \(Self.formatDuration(start))")
         }
     }
 
