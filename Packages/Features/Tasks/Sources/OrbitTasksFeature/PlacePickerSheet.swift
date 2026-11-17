@@ -84,43 +84,84 @@ struct PlacePickerSheet: View {
         }
     }
 
-    // A plain stack: search field, map, controls. An earlier version put
-    // the controls in a bottom safe-area inset alongside `.searchable`,
-    // whose iOS 26 search bar also lives at the bottom; each kept
-    // re-laying-out the other, an observation feedback loop that froze the
-    // sheet. Nothing here competes for the same edge.
+    // A plain stack with no navigation bar and no MapKit controls. Inside
+    // a sheet's NavigationStack, iOS 26 hands the map "bar layout guides"
+    // for the navigation bar and its floating controls; with the map
+    // sized by a stack, those guides demanded more height than the map
+    // had, and layout never settled (an earlier version also fought
+    // `.searchable` over the bottom edge). A custom header and our own
+    // locate button leave the map nothing to make room for.
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                searchBar
-                map
-                    .overlay(alignment: .top) { searchResults }
-                controls
+        VStack(spacing: 0) {
+            header
+            searchBar
+            map
+                .overlay(alignment: .top) { searchResults }
+                .overlay(alignment: .bottomTrailing) { locateButton }
+            controls
+        }
+        .background(OrbitColor.surfaceElevated)
+        .task {
+            // Arrival alerts need location anyway; asking here also lets
+            // the map open on where the user is.
+            let allowed = await finder.ensureAuthorization()
+            guard allowed else {
+                locationMessage = "Location is off for Orbit, so iPhone can\u{2019}t remind you on arrival. You can turn it on in Settings."
+                return
             }
-            .background(OrbitColor.surfaceElevated)
-            .navigationTitle(placeName.isEmpty ? "Choose a Place" : "Where is \(placeName)?")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") { onCancel() }
-                    }
-                }
-                .task {
-                    // Arrival alerts need location anyway; asking here also
-                    // lets the map open on where the user is.
-                    let allowed = await finder.ensureAuthorization()
-                    guard allowed else {
-                        locationMessage = "Location is off for Orbit, so iPhone can\u{2019}t remind you on arrival. You can turn it on in Settings."
-                        return
-                    }
-                    if !startsAtExistingPlace, let here = try? await finder.currentCoordinate() {
-                        position = .region(MKCoordinateRegion(
-                            center: CLLocationCoordinate2D(latitude: here.latitude, longitude: here.longitude),
-                            latitudinalMeters: Self.resultSpanMeters,
-                            longitudinalMeters: Self.resultSpanMeters
-                        ))
-                    }
-                }
+            if !startsAtExistingPlace {
+                await centerOnUser(animated: false)
+            }
+        }
+    }
+
+    private var header: some View {
+        ZStack {
+            Text(placeName.isEmpty ? "Choose a Place" : "Where is \(placeName)?")
+                .font(OrbitTypography.bodyEmphasized)
+                .foregroundStyle(OrbitColor.textPrimary)
+                .lineLimit(1)
+                .padding(.horizontal, OrbitSpacing.xxxl * 2)
+                .accessibilityAddTraits(.isHeader)
+            HStack {
+                Button("Cancel") { onCancel() }
+                    .font(OrbitTypography.body)
+                    .frame(minHeight: OrbitHitTarget.minimum)
+                Spacer()
+            }
+        }
+        .padding(.horizontal, OrbitSpacing.md)
+        .padding(.top, OrbitSpacing.sm)
+    }
+
+    private var locateButton: some View {
+        Button {
+            Haptics.play(.selection)
+            Task { await centerOnUser(animated: true) }
+        } label: {
+            Image(systemName: "location.fill")
+                .font(OrbitTypography.bodyEmphasized)
+                .foregroundStyle(orbitTheme.primary)
+                .frame(width: OrbitHitTarget.minimum, height: OrbitHitTarget.minimum)
+                .background(OrbitColor.surfaceElevated, in: .circle)
+                .orbitShadow(.lifted)
+        }
+        .buttonStyle(.plain)
+        .padding(OrbitSpacing.md)
+        .accessibilityLabel("Center on my location")
+    }
+
+    private func centerOnUser(animated: Bool) async {
+        guard let here = try? await finder.currentCoordinate() else { return }
+        let region = MKCoordinateRegion(
+            center: CLLocationCoordinate2D(latitude: here.latitude, longitude: here.longitude),
+            latitudinalMeters: Self.resultSpanMeters,
+            longitudinalMeters: Self.resultSpanMeters
+        )
+        if animated {
+            withAnimation(OrbitMotion.smooth) { position = .region(region) }
+        } else {
+            position = .region(region)
         }
     }
 
@@ -134,10 +175,6 @@ struct PlacePickerSheet: View {
                     .foregroundStyle(orbitTheme.primary.opacity(0.15))
                     .stroke(orbitTheme.primary, lineWidth: 2)
             }
-        }
-        .mapControls {
-            MapUserLocationButton()
-            MapCompass()
         }
         // `.onEnd`, not `.continuous`: writing state on every camera frame
         // re-renders the sheet, which nudges the map's layout, which moves
