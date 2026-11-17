@@ -186,6 +186,7 @@ extension MemoryTaskEntity {
         self.calendarEventIdentifier = task.calendarEventIdentifier
         self.createdAt = task.createdAt
         self.completedAt = task.completedAt
+        self.promisedTo = task.promisedTo
     }
 
     func toDomain() -> MemoryTask {
@@ -201,7 +202,8 @@ extension MemoryTaskEntity {
             remindersIdentifier: remindersIdentifier,
             calendarEventIdentifier: calendarEventIdentifier,
             createdAt: createdAt,
-            completedAt: completedAt
+            completedAt: completedAt,
+            promisedTo: promisedTo
         )
     }
 }

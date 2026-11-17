@@ -12,21 +12,56 @@ public struct ExtractedSignals: Codable, Sendable, Hashable {
     public var taskHints: [TaskHint]
     public var habitMentions: [HabitMention]
     public var readingItems: [ReadingItem]
+    /// Promises to other people ("I told Sam I'd send the photos"). Added in
+    /// 2.0.
+    public var promises: [PromiseHint]
 
     public init(
         taskHints: [TaskHint] = [],
         habitMentions: [HabitMention] = [],
-        readingItems: [ReadingItem] = []
+        readingItems: [ReadingItem] = [],
+        promises: [PromiseHint] = []
     ) {
         self.taskHints = taskHints
         self.habitMentions = habitMentions
         self.readingItems = readingItems
+        self.promises = promises
+    }
+
+    /// Every field defaults when its key is missing. Signals are stored as
+    /// JSON on each memory; without this, adding a field (as 2.0 does with
+    /// `promises`) would make every stored blob fail to decode and silently
+    /// drop all existing signals.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        taskHints = try container.decodeIfPresent([TaskHint].self, forKey: .taskHints) ?? []
+        habitMentions = try container.decodeIfPresent([HabitMention].self, forKey: .habitMentions) ?? []
+        readingItems = try container.decodeIfPresent([ReadingItem].self, forKey: .readingItems) ?? []
+        promises = try container.decodeIfPresent([PromiseHint].self, forKey: .promises) ?? []
     }
 
     public static let empty = ExtractedSignals()
 
     public var isEmpty: Bool {
-        taskHints.isEmpty && habitMentions.isEmpty && readingItems.isEmpty
+        taskHints.isEmpty && habitMentions.isEmpty && readingItems.isEmpty && promises.isEmpty
+    }
+}
+
+/// "I told Sam I'd send the photos" — a commitment to a person, surfaced
+/// in the Promise Ledger and on that person's page.
+public struct PromiseHint: Codable, Sendable, Hashable, Identifiable {
+    public var id: UUID
+    /// Who the promise was made to.
+    public var person: String
+    /// What was promised ("send the photos").
+    public var item: String
+    public var dueDate: Date?
+
+    public init(id: UUID = UUID(), person: String, item: String, dueDate: Date? = nil) {
+        self.id = id
+        self.person = person
+        self.item = item
+        self.dueDate = dueDate
     }
 }
 

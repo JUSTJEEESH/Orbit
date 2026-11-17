@@ -232,6 +232,7 @@ extension StoreBackedTests {
             #expect(task.calendarEventIdentifier == "event-456")
             #expect(task.createdAt == Fixture.created)
             #expect(task.completedAt == Fixture.updated)
+            #expect(task.promisedTo == nil)
 
             let insight = try #require(try context.fetch(FetchDescriptor<AIInsightEntity>()).first)
             #expect(insight.id == Fixture.insightID)

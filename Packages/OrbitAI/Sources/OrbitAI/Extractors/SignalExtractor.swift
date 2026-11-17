@@ -29,7 +29,8 @@ public struct SignalExtractor: SignalExtracting {
         return ExtractedSignals(
             taskHints: extractTaskHints(text, fallbackDate: nearestDate),
             habitMentions: extractHabits(text, occurredAt: memory.createdAt),
-            readingItems: extractReadingItems(text) + implicitReadingItems(for: memory.content)
+            readingItems: extractReadingItems(text) + implicitReadingItems(for: memory.content),
+            promises: PromiseExtractor.extract(from: text)
         )
     }
 

@@ -137,6 +137,9 @@ public final class MemoryTaskEntity {
     public var calendarEventIdentifier: String?
     public var createdAt: Date = Date()
     public var completedAt: Date?
+    /// Who this task was promised to (Promise Ledger). Added in schema V2;
+    /// optional so 1.x rows migrate untouched.
+    public var promisedTo: String?
 
     public init(
         id: UUID = UUID(),

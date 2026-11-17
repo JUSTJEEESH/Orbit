@@ -24,6 +24,8 @@ public struct MemoryTask: Identifiable, Sendable, Hashable {
     public var calendarEventIdentifier: String?
     public var createdAt: Date
     public var completedAt: Date?
+    /// Set when this task is a promise to someone (the Promise Ledger).
+    public var promisedTo: String?
 
     public init(
         id: UUID = UUID(),
@@ -37,7 +39,8 @@ public struct MemoryTask: Identifiable, Sendable, Hashable {
         remindersIdentifier: String? = nil,
         calendarEventIdentifier: String? = nil,
         createdAt: Date,
-        completedAt: Date? = nil
+        completedAt: Date? = nil,
+        promisedTo: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -50,6 +53,7 @@ public struct MemoryTask: Identifiable, Sendable, Hashable {
         self.remindersIdentifier = remindersIdentifier
         self.calendarEventIdentifier = calendarEventIdentifier
         self.createdAt = createdAt
+        self.promisedTo = promisedTo
         self.completedAt = completedAt
     }
 }

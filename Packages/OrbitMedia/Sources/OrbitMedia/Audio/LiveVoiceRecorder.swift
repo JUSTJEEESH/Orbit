@@ -1,4 +1,5 @@
 import AVFoundation
+import CoreMedia
 import Foundation
 import os
 import OrbitDomain
@@ -55,14 +56,14 @@ public actor LiveVoiceRecorder {
     /// The format recordings are stored in: 16 kHz mono 16-bit PCM, the same
     /// as Orbit's earlier recorder, so every existing playback and fallback
     /// transcription path keeps working unchanged.
-    private static let fileSettings: [String: Any] = [
+    private static var fileSettings: [String: Any] { [
         AVFormatIDKey: kAudioFormatLinearPCM,
         AVSampleRateKey: 16_000,
         AVNumberOfChannelsKey: 1,
         AVLinearPCMBitDepthKey: 16,
         AVLinearPCMIsFloatKey: false,
         AVLinearPCMIsBigEndianKey: false,
-    ]
+    ] }
 
     /// Microphone buffer size: about 85 ms at 48 kHz, so the waveform and
     /// live text update roughly 12 times a second.
@@ -376,7 +377,10 @@ private final class AudioPipeline: @unchecked Sendable {
         let ratio = format.sampleRate / buffer.format.sampleRate
         let capacity = AVAudioFrameCount((Double(buffer.frameLength) * ratio).rounded(.up)) + 1
         guard let output = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: capacity) else { return nil }
-        var supplied = false
+        // The input block runs synchronously inside `convert`, on this
+        // thread, so these captures are never shared across threads.
+        nonisolated(unsafe) var supplied = false
+        nonisolated(unsafe) let input = buffer
         var error: NSError?
         converter.convert(to: output, error: &error) { _, status in
             if supplied {
@@ -385,7 +389,7 @@ private final class AudioPipeline: @unchecked Sendable {
             }
             supplied = true
             status.pointee = .haveData
-            return buffer
+            return input
         }
         guard error == nil, output.frameLength > 0 else { return nil }
         return output
