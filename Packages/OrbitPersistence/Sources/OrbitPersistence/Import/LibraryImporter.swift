@@ -223,7 +223,8 @@ extension ExportedTask {
             dueDate: dueDate,
             linkedMemoryID: linkedMemoryID,
             createdAt: createdAt,
-            completedAt: completedAt
+            completedAt: completedAt,
+            promisedTo: promisedTo
         )
     }
 }

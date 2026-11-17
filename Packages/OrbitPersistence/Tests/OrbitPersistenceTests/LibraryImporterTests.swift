@@ -106,4 +106,20 @@ struct LibraryImporterTests {
         let summary = try await LibraryImporter.importFiles([url], memories: InMemoryMemoryRepository(), tasks: InMemoryTaskRepository())
         #expect(summary.unreadableFiles == 1)
     }
+
+    @Test func promiseSurvivesExportAndRestore() throws {
+        let task = MemoryTask(title: "Send the photos", createdAt: Date(timeIntervalSince1970: 1_750_000_000), promisedTo: "Sam")
+        let data = try JSONEncoder().encode(ExportedTask(task))
+        let restored = try JSONDecoder().decode(ExportedTask.self, from: data).restoredTask()
+        #expect(restored.promisedTo == "Sam")
+    }
+
+    @Test func taskExportedBefore2_0StillDecodes() throws {
+        let legacy = """
+        {"id":"\(UUID().uuidString)","title":"Buy milk","isCompleted":false,"createdAt":0}
+        """
+        let task = try JSONDecoder().decode(ExportedTask.self, from: Data(legacy.utf8)).restoredTask()
+        #expect(task.title == "Buy milk")
+        #expect(task.promisedTo == nil)
+    }
 }

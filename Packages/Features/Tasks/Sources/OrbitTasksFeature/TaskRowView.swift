@@ -40,6 +40,12 @@ struct TaskRowView: View {
                             .foregroundStyle(dueColor(due))
                         }
 
+                        if let person = task.promisedTo {
+                            Label("For \(person)", systemImage: "person.fill")
+                                .font(OrbitTypography.footnote)
+                                .foregroundStyle(orbitTheme.primary)
+                        }
+
                         if let memory = linkedMemory {
                             Text("From: \(memorySnippet(memory))")
                                 .font(OrbitTypography.caption)
@@ -131,6 +137,7 @@ struct TaskRowView: View {
 
     private var accessibilityLabel: String {
         var parts: [String] = [task.title]
+        if let person = task.promisedTo { parts.append("Promised to \(person).") }
         if task.isCompleted { parts.append("Completed.") }
         if let due = task.dueDate {
             parts.append("Due \(dueLabel(due)).")

@@ -188,6 +188,8 @@ struct ExportedTask: Codable, Equatable {
     var createdAt: Date
     var completedAt: Date?
     var linkedMemoryID: UUID?
+    /// Added in 2.0. Optional, so exports from 1.x still import.
+    var promisedTo: String?
 
     init(_ task: MemoryTask) {
         id = task.id
@@ -198,6 +200,7 @@ struct ExportedTask: Codable, Equatable {
         createdAt = task.createdAt
         completedAt = task.completedAt
         linkedMemoryID = task.linkedMemoryID
+        promisedTo = task.promisedTo
     }
 }
 

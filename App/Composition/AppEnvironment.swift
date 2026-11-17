@@ -85,6 +85,9 @@ final class AppEnvironment {
     let listReadingItems: ListReadingItemsUseCase
     let updateReadingItemStatus: UpdateReadingItemStatusUseCase
     let listHabits: ListHabitsUseCase
+    let loadPromiseLedger: LoadPromiseLedgerUseCase
+    let keepPromise: KeepPromiseUseCase
+    let promiseDismissals: any PromiseDismissalStore
     let listReminderSuggestions: ListReminderSuggestionsUseCase
     let promoteReminderToTask: PromoteReminderToTaskUseCase
     let captureGratitude: CaptureGratitudeUseCase
@@ -438,6 +441,9 @@ final class AppEnvironment {
         self.listReadingItems = ListReadingItemsUseCase(memories: memories)
         self.updateReadingItemStatus = UpdateReadingItemStatusUseCase(memories: memories, clock: clock)
         self.listHabits = ListHabitsUseCase(memories: memories, clock: clock)
+        self.loadPromiseLedger = LoadPromiseLedgerUseCase(memories: memories, tasks: tasks)
+        self.keepPromise = KeepPromiseUseCase(tasks: tasks, clock: clock)
+        self.promiseDismissals = UserDefaultsPromiseDismissalStore()
         self.listReminderSuggestions = ListReminderSuggestionsUseCase(
             memories: memories,
             tasks: tasks,

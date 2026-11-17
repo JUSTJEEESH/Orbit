@@ -6,11 +6,12 @@ import OrbitMemoryDetailFeature
 
 public struct TasksView: View {
     public enum Section: Hashable {
-        case tasks, reading, habits
+        case tasks, promises, reading, habits
 
         var title: String {
             switch self {
-            case .tasks:   return "Tasks"
+            case .tasks:    return "Tasks"
+            case .promises: return "Promises"
             case .reading: return "Reading"
             case .habits:  return "Habits"
             }
@@ -20,6 +21,7 @@ public struct TasksView: View {
     @State private var model: TasksViewModel
     @State private var readingModel: ReadingListViewModel
     @State private var habitsModel: HabitsViewModel
+    @State private var promisesModel: PromisesViewModel
     @State private var editing: MemoryTask?
     @State private var showingCompleted: Bool = false
     @State private var section: Section = .tasks
@@ -34,12 +36,14 @@ public struct TasksView: View {
         viewModel: TasksViewModel,
         readingViewModel: ReadingListViewModel,
         habitsViewModel: HabitsViewModel,
+        promisesViewModel: PromisesViewModel,
         refreshToken: Int = 0,
         makeDetailViewModel: @escaping @MainActor (UUID) -> MemoryDetailViewModel
     ) {
         self._model = State(initialValue: viewModel)
         self._readingModel = State(initialValue: readingViewModel)
         self._habitsModel = State(initialValue: habitsViewModel)
+        self._promisesModel = State(initialValue: promisesViewModel)
         self.refreshToken = refreshToken
         self.makeDetailViewModel = makeDetailViewModel
     }
@@ -54,6 +58,11 @@ public struct TasksView: View {
                     Group {
                         switch section {
                         case .tasks:   tasksBody
+                        case .promises: PromisesView(
+                            model: promisesModel,
+                            onOpenTask: { task in editing = task },
+                            onOpenMemory: { id in sheetMemory = MemoryIDBox(id: id) }
+                        )
                         case .reading: ReadingListView(
                             model: readingModel,
                             onOpenMemory: { id in sheetMemory = MemoryIDBox(id: id) }
@@ -73,6 +82,7 @@ public struct TasksView: View {
             // hooks; refreshing the tab pulls everything in step.
             await readingModel.load()
             await habitsModel.load()
+            await promisesModel.refresh()
         }
         .sheet(item: $editing) { task in
             TaskDetailSheet(
@@ -80,11 +90,17 @@ public struct TasksView: View {
                 linkedMemory: task.linkedMemoryID.flatMap { model.memoriesByID[$0] },
                 onSave: { updated in
                     editing = nil
-                    Task { await model.update(updated) }
+                    Task {
+                        await model.update(updated)
+                        await promisesModel.refresh()
+                    }
                 },
                 onDelete: {
                     editing = nil
-                    Task { await model.delete(task) }
+                    Task {
+                        await model.delete(task)
+                        await promisesModel.refresh()
+                    }
                 },
                 onDismiss: { editing = nil }
             )
@@ -115,6 +131,7 @@ public struct TasksView: View {
     private var sectionPicker: some View {
         Picker("Section", selection: $section) {
             Text("Tasks").tag(Section.tasks)
+            Text("Promises").tag(Section.promises)
             Text("Reading").tag(Section.reading)
             Text("Habits").tag(Section.habits)
         }

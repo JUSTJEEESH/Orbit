@@ -417,6 +417,17 @@ struct RootView: View {
                     updateStatus: env.updateReadingItemStatus
                 ),
                 habitsViewModel: HabitsViewModel(listHabits: env.listHabits),
+                promisesViewModel: PromisesViewModel(
+                    load: env.loadPromiseLedger,
+                    keep: env.keepPromise,
+                    toggleTask: env.toggleTask,
+                    dismissals: env.promiseDismissals,
+                    onTaskMutated: { task in
+                        await env.remindersSync.mirror(task)
+                        await env.calendarSync.mirror(task)
+                        await env.syncTaskReminder(for: task)
+                    }
+                ),
                 refreshToken: env.memoryListVersion,
                 makeDetailViewModel: makeDetailViewModel
             )
