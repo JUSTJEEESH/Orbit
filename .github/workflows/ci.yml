@@ -83,6 +83,18 @@ jobs:
             | tee xcodebuild-build.log | grep -E "error:|\*\* BUILD" || true
           grep -q "\*\* BUILD SUCCEEDED \*\*" xcodebuild-build.log
 
+      # Launches the Debug build in a simulator with the place-picker
+      # harness: catches hangs and layout loops that only show at runtime.
+      - name: Place picker smoke test (simulator)
+        run: Scripts/ci/place-picker-smoke.sh
+
+      - name: Upload smoke test log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: picker-smoke-log
+          path: picker-smoke.log
+
       - name: Upload build log
         if: failure()
         uses: actions/upload-artifact@v4

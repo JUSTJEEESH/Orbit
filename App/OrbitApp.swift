@@ -2,6 +2,7 @@ import SwiftUI
 import OrbitKit
 import OrbitDesignSystem
 import OrbitStore
+import OrbitTasksFeature
 import TipKit
 import os
 
@@ -92,7 +93,11 @@ private struct ContentRoot: View {
 
     var body: some View {
         Group {
-            if environment.onboardingComplete {
+            // Debug-only CI smoke test of the place picker (see
+            // `PlacePickerHarness`); never true in release builds.
+            if PlacePickerHarness.isRequested {
+                PlacePickerHarness()
+            } else if environment.onboardingComplete {
                 RootView()
             } else {
                 OnboardingView(

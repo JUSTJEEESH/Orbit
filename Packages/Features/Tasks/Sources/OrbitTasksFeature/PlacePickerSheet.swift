@@ -40,10 +40,15 @@ struct PlacePickerSheet: View {
     let onCancel: @MainActor () -> Void
 
     @State private var name: String
-    @State private var position: MapCameraPosition = .automatic
+    /// The latest camera move asked for (saved place, locate, search
+    /// result). The map applies each request once.
+    @State private var cameraRequest: PlaceMapCameraRequest?
     /// Changing an existing place opens on it; otherwise the map centers on
     /// the user once, after location access is settled.
     private let startsAtExistingPlace: Bool
+    /// Debug harness only (CI smoke test): moves the camera on a timer to
+    /// exercise the same path as a user dragging the map.
+    private let harnessMovesCamera: Bool
     @State private var center: CLLocationCoordinate2D?
     @State private var visibleRegion: MKCoordinateRegion?
     @State private var radius: ReminderRadius = .medium
@@ -64,8 +69,10 @@ struct PlacePickerSheet: View {
         current: PlaceCue? = nil,
         finder: PlaceFinder,
         onPick: @escaping @MainActor (PlaceCandidate, ReminderRadius) -> Void,
-        onCancel: @escaping @MainActor () -> Void
+        onCancel: @escaping @MainActor () -> Void,
+        harnessMovesCamera: Bool = false
     ) {
+        self.harnessMovesCamera = harnessMovesCamera
         self.placeName = placeName
         self.finder = finder
         self.onPick = onPick
@@ -74,11 +81,12 @@ struct PlacePickerSheet: View {
         self.startsAtExistingPlace = current != nil
         if let current {
             let coordinate = CLLocationCoordinate2D(latitude: current.latitude, longitude: current.longitude)
-            self._position = State(initialValue: .region(MKCoordinateRegion(
-                center: coordinate,
-                latitudinalMeters: Self.resultSpanMeters,
-                longitudinalMeters: Self.resultSpanMeters
-            )))
+            self._cameraRequest = State(initialValue: PlaceMapCameraRequest(
+                latitude: coordinate.latitude,
+                longitude: coordinate.longitude,
+                spanMeters: Self.resultSpanMeters,
+                animated: false
+            ))
             self._center = State(initialValue: coordinate)
             self._radius = State(initialValue: ReminderRadius(rawValue: current.radius) ?? .medium)
         }
@@ -111,6 +119,9 @@ struct PlacePickerSheet: View {
             }
             if !startsAtExistingPlace {
                 await centerOnUser(animated: false)
+            }
+            if harnessMovesCamera {
+                await runHarnessCameraMoves()
             }
         }
     }
@@ -158,35 +169,41 @@ struct PlacePickerSheet: View {
             latitudinalMeters: Self.resultSpanMeters,
             longitudinalMeters: Self.resultSpanMeters
         )
-        if animated {
-            withAnimation(OrbitMotion.smooth) { position = .region(region) }
-        } else {
-            position = .region(region)
+        cameraRequest = PlaceMapCameraRequest(
+            latitude: region.center.latitude,
+            longitude: region.center.longitude,
+            spanMeters: Self.resultSpanMeters,
+            animated: animated
+        )
+    }
+
+    /// Small hops around the starting point, like a user nudging the map.
+    private func runHarnessCameraMoves() async {
+        let offsets: [(Double, Double)] = [(0.002, 0), (0, 0.002), (-0.002, -0.002), (0.004, 0.001)]
+        for (latitudeOffset, longitudeOffset) in offsets {
+            try? await Task.sleep(for: .seconds(1.5))
+            guard let center else { continue }
+            cameraRequest = PlaceMapCameraRequest(
+                latitude: center.latitude + latitudeOffset,
+                longitude: center.longitude + longitudeOffset,
+                spanMeters: Self.resultSpanMeters,
+                animated: true
+            )
         }
     }
 
     // MARK: - Map
 
     private var map: some View {
-        Map(position: $position) {
-            UserAnnotation()
-            if let center {
-                MapCircle(center: center, radius: radius.rawValue)
-                    .foregroundStyle(orbitTheme.primary.opacity(0.15))
-                    .stroke(orbitTheme.primary, lineWidth: 2)
+        PlaceMapView(
+            cameraRequest: cameraRequest,
+            radius: radius.rawValue,
+            accent: orbitTheme.primary,
+            onCenterChange: { newCenter, region in
+                center = newCenter
+                visibleRegion = region
             }
-        }
-        // `.onEnd`, not `.continuous`: writing state on every camera frame
-        // re-renders the sheet, which nudges the map's layout, which moves
-        // the camera again — a layout feedback loop that froze the sheet.
-        // The pin is a fixed overlay, so it tracks the finger regardless;
-        // only the circle and the confirmed spot wait for the drag to end.
-        .onMapCameraChange(frequency: .onEnd) { context in
-            let region = context.region
-            if let visibleRegion, Self.isNegligibleChange(from: visibleRegion, to: region) { return }
-            center = region.center
-            visibleRegion = region
-        }
+        )
         .overlay {
             // Fixed pin: the map moves under it. The tip sits on the center.
             Image(systemName: "mappin")
@@ -196,18 +213,8 @@ struct PlacePickerSheet: View {
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
         }
+        .accessibilityElement(children: .contain)
         .accessibilityLabel("Map. Move it to put the pin on the place.")
-    }
-
-    /// Camera moves smaller than this (degrees, about a meter) are layout
-    /// jitter, not the user moving the map.
-    private static let negligibleDegrees = 0.000_01
-
-    private static func isNegligibleChange(from old: MKCoordinateRegion, to new: MKCoordinateRegion) -> Bool {
-        abs(old.center.latitude - new.center.latitude) < negligibleDegrees
-            && abs(old.center.longitude - new.center.longitude) < negligibleDegrees
-            && abs(old.span.latitudeDelta - new.span.latitudeDelta) < negligibleDegrees
-            && abs(old.span.longitudeDelta - new.span.longitudeDelta) < negligibleDegrees
     }
 
     // MARK: - Search
@@ -289,14 +296,12 @@ struct PlacePickerSheet: View {
 
     private func select(_ candidate: PlaceCandidate) {
         Haptics.play(.selection)
-        let coordinate = CLLocationCoordinate2D(latitude: candidate.latitude, longitude: candidate.longitude)
-        withAnimation(OrbitMotion.smooth) {
-            position = .region(MKCoordinateRegion(
-                center: coordinate,
-                latitudinalMeters: Self.resultSpanMeters,
-                longitudinalMeters: Self.resultSpanMeters
-            ))
-        }
+        cameraRequest = PlaceMapCameraRequest(
+            latitude: candidate.latitude,
+            longitude: candidate.longitude,
+            spanMeters: Self.resultSpanMeters,
+            animated: true
+        )
         results = []
         query = ""
     }
