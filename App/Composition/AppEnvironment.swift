@@ -87,6 +87,7 @@ final class AppEnvironment {
     let listHabits: ListHabitsUseCase
     let loadPromiseLedger: LoadPromiseLedgerUseCase
     let loadWelcomeBack: LoadWelcomeBackUseCase
+    let generateWeeklyReview: GenerateWeeklyReviewUseCase
     let keepPromise: KeepPromiseUseCase
     let promiseDismissals: any PromiseDismissalStore
     let listReminderSuggestions: ListReminderSuggestionsUseCase
@@ -447,6 +448,7 @@ final class AppEnvironment {
         self.listHabits = ListHabitsUseCase(memories: memories, clock: clock)
         self.loadPromiseLedger = LoadPromiseLedgerUseCase(memories: memories, tasks: tasks)
         self.loadWelcomeBack = LoadWelcomeBackUseCase(tasks: tasks)
+        self.generateWeeklyReview = GenerateWeeklyReviewUseCase(memories: memories, tasks: tasks, clock: clock)
         self.keepPromise = KeepPromiseUseCase(tasks: tasks, clock: clock)
         self.promiseDismissals = UserDefaultsPromiseDismissalStore()
         self.listReminderSuggestions = ListReminderSuggestionsUseCase(

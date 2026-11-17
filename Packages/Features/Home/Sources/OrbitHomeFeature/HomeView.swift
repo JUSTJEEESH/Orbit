@@ -25,6 +25,8 @@ public struct HomeView: View {
     private let onPresentYearInReview: @MainActor () -> Void
     private let onPresentGratitude: @MainActor () -> Void
     private let onPresentCapture: @MainActor () -> Void
+    /// Opens the Weekly Review. Nil hides the Sunday card.
+    private let onPresentWeeklyReview: (@MainActor () -> Void)?
     private let loadGratitudeStatus: LoadGratitudeStatusUseCase
     private let shouldShowYearInReviewBanner: Bool
     /// The "Add a widget" card, when it should show.
@@ -66,6 +68,7 @@ public struct HomeView: View {
         onPresentYearInReview: @escaping @MainActor () -> Void,
         onPresentGratitude: @escaping @MainActor () -> Void,
         onPresentCapture: @escaping @MainActor () -> Void,
+        onPresentWeeklyReview: (@MainActor () -> Void)? = nil,
         shouldShowYearInReviewBanner: Bool = false,
         screenshotNudge: HomeScreenshotNudge? = nil,
         widgetNudge: HomeWidgetNudge? = nil,
@@ -88,6 +91,7 @@ public struct HomeView: View {
         self.onPresentYearInReview = onPresentYearInReview
         self.onPresentGratitude = onPresentGratitude
         self.onPresentCapture = onPresentCapture
+        self.onPresentWeeklyReview = onPresentWeeklyReview
         self.shouldShowYearInReviewBanner = shouldShowYearInReviewBanner
         self.widgetNudge = widgetNudge
         self.screenshotNudge = screenshotNudge
@@ -336,7 +340,13 @@ public struct HomeView: View {
 
     /// The candidate cards Home can show beneath Today.
     private enum Surface {
-        case onThisDay, recap, insight, related
+        case onThisDay, recap, insight, related, weeklyReview
+    }
+
+    /// Sunday: the week in review leads. A calm ritual, offered once a
+    /// week, never a badge or a reminder of a missed one.
+    private var isWeeklyReviewDay: Bool {
+        Calendar.current.component(.weekday, from: clock.now()) == WeeklyReviewSchedule.weekday
     }
 
     /// Home shows **one** contextual card instead of stacking them all
@@ -344,6 +354,9 @@ public struct HomeView: View {
     /// falling back to whatever is available.
     private var surfaceOrder: [Surface] {
         let hour = Calendar.current.component(.hour, from: clock.now())
+        if isWeeklyReviewDay {
+            return [.weeklyReview, .onThisDay, .insight, .related, .recap]
+        }
         switch hour {
         case 5..<12:  return [.onThisDay, .insight, .related, .recap]
         case 12..<17: return [.related, .insight, .onThisDay, .recap]
@@ -357,6 +370,7 @@ public struct HomeView: View {
         case .recap:     return shouldShowRecapInvite
         case .insight:   return primaryInsight != nil
         case .related:   return suggestionFeed.map { !$0.related.isEmpty } ?? false
+        case .weeklyReview: return onPresentWeeklyReview != nil && isWeeklyReviewDay
         }
     }
 
@@ -373,6 +387,8 @@ public struct HomeView: View {
                     if let primaryInsight { insightCard(primaryInsight) }
                 case .related:
                     if let suggestionFeed { relatedSection(suggestionFeed) }
+                case .weeklyReview:
+                    weeklyReviewCard
                 }
             }
             .transition(.opacity)
@@ -546,6 +562,40 @@ public struct HomeView: View {
     /// memory feels lonely as a 'day in review.'
     private var shouldShowRecapInvite: Bool {
         memoriesFromToday.count >= 2
+    }
+
+    private var weeklyReviewCard: some View {
+        let themeColor = themeAccent
+        return Button {
+            Haptics.play(.tap)
+            onPresentWeeklyReview?()
+        } label: {
+            OrbitCard(elevation: .lifted) {
+                VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+                    OrbitEyebrow(label: "Weekly Review", suffix: "Sunday", tint: themeColor)
+                    Text("Your week, in one calm page")
+                        .scaledFont(size: 22, weight: .semibold, design: .serif)
+                        .foregroundStyle(OrbitColor.textPrimary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("What\u{2019}s still open, who was on your mind, and the moments worth keeping.")
+                        .font(OrbitTypography.footnote)
+                        .foregroundStyle(OrbitColor.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    HStack(spacing: 6) {
+                        Text("Look back")
+                            .font(OrbitTypography.bodyEmphasized)
+                        Image(systemName: "arrow.right")
+                            .scaledFont(size: 14, weight: .semibold)
+                    }
+                    .foregroundStyle(OrbitColor.textPrimary)
+                    .padding(.top, OrbitSpacing.xxs)
+                }
+            }
+        }
+        .buttonStyle(OrbitBloomButtonStyle(tint: themeAccent))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Weekly Review. Your week, in one calm page.")
+        .accessibilityHint("Double-tap to open.")
     }
 
     private var recapCard: some View {

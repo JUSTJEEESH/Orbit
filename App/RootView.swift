@@ -140,6 +140,9 @@ struct RootView: View {
                     )
                 )
                 .presentationDetents([.large])
+            case .weeklyReview:
+                WeeklyReviewView(onDismiss: { env.requestedModal = nil })
+                    .presentationDetents([.large])
             case .recentlyDeleted:
                 RecentlyDeletedView(onDismiss: { env.requestedModal = nil })
                     .presentationDetents([.large])
@@ -356,6 +359,7 @@ struct RootView: View {
                     onPresentYearInReview: { env.requestedModal = .yearInReview },
                     onPresentGratitude: { env.requestedModal = .gratitude },
                     onPresentCapture: { env.requestedModal = .capture },
+                    onPresentWeeklyReview: { env.requestedModal = .weeklyReview },
                     shouldShowYearInReviewBanner: env.shouldOfferYearInReview(),
                     screenshotNudge: env.screenshotInbox.pending.isEmpty
                         ? nil
