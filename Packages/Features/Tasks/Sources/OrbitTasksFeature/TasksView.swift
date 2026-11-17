@@ -22,6 +22,7 @@ public struct TasksView: View {
     @State private var readingModel: ReadingListViewModel
     @State private var habitsModel: HabitsViewModel
     @State private var promisesModel: PromisesViewModel
+    @State private var cueModel: CueRemindersViewModel
     @State private var editing: MemoryTask?
     @State private var showingCompleted: Bool = false
     @State private var section: Section = .tasks
@@ -37,6 +38,7 @@ public struct TasksView: View {
         readingViewModel: ReadingListViewModel,
         habitsViewModel: HabitsViewModel,
         promisesViewModel: PromisesViewModel,
+        cueRemindersViewModel: CueRemindersViewModel,
         refreshToken: Int = 0,
         makeDetailViewModel: @escaping @MainActor (UUID) -> MemoryDetailViewModel
     ) {
@@ -44,6 +46,7 @@ public struct TasksView: View {
         self._readingModel = State(initialValue: readingViewModel)
         self._habitsModel = State(initialValue: habitsViewModel)
         self._promisesModel = State(initialValue: promisesViewModel)
+        self._cueModel = State(initialValue: cueRemindersViewModel)
         self.refreshToken = refreshToken
         self.makeDetailViewModel = makeDetailViewModel
     }
@@ -83,6 +86,23 @@ public struct TasksView: View {
             await readingModel.load()
             await habitsModel.load()
             await promisesModel.refresh()
+            await cueModel.refresh()
+        }
+        .sheet(item: $cueModel.pickingPlaceFor) { suggestion in
+            if case .place(let name) = suggestion.hint.target {
+                PlacePickerSheet(
+                    placeName: name,
+                    finder: cueModel.placeFinder,
+                    onPick: { candidate in
+                        Task {
+                            await cueModel.keep(suggestion, at: candidate, name: name)
+                            await model.load()
+                        }
+                    },
+                    onCancel: { cueModel.pickingPlaceFor = nil }
+                )
+                .presentationDetents([.large])
+            }
         }
         .sheet(item: $editing) { task in
             TaskDetailSheet(
@@ -145,6 +165,9 @@ public struct TasksView: View {
                     if !model.suggestions.isEmpty {
                         suggestionsSection
                     }
+                    if !cueModel.suggestions.isEmpty || cueModel.errorMessage != nil {
+                        cueSection
+                    }
                     if !model.reminderSuggestions.isEmpty {
                         reminderSuggestionsSection
                     }
@@ -170,10 +193,42 @@ public struct TasksView: View {
 
     private var hasAnyContent: Bool {
         !model.suggestions.isEmpty
+        || !cueModel.suggestions.isEmpty
         || !model.reminderSuggestions.isEmpty
         || !model.sections.soon.isEmpty
         || !model.sections.open.isEmpty
         || !model.sections.completed.isEmpty
+    }
+
+    /// Reminders tied to a place or a person instead of a time.
+    private var cueSection: some View {
+        VStack(alignment: .leading, spacing: OrbitSpacing.md) {
+            OrbitSectionHeader("For the right moment", subtitle: "Reminders for a place or a person")
+                .accessibilityAddTraits(.isHeader)
+            if let message = cueModel.errorMessage {
+                Text(message)
+                    .font(OrbitTypography.footnote)
+                    .foregroundStyle(OrbitColor.danger)
+            }
+            VStack(spacing: OrbitSpacing.sm) {
+                ForEach(cueModel.suggestions) { suggestion in
+                    CueSuggestionCard(
+                        suggestion: suggestion,
+                        onRemind: {
+                            Task {
+                                await cueModel.remind(suggestion)
+                                await model.load()
+                            }
+                        },
+                        onDismiss: {
+                            withAnimation(OrbitMotion.respectfully(OrbitMotion.snap, reduceMotion: reduceMotion)) {
+                                cueModel.dismiss(suggestion)
+                            }
+                        }
+                    )
+                }
+            }
+        }
     }
 
     private var reminderSuggestionsSection: some View {

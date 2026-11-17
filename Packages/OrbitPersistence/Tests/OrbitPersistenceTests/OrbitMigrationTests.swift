@@ -233,6 +233,9 @@ extension StoreBackedTests {
             #expect(task.createdAt == Fixture.created)
             #expect(task.completedAt == Fixture.updated)
             #expect(task.promisedTo == nil)
+            #expect(task.cuePlaceName == nil)
+            #expect(task.cueLatitude == nil)
+            #expect(task.cuePerson == nil)
 
             let insight = try #require(try context.fetch(FetchDescriptor<AIInsightEntity>()).first)
             #expect(insight.id == Fixture.insightID)

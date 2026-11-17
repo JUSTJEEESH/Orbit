@@ -65,6 +65,7 @@ extension StoreBackedTests {
             let tasks = try context.fetch(FetchDescriptor<MemoryTaskEntity>())
             #expect(tasks.map(\.id) == [taskID])
             #expect(tasks.first?.promisedTo == nil)
+            #expect(tasks.first?.cuePlaceName == nil)
         }
 
         @Test func recoveredStoreReopensNormally() throws {

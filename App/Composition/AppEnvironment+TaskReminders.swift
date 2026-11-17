@@ -15,8 +15,9 @@ extension AppEnvironment {
         static let impliedNoonHour = 12
     }
 
-    /// Schedules, moves or cancels a task's alert to match its current state.
+    /// Schedules, moves or cancels a task's alerts to match its current state.
     func syncTaskReminder(for task: MemoryTask) async {
+        await syncArrivalReminder(for: task)
         guard let due = task.dueDate, !task.isCompleted, !remindersSync.isEnabled else {
             notifications.cancelTaskReminder(taskID: task.id)
             return
@@ -31,6 +32,25 @@ extension AppEnvironment {
 
     func cancelTaskReminder(for task: MemoryTask) {
         notifications.cancelTaskReminder(taskID: task.id)
+        notifications.cancelArrivalReminder(taskID: task.id)
+    }
+
+    /// Place reminders ring on arrival, independent of Reminders sync
+    /// (iOS Reminders has no matching cue for Orbit's places).
+    private func syncArrivalReminder(for task: MemoryTask) async {
+        guard let place = task.cue?.place, !task.isCompleted else {
+            notifications.cancelArrivalReminder(taskID: task.id)
+            return
+        }
+        await notifications.scheduleArrivalReminder(
+            taskID: task.id,
+            title: task.title,
+            placeName: place.name,
+            latitude: place.latitude,
+            longitude: place.longitude,
+            radius: place.radius,
+            linkedMemoryID: task.linkedMemoryID
+        )
     }
 
     static func fireDate(for due: Date, calendar: Calendar = .current) -> Date {

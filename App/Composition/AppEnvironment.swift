@@ -88,6 +88,10 @@ final class AppEnvironment {
     let loadPromiseLedger: LoadPromiseLedgerUseCase
     let loadWelcomeBack: LoadWelcomeBackUseCase
     let generateWeeklyReview: GenerateWeeklyReviewUseCase
+    let listCueSuggestions: ListCueSuggestionsUseCase
+    let keepCueReminder: KeepCueReminderUseCase
+    let cueDismissals: any PromiseDismissalStore
+    let placeFinder: PlaceFinder
     let keepPromise: KeepPromiseUseCase
     let promiseDismissals: any PromiseDismissalStore
     let listReminderSuggestions: ListReminderSuggestionsUseCase
@@ -449,6 +453,10 @@ final class AppEnvironment {
         self.loadPromiseLedger = LoadPromiseLedgerUseCase(memories: memories, tasks: tasks)
         self.loadWelcomeBack = LoadWelcomeBackUseCase(tasks: tasks)
         self.generateWeeklyReview = GenerateWeeklyReviewUseCase(memories: memories, tasks: tasks, clock: clock)
+        self.listCueSuggestions = ListCueSuggestionsUseCase(memories: memories, tasks: tasks)
+        self.keepCueReminder = KeepCueReminderUseCase(tasks: tasks, clock: clock)
+        self.cueDismissals = UserDefaultsPromiseDismissalStore(storageKey: UserDefaultsPromiseDismissalStore.cuesKey)
+        self.placeFinder = PlaceFinder()
         self.keepPromise = KeepPromiseUseCase(tasks: tasks, clock: clock)
         self.promiseDismissals = UserDefaultsPromiseDismissalStore()
         self.listReminderSuggestions = ListReminderSuggestionsUseCase(

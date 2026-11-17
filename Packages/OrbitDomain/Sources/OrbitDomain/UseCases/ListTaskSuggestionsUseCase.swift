@@ -27,8 +27,13 @@ public struct ListTaskSuggestionsUseCase: Sendable {
         let promotedHintIDs = Set(allTasks.compactMap(\.sourceHintID))
 
         let suggestions: [Suggestion] = allMemories.flatMap { memory in
-            memory.ai.signals.taskHints
+            // "Remind me to buy batteries when I get to Costco" is offered
+            // as a place reminder; don't also offer it as a plain task.
+            let cueActions = CueParser.cues(in: memory.analyzableText, memoryID: memory.id)
+                .map { $0.action.lowercased() }
+            return memory.ai.signals.taskHints
                 .filter { !promotedHintIDs.contains($0.id) }
+                .filter { hint in !cueActions.contains { hint.phrase.lowercased().hasPrefix($0) } }
                 .map { Suggestion(memory: memory, hint: $0) }
         }
         // Newest memories first, so the suggestion the user just captured

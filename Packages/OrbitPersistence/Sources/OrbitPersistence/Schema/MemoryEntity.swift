@@ -140,6 +140,15 @@ public final class MemoryTaskEntity {
     /// Who this task was promised to (Promise Ledger). Added in schema V2;
     /// optional so 1.x rows migrate untouched.
     public var promisedTo: String?
+    /// Place reminder (schema V2): name and circle. All four are set
+    /// together or left nil. Optional so 1.x rows migrate untouched and
+    /// iCloud accepts the schema.
+    public var cuePlaceName: String?
+    public var cueLatitude: Double?
+    public var cueLongitude: Double?
+    public var cueRadius: Double?
+    /// Person reminder (schema V2): "next time I'm with Alex".
+    public var cuePerson: String?
 
     public init(
         id: UUID = UUID(),

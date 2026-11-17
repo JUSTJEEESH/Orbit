@@ -114,6 +114,16 @@ struct LibraryImporterTests {
         #expect(restored.promisedTo == "Sam")
     }
 
+    @Test func remindersSurviveExportAndRestore() throws {
+        let created = Date(timeIntervalSince1970: 1_750_000_000)
+        let place = PlaceCue(name: "Mom's", latitude: 30.2672, longitude: -97.7431)
+        for cue in [TaskCue.place(place), .person("Alex")] {
+            let task = MemoryTask(title: "Grab the ladder", createdAt: created, cue: cue)
+            let data = try JSONEncoder().encode(ExportedTask(task))
+            #expect(try JSONDecoder().decode(ExportedTask.self, from: data).restoredTask().cue == cue)
+        }
+    }
+
     @Test func taskExportedBefore2_0StillDecodes() throws {
         let legacy = """
         {"id":"\(UUID().uuidString)","title":"Buy milk","isCompleted":false,"createdAt":0}
@@ -121,5 +131,6 @@ struct LibraryImporterTests {
         let task = try JSONDecoder().decode(ExportedTask.self, from: Data(legacy.utf8)).restoredTask()
         #expect(task.title == "Buy milk")
         #expect(task.promisedTo == nil)
+        #expect(task.cue == nil)
     }
 }

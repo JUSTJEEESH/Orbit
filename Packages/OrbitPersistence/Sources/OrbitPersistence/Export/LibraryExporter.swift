@@ -190,6 +190,12 @@ struct ExportedTask: Codable, Equatable {
     var linkedMemoryID: UUID?
     /// Added in 2.0. Optional, so exports from 1.x still import.
     var promisedTo: String?
+    /// Added in 2.0; optional like `promisedTo`.
+    var cuePlaceName: String?
+    var cueLatitude: Double?
+    var cueLongitude: Double?
+    var cueRadius: Double?
+    var cuePerson: String?
 
     init(_ task: MemoryTask) {
         id = task.id
@@ -201,6 +207,20 @@ struct ExportedTask: Codable, Equatable {
         completedAt = task.completedAt
         linkedMemoryID = task.linkedMemoryID
         promisedTo = task.promisedTo
+        cuePlaceName = task.cue?.place?.name
+        cueLatitude = task.cue?.place?.latitude
+        cueLongitude = task.cue?.place?.longitude
+        cueRadius = task.cue?.place?.radius
+        cuePerson = task.cue?.personName
+    }
+
+    /// The cue as exported; a place needs its name and coordinates.
+    var restoredCue: TaskCue? {
+        if let cuePlaceName, let cueLatitude, let cueLongitude {
+            return .place(PlaceCue(name: cuePlaceName, latitude: cueLatitude, longitude: cueLongitude,
+                                   radius: cueRadius ?? PlaceCue.defaultRadius))
+        }
+        return cuePerson.map(TaskCue.person)
     }
 }
 

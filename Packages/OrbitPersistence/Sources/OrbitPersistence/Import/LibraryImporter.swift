@@ -224,7 +224,8 @@ extension ExportedTask {
             linkedMemoryID: linkedMemoryID,
             createdAt: createdAt,
             completedAt: completedAt,
-            promisedTo: promisedTo
+            promisedTo: promisedTo,
+            cue: restoredCue
         )
     }
 }

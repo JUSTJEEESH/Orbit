@@ -444,6 +444,17 @@ struct RootView: View {
                         await env.syncTaskReminder(for: task)
                     }
                 ),
+                cueRemindersViewModel: CueRemindersViewModel(
+                    list: env.listCueSuggestions,
+                    keep: env.keepCueReminder,
+                    dismissals: env.cueDismissals,
+                    placeFinder: env.placeFinder,
+                    onTaskMutated: { task in
+                        await env.remindersSync.mirror(task)
+                        await env.calendarSync.mirror(task)
+                        await env.syncTaskReminder(for: task)
+                    }
+                ),
                 refreshToken: env.memoryListVersion,
                 makeDetailViewModel: makeDetailViewModel
             )

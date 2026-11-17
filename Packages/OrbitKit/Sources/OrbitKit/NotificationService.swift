@@ -1,3 +1,4 @@
+import CoreLocation
 import Foundation
 import UserNotifications
 import UIKit
@@ -25,6 +26,7 @@ public final class NotificationService {
     public nonisolated static let sealedDeliveryPrefix = "com.orbit.sealed."
     public nonisolated static let resurfacingPrefix = "com.orbit.resurface."
     public nonisolated static let taskReminderPrefix = "com.orbit.task."
+    public nonisolated static let arrivalReminderPrefix = "com.orbit.arrive."
     private static let resurfacingEnabledKey = "orbit.notifications.resurfacing.enabled"
 
     private static let enabledKey = "orbit.notifications.dailyRecap.enabled"
@@ -241,6 +243,57 @@ public final class NotificationService {
 
     public func cancelTaskReminder(taskID: UUID) {
         center.removePendingNotificationRequests(withIdentifiers: [Self.taskReminderPrefix + taskID.uuidString])
+    }
+
+    // MARK: - Arrival reminders
+
+    /// Schedules (or replaces) an alert delivered by iOS when the user
+    /// arrives within `radius` meters of a place. iOS watches the region,
+    /// so it works with Orbit closed and needs only "While Using" location
+    /// access.
+    public func scheduleArrivalReminder(
+        taskID: UUID,
+        title: String,
+        placeName: String,
+        latitude: Double,
+        longitude: Double,
+        radius: Double,
+        linkedMemoryID: UUID?
+    ) async {
+        await refreshAuthorizationStatus()
+        if authorizationStatus == .notDetermined {
+            _ = await requestAuthorization()
+        }
+        guard isAuthorized else { return }
+        let identifier = Self.arrivalReminderPrefix + taskID.uuidString
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = "You\u{2019}re at \(placeName)"
+        content.sound = .default
+        var info: [String: String] = ["kind": "arrival", "taskID": taskID.uuidString]
+        if let linkedMemoryID { info["memoryID"] = linkedMemoryID.uuidString }
+        content.userInfo = info
+        let region = CLCircularRegion(
+            center: CLLocationCoordinate2D(latitude: latitude, longitude: longitude),
+            radius: radius,
+            identifier: identifier
+        )
+        region.notifyOnEntry = true
+        region.notifyOnExit = false
+        let request = UNNotificationRequest(
+            identifier: identifier,
+            content: content,
+            trigger: UNLocationNotificationTrigger(region: region, repeats: false)
+        )
+        do {
+            try await center.add(request)
+        } catch {
+            OrbitLog.app.error("Failed to schedule arrival reminder: \(String(describing: error), privacy: .public)")
+        }
+    }
+
+    public func cancelArrivalReminder(taskID: UUID) {
+        center.removePendingNotificationRequests(withIdentifiers: [Self.arrivalReminderPrefix + taskID.uuidString])
     }
 
     // MARK: - Resurfacing ("Worth remembering")

@@ -187,6 +187,25 @@ extension MemoryTaskEntity {
         self.createdAt = task.createdAt
         self.completedAt = task.completedAt
         self.promisedTo = task.promisedTo
+        let place = task.cue?.place
+        self.cuePlaceName = place?.name
+        self.cueLatitude = place?.latitude
+        self.cueLongitude = place?.longitude
+        self.cueRadius = place?.radius
+        self.cuePerson = task.cue?.personName
+    }
+
+    /// Rebuilds the cue; a place needs all of its parts.
+    private var cue: TaskCue? {
+        if let cuePlaceName, let cueLatitude, let cueLongitude {
+            return .place(PlaceCue(
+                name: cuePlaceName,
+                latitude: cueLatitude,
+                longitude: cueLongitude,
+                radius: cueRadius ?? PlaceCue.defaultRadius
+            ))
+        }
+        return cuePerson.map(TaskCue.person)
     }
 
     func toDomain() -> MemoryTask {
@@ -203,7 +222,8 @@ extension MemoryTaskEntity {
             calendarEventIdentifier: calendarEventIdentifier,
             createdAt: createdAt,
             completedAt: completedAt,
-            promisedTo: promisedTo
+            promisedTo: promisedTo,
+            cue: cue
         )
     }
 }

@@ -46,6 +46,12 @@ struct TaskRowView: View {
                                 .foregroundStyle(orbitTheme.primary)
                         }
 
+                        if let cueLabel {
+                            Label(cueLabel.text, systemImage: cueLabel.symbol)
+                                .font(OrbitTypography.footnote)
+                                .foregroundStyle(orbitTheme.primary)
+                        }
+
                         if let memory = linkedMemory {
                             Text("From: \(memorySnippet(memory))")
                                 .font(OrbitTypography.caption)
@@ -135,9 +141,19 @@ struct TaskRowView: View {
         }
     }
 
+    /// "At Mom's" / "With Alex" for place and person reminders.
+    private var cueLabel: (text: String, symbol: String)? {
+        switch task.cue {
+        case .place(let place): return ("At \(place.name)", "mappin.and.ellipse")
+        case .person(let name): return ("With \(name)", "person.2")
+        case nil:               return nil
+        }
+    }
+
     private var accessibilityLabel: String {
         var parts: [String] = [task.title]
         if let person = task.promisedTo { parts.append("Promised to \(person).") }
+        if let cueLabel { parts.append("\(cueLabel.text).") }
         if task.isCompleted { parts.append("Completed.") }
         if let due = task.dueDate {
             parts.append("Due \(dueLabel(due)).")

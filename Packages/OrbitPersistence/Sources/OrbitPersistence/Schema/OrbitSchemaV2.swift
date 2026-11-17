@@ -8,6 +8,8 @@ import SwiftData
 /// - `MemoryEntity.deletedAt: Date?` — powers Recently Deleted.
 /// - `MemoryEntity.transcriptSegmentsJSON: Data?` — voice-note word timings.
 /// - `MemoryTaskEntity.promisedTo: String?` — the Promise Ledger.
+/// - `MemoryTaskEntity.cuePlaceName / cueLatitude / cueLongitude /
+///   cueRadius / cuePerson` (all optional) — place and person reminders.
 ///
 /// The models listed here are the live, top-level classes. When a V3 is
 /// needed, freeze copies of these models inside this enum first (exactly as
