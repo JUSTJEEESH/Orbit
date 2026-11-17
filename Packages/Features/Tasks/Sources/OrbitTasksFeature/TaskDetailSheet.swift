@@ -12,8 +12,12 @@ struct TaskDetailSheet: View {
     let onSave: @MainActor (MemoryTask) -> Void
     let onDelete: @MainActor () -> Void
     let onDismiss: @MainActor () -> Void
+    /// Nil hides place editing (no location support in this context).
+    let placeFinder: PlaceFinder?
 
     @State private var title: String
+    @State private var cue: TaskCue?
+    @State private var showsPlacePicker = false
     @State private var notes: String
     @State private var hasDueDate: Bool
     @State private var dueDate: Date
@@ -26,9 +30,12 @@ struct TaskDetailSheet: View {
         linkedMemory: Memory?,
         onSave: @escaping @MainActor (MemoryTask) -> Void,
         onDelete: @escaping @MainActor () -> Void,
-        onDismiss: @escaping @MainActor () -> Void
+        onDismiss: @escaping @MainActor () -> Void,
+        placeFinder: PlaceFinder? = nil
     ) {
         self.original = task
+        self.placeFinder = placeFinder
+        _cue = State(initialValue: task.cue)
         self.linkedMemory = linkedMemory
         self.onSave = onSave
         self.onDelete = onDelete
@@ -47,6 +54,7 @@ struct TaskDetailSheet: View {
                         titleField
                         notesField
                         dueDateRow
+                        reminderSection
                         if let memory = linkedMemory {
                             sourceMemorySection(memory)
                         }
@@ -70,6 +78,25 @@ struct TaskDetailSheet: View {
                     }
                     .font(OrbitTypography.bodyEmphasized)
                     .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+            .sheet(isPresented: $showsPlacePicker) {
+                if let placeFinder {
+                    PlacePickerSheet(
+                        placeName: cue?.placeName ?? "",
+                        current: cue?.place,
+                        finder: placeFinder,
+                        onPick: { candidate, radius in
+                            cue = .place(PlaceCue(
+                                name: candidate.name,
+                                latitude: candidate.latitude,
+                                longitude: candidate.longitude,
+                                radius: radius.rawValue
+                            ))
+                            showsPlacePicker = false
+                        },
+                        onCancel: { showsPlacePicker = false }
+                    )
                 }
             }
             .confirmationDialog(
@@ -127,6 +154,65 @@ struct TaskDetailSheet: View {
         }
     }
 
+    /// Place or person cue: see it, move it on the map, or remove it.
+    @ViewBuilder
+    private var reminderSection: some View {
+        if cue != nil || placeFinder != nil {
+            VStack(alignment: .leading, spacing: OrbitSpacing.xxs) {
+                sectionLabel("Reminder")
+                OrbitCard(elevation: .resting) {
+                    VStack(alignment: .leading, spacing: OrbitSpacing.sm) {
+                        switch cue {
+                        case .place(let place):
+                            Label("At \(place.name)", systemImage: "mappin.and.ellipse")
+                                .font(OrbitTypography.body)
+                                .foregroundStyle(OrbitColor.textPrimary)
+                            HStack(spacing: OrbitSpacing.md) {
+                                if placeFinder != nil {
+                                    Button("Change on Map") { showsPlacePicker = true }
+                                        .font(OrbitTypography.bodyEmphasized)
+                                        .foregroundStyle(orbitTheme.primary)
+                                }
+                                Spacer()
+                                removeCueButton
+                            }
+                        case .person(let name):
+                            Label("With \(name)", systemImage: "person.2")
+                                .font(OrbitTypography.body)
+                                .foregroundStyle(OrbitColor.textPrimary)
+                            Text("Rings when an event with \(name) on your calendar starts.")
+                                .font(OrbitTypography.footnote)
+                                .foregroundStyle(OrbitColor.textSecondary)
+                            HStack {
+                                Spacer()
+                                removeCueButton
+                            }
+                        case nil:
+                            Button {
+                                showsPlacePicker = true
+                            } label: {
+                                Label("Remind Me at a Place", systemImage: "mappin.and.ellipse")
+                                    .font(OrbitTypography.bodyEmphasized)
+                                    .foregroundStyle(orbitTheme.primary)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+        }
+    }
+
+    private var removeCueButton: some View {
+        Button("Remove", role: .destructive) {
+            Haptics.play(.selection)
+            cue = nil
+        }
+        .font(OrbitTypography.footnote)
+        .foregroundStyle(OrbitColor.danger)
+    }
+
     private func sourceMemorySection(_ memory: Memory) -> some View {
         VStack(alignment: .leading, spacing: OrbitSpacing.xxs) {
             sectionLabel("From memory")
@@ -176,6 +262,7 @@ struct TaskDetailSheet: View {
         let trimmedNotes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
         copy.notes = trimmedNotes.isEmpty ? nil : trimmedNotes
         copy.dueDate = hasDueDate ? dueDate : nil
+        copy.cue = cue
         return copy
     }
 

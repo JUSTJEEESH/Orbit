@@ -18,9 +18,9 @@ extension AppEnvironment {
     /// Schedules, moves or cancels a task's alerts to match its current state.
     func syncTaskReminder(for task: MemoryTask) async {
         await syncArrivalReminder(for: task)
-        if task.cue?.personName != nil {
-            await refreshPersonReminders()
-        }
+        // Always re-plan: the change may have removed a person cue, and the
+        // refresh only asks for calendar access when one exists.
+        await refreshPersonReminders()
         guard let due = task.dueDate, !task.isCompleted, !remindersSync.isEnabled else {
             notifications.cancelTaskReminder(taskID: task.id)
             return
@@ -36,9 +36,7 @@ extension AppEnvironment {
     func cancelTaskReminder(for task: MemoryTask) {
         notifications.cancelTaskReminder(taskID: task.id)
         notifications.cancelArrivalReminder(taskID: task.id)
-        if task.cue?.personName != nil {
-            Task { await refreshPersonReminders() }
-        }
+        Task { await refreshPersonReminders() }
     }
 
     /// Place reminders ring on arrival, independent of Reminders sync

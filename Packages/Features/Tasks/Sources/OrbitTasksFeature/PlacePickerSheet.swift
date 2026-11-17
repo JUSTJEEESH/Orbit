@@ -2,6 +2,7 @@ import CoreLocation
 import MapKit
 import SwiftUI
 import OrbitDesignSystem
+import OrbitDomain
 import OrbitKit
 
 /// How close counts as "arrived".
@@ -53,8 +54,11 @@ struct PlacePickerSheet: View {
     private static let resultSpanMeters: CLLocationDistance = 800
     private static let pinSize: CGFloat = 36
 
+    /// - Parameter current: the place being changed, so the map opens on
+    ///   it (with its area) instead of on the user's location.
     init(
         placeName: String,
+        current: PlaceCue? = nil,
         finder: PlaceFinder,
         onPick: @escaping @MainActor (PlaceCandidate, ReminderRadius) -> Void,
         onCancel: @escaping @MainActor () -> Void
@@ -64,6 +68,16 @@ struct PlacePickerSheet: View {
         self.onPick = onPick
         self.onCancel = onCancel
         self._name = State(initialValue: placeName)
+        if let current {
+            let coordinate = CLLocationCoordinate2D(latitude: current.latitude, longitude: current.longitude)
+            self._position = State(initialValue: .region(MKCoordinateRegion(
+                center: coordinate,
+                latitudinalMeters: Self.resultSpanMeters,
+                longitudinalMeters: Self.resultSpanMeters
+            )))
+            self._center = State(initialValue: coordinate)
+            self._radius = State(initialValue: ReminderRadius(rawValue: current.radius) ?? .medium)
+        }
     }
 
     var body: some View {
@@ -76,7 +90,7 @@ struct PlacePickerSheet: View {
                 .onChange(of: query) { _, newValue in
                     if newValue.isEmpty { results = [] }
                 }
-                .navigationTitle("Where is \(placeName)?")
+                .navigationTitle(placeName.isEmpty ? "Choose a Place" : "Where is \(placeName)?")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
@@ -122,7 +136,7 @@ struct PlacePickerSheet: View {
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
         }
-        .accessibilityLabel("Map. Move it to put the pin on \(placeName).")
+        .accessibilityLabel("Map. Move it to put the pin on the place.")
     }
 
     // MARK: - Search
@@ -210,7 +224,7 @@ struct PlacePickerSheet: View {
                     .foregroundStyle(OrbitColor.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            TextField("Name", text: $name)
+            TextField("Name, like Mom\u{2019}s house", text: $name)
                 .font(OrbitTypography.bodyEmphasized)
                 .textInputAutocapitalization(.words)
                 .submitLabel(.done)

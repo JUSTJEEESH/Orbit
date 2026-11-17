@@ -122,7 +122,8 @@ public struct TasksView: View {
                         await promisesModel.refresh()
                     }
                 },
-                onDismiss: { editing = nil }
+                onDismiss: { editing = nil },
+                placeFinder: cueModel.placeFinder
             )
             .presentationDetents([.large])
         }
