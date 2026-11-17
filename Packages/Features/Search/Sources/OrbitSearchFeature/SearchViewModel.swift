@@ -44,6 +44,12 @@ public final class SearchViewModel {
     public private(set) var results: [SearchMemoriesUseCase.Result] = []
     public private(set) var state: LoadState = .idle
 
+    /// The user's last few searches that found something, newest first.
+    public private(set) var recentQueries: [String] = UserDefaults.standard.stringArray(forKey: SearchViewModel.recentKey) ?? []
+
+    private static let recentKey = "orbit.search.recentQueries"
+    private static let recentLimit = 6
+
     /// Most-mentioned people and places, for browsing without typing.
     public private(set) var people: [MentionedEntity] = []
     public private(set) var places: [MentionedEntity] = []
@@ -67,6 +73,18 @@ public final class SearchViewModel {
         self.removeMemory = removeMemory
         self.listEntities = listEntities
         self.listMentioning = listMentioning
+    }
+
+    private func remember(_ query: String) {
+        var recents = recentQueries.filter { $0.caseInsensitiveCompare(query) != .orderedSame }
+        recents.insert(query, at: 0)
+        recentQueries = Array(recents.prefix(Self.recentLimit))
+        UserDefaults.standard.set(recentQueries, forKey: Self.recentKey)
+    }
+
+    public func clearRecentQueries() {
+        recentQueries = []
+        UserDefaults.standard.removeObject(forKey: Self.recentKey)
     }
 
     /// Loads the People and Places rows for the idle screen.
@@ -105,6 +123,7 @@ public final class SearchViewModel {
             let hits = try await searchMemories(request)
             results = hits
             state = hits.isEmpty ? .empty : .results
+            if !hits.isEmpty { remember(text) }
         } catch {
             OrbitLog.search.error("Search failed: \(String(describing: error), privacy: .public)")
             state = .failed("Search couldn't run right now. Try again in a moment.")

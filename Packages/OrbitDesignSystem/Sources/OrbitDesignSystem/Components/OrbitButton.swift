@@ -42,7 +42,7 @@ public struct OrbitButton: View {
             HStack(spacing: OrbitSpacing.xs) {
                 if let systemImage {
                     Image(systemName: systemImage)
-                        .font(.system(size: iconSize, weight: .semibold))
+                        .scaledFont(size: iconSize, weight: .semibold)
                 }
                 Text(title)
                     .font(font)

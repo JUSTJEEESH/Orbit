@@ -27,7 +27,7 @@ public struct OrbitErrorState: View {
     public var body: some View {
         VStack(spacing: OrbitSpacing.sm) {
             Image(systemName: systemImage)
-                .font(.system(size: 36, weight: .regular))
+                .scaledFont(size: 36, weight: .regular)
                 .foregroundStyle(OrbitColor.warning)
                 .symbolRenderingMode(.hierarchical)
                 .padding(.bottom, OrbitSpacing.xs)

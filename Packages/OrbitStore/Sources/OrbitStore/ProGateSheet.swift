@@ -61,7 +61,7 @@ public struct ProGateSheet: View {
 
     private var icon: some View {
         Image(systemName: gate.systemImage)
-            .font(.system(size: 44, weight: .light))
+            .scaledFont(size: 44, weight: .light, relativeTo: .largeTitle)
             .foregroundStyle(OrbitColor.textPrimary)
             .padding(.top, OrbitSpacing.xs)
     }

@@ -320,40 +320,75 @@ public struct HomeView: View {
             if let widgetNudge {
                 WidgetNudgeCard(nudge: widgetNudge, accent: themeAccent)
             }
-            if let onThisDay, !onThisDay.isEmpty {
-                onThisDayCard(onThisDay)
-            }
-            if shouldShowRecapInvite {
-                recapCard
-            }
-            if let primaryInsight {
-                insightCard(primaryInsight)
-            }
-            if let suggestionFeed {
-                SuggestionSection(
-                    feed: suggestionFeed,
-                    heroNamespace: heroNamespace,
-                    onDismiss: { memoryID in
-                        // Optimistic UI: drop the dismissed card from
-                        // the in-memory feed so it disappears
-                        // immediately, then persist + reload from
-                        // source so the slot fills with the next-best
-                        // candidate. `self.suggestionFeed` is required
-                        // here because the surrounding `if let
-                        // suggestionFeed` shadows the @State property
-                        // with a read-only local constant.
-                        self.suggestionFeed = MemorySuggestionFeed(
-                            anchor: suggestionFeed.anchor,
-                            related: suggestionFeed.related.filter { $0.memory.id != memoryID },
-                            generatedAt: suggestionFeed.generatedAt
-                        )
-                        dismissSuggestion(memoryID)
-                        Task { await reloadSuggestions() }
-                    }
-                )
-            }
+            contextualSurface
             recentSection
         }
+    }
+
+    // MARK: - One contextual surface
+
+    /// The candidate cards Home can show beneath Today.
+    private enum Surface {
+        case onThisDay, recap, insight, related
+    }
+
+    /// Home shows **one** contextual card instead of stacking them all
+    /// (Flighty's "smart states"): the most fitting for the time of day,
+    /// falling back to whatever is available.
+    private var surfaceOrder: [Surface] {
+        let hour = Calendar.current.component(.hour, from: clock.now())
+        switch hour {
+        case 5..<12:  return [.onThisDay, .insight, .related, .recap]
+        case 12..<17: return [.related, .insight, .onThisDay, .recap]
+        default:      return [.recap, .onThisDay, .insight, .related]
+        }
+    }
+
+    private func isAvailable(_ surface: Surface) -> Bool {
+        switch surface {
+        case .onThisDay: return onThisDay.map { !$0.isEmpty } ?? false
+        case .recap:     return shouldShowRecapInvite
+        case .insight:   return primaryInsight != nil
+        case .related:   return suggestionFeed.map { !$0.related.isEmpty } ?? false
+        }
+    }
+
+    @ViewBuilder
+    private var contextualSurface: some View {
+        if let surface = surfaceOrder.first(where: isAvailable) {
+            Group {
+                switch surface {
+                case .onThisDay:
+                    if let onThisDay { onThisDayCard(onThisDay) }
+                case .recap:
+                    recapCard
+                case .insight:
+                    if let primaryInsight { insightCard(primaryInsight) }
+                case .related:
+                    if let suggestionFeed { relatedSection(suggestionFeed) }
+                }
+            }
+            .transition(.opacity)
+        }
+    }
+
+    private func relatedSection(_ suggestionFeed: MemorySuggestionFeed) -> some View {
+        SuggestionSection(
+            feed: suggestionFeed,
+            heroNamespace: heroNamespace,
+            onDismiss: { memoryID in
+                // Optimistic UI: drop the dismissed card from the in-memory
+                // feed so it disappears immediately, then persist + reload
+                // from source so the slot fills with the next-best candidate.
+                self.suggestionFeed = MemorySuggestionFeed(
+                    anchor: suggestionFeed.anchor,
+                    related: suggestionFeed.related.filter { $0.memory.id != memoryID },
+                    generatedAt: suggestionFeed.generatedAt
+                )
+                dismissSuggestion(memoryID)
+                Task { await reloadSuggestions() }
+            }
+        )
     }
 
     // MARK: - Year in Review banner

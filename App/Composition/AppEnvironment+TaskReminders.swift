@@ -1,5 +1,7 @@
 import Foundation
 import OrbitDomain
+import OrbitKit
+import os
 
 /// Local alerts for tasks with a due date — "call mom tomorrow at 5" rings
 /// tomorrow at 5. When Reminders sync is on, the Reminders app already
@@ -36,5 +38,31 @@ extension AppEnvironment {
         let isDayOnly = parts.hour == TaskReminder.impliedNoonHour && parts.minute == 0 && parts.second == 0
         guard isDayOnly else { return due }
         return calendar.date(bySettingHour: TaskReminder.dayOnlyHour, minute: 0, second: 0, of: due) ?? due
+    }
+}
+
+extension AppEnvironment {
+    /// Longest task title taken from a memory's text.
+    private static let taskTitleLimit = 80
+
+    /// Turns a memory into a task linked back to it (Timeline's "Make
+    /// Task"), titled from the memory's first line.
+    func makeTask(from memory: Memory) async {
+        let source = memory.content.editableText.isEmpty ? (memory.ai.summary ?? "") : memory.content.editableText
+        let firstLine = source.split(whereSeparator: \.isNewline).first.map(String.init) ?? source
+        let title = String(firstLine.trimmingCharacters(in: .whitespacesAndNewlines).prefix(Self.taskTitleLimit))
+        let task = MemoryTask(
+            title: title.isEmpty ? "Follow up" : title,
+            linkedMemoryID: memory.id,
+            createdAt: clock.now()
+        )
+        do {
+            try await tasks.save(task)
+            await remindersSync.mirror(task)
+            await calendarSync.mirror(task)
+            memoriesDidChange()
+        } catch {
+            OrbitLog.persistence.error("Make task failed: \(String(describing: error), privacy: .public)")
+        }
     }
 }

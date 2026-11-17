@@ -12,6 +12,8 @@ public struct TimelineView: View {
     private let makeDetailViewModel: @MainActor (UUID) -> MemoryDetailViewModel
     private let onPresentCapture: @MainActor () -> Void
     private let externalPath: Binding<[MemoryDetailRoute]>?
+    /// Turns a memory into a task (leading swipe / context menu). Nil hides it.
+    private let makeTask: (@MainActor (Memory) async -> Void)?
 
     @State private var memories: [Memory] = []
     @State private var loadState: LoadState = .idle
@@ -30,7 +32,8 @@ public struct TimelineView: View {
         refreshToken: Int = 0,
         makeDetailViewModel: @escaping @MainActor (UUID) -> MemoryDetailViewModel,
         onPresentCapture: @escaping @MainActor () -> Void,
-        path: Binding<[MemoryDetailRoute]>? = nil
+        path: Binding<[MemoryDetailRoute]>? = nil,
+        makeTask: (@MainActor (Memory) async -> Void)? = nil
     ) {
         self.listMemories = listMemories
         self.removeMemory = removeMemory
@@ -38,6 +41,7 @@ public struct TimelineView: View {
         self.makeDetailViewModel = makeDetailViewModel
         self.onPresentCapture = onPresentCapture
         self.externalPath = path
+        self.makeTask = makeTask
     }
 
     public var body: some View {
@@ -106,11 +110,36 @@ public struct TimelineView: View {
                                 Label("Delete", systemImage: "trash")
                             }
                         }
-                        // Surface the destructive swipe as a VoiceOver
-                        // custom action so rotor users don't have to know
-                        // the two-finger swipe gesture.
+                        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                            if makeTask != nil {
+                                Button {
+                                    turnIntoTask(memory)
+                                } label: {
+                                    Label("Make Task", systemImage: "checklist")
+                                }
+                                .tint(OrbitColor.accentGreen)
+                            }
+                        }
+                        // Long-press: a preview of the memory with quick
+                        // actions (Things 3, Mail).
+                        .contextMenu {
+                            if makeTask != nil {
+                                Button("Make Task", systemImage: "checklist") { turnIntoTask(memory) }
+                            }
+                            Button("Delete", systemImage: "trash", role: .destructive) { deleteRow(memory) }
+                        } preview: {
+                            MemoryRow(memory: memory)
+                                .padding(OrbitSpacing.md)
+                                .frame(width: 340)
+                                .background(OrbitColor.background)
+                        }
+                        // Surface the swipes as VoiceOver custom actions so
+                        // rotor users don't have to know the gestures.
                         .accessibilityAction(named: "Delete memory") {
                             deleteRow(memory)
+                        }
+                        .accessibilityAction(named: "Make task") {
+                            turnIntoTask(memory)
                         }
                     }
                 } header: {
@@ -125,16 +154,25 @@ public struct TimelineView: View {
                 }
             }
 
-            // Breathing room above the floating capture FAB.
-            Color.clear
-                .frame(height: 96)
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .background(OrbitColor.background)
         .refreshable { await reload() }
+        // VoiceOver: flick between days with the rotor instead of every row.
+        .accessibilityRotor("Days") {
+            ForEach(sections, id: \.id) { section in
+                if let first = section.memories.first {
+                    AccessibilityRotorEntry(section.title, id: first.id)
+                }
+            }
+        }
+    }
+
+    private func turnIntoTask(_ memory: Memory) {
+        guard let makeTask else { return }
+        Haptics.play(.success)
+        Task { await makeTask(memory) }
     }
 
     private var emptyState: some View {

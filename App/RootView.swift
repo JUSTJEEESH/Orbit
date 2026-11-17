@@ -382,7 +382,8 @@ struct RootView: View {
                 refreshToken: env.memoryListVersion,
                 makeDetailViewModel: makeDetailViewModel,
                 onPresentCapture: { env.requestedModal = .capture },
-                path: $timelinePath
+                path: $timelinePath,
+                makeTask: { memory in await env.makeTask(from: memory) }
             )
                 .toolbar { profileToolbar }
             }

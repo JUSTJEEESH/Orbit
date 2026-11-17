@@ -25,7 +25,7 @@ public struct OrbitTextField: View {
         HStack(spacing: OrbitSpacing.sm) {
             if let systemImage {
                 Image(systemName: systemImage)
-                    .font(.system(size: 16, weight: .medium))
+                    .scaledFont(size: 16, weight: .medium)
                     .foregroundStyle(OrbitColor.textSecondary)
             }
             field
@@ -38,7 +38,7 @@ public struct OrbitTextField: View {
                     text = ""
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 16, weight: .regular))
+                        .scaledFont(size: 16, weight: .regular)
                         .foregroundStyle(OrbitColor.textTertiary)
                 }
                 .buttonStyle(.plain)

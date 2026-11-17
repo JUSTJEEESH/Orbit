@@ -40,7 +40,7 @@ public struct CaptureTypeSwitcher: View {
                 } label: {
                     HStack(spacing: OrbitSpacing.xxs) {
                         Image(systemName: kind.systemImage)
-                            .font(.system(size: 13, weight: .semibold))
+                            .scaledFont(size: 13, weight: .semibold)
                         Text(kind.title)
                             .font(OrbitTypography.callout.weight(.semibold))
                             .lineLimit(1)

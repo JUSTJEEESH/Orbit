@@ -1,6 +1,7 @@
 import SwiftUI
 import OrbitDesignSystem
 import OrbitKit
+import TipKit
 
 /// Orbit's capture entry point, living in the iOS 26 tab bar's bottom
 /// accessory: the system draws the Liquid Glass and keeps every list's
@@ -21,6 +22,7 @@ struct CaptureAccessory: View {
     @Environment(\.tabViewBottomAccessoryPlacement) private var placement
     @State private var isHolding = false
     @State private var holdTask: Task<Void, Never>?
+    private let holdTip = HoldToTalkTip()
 
     /// How long a press must last before it counts as hold-to-talk rather
     /// than a tap.
@@ -64,6 +66,7 @@ struct CaptureAccessory: View {
             .animation(OrbitMotion.snap, value: isHolding)
             .frame(width: OrbitHitTarget.minimum, height: OrbitHitTarget.minimum)
             .contentShape(.rect)
+            .popoverTip(holdTip, arrowEdge: .bottom)
             .onLongPressGesture(minimumDuration: .infinity, maximumDistance: .infinity) {
                 // Never fires: the press is handled entirely below so a
                 // short press can still act as a tap.
@@ -82,6 +85,7 @@ struct CaptureAccessory: View {
             try? await Task.sleep(for: Self.holdThreshold)
             guard !Task.isCancelled else { return }
             isHolding = true
+            holdTip.invalidate(reason: .actionPerformed)
             onHoldStart()
         }
     }

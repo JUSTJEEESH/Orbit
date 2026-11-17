@@ -120,21 +120,28 @@ public struct SearchView: View {
             if !model.places.isEmpty {
                 entityRow(title: "Places", entities: model.places, systemImage: "mappin")
             }
-            OrbitSectionHeader("Try")
-            FlowSuggestions(
-                queries: [
-                    "Restaurants in Roatan",
-                    "Drone business idea",
-                    "From Pamela last month",
-                    "Voice notes about travel",
-                    "Passport renewal",
-                ],
-                onTap: { suggestion in
-                    Haptics.play(.tap)
-                    model.query = suggestion
-                    model.queryDidChange()
+            if !model.recentQueries.isEmpty {
+                OrbitSectionHeader("Recent") {
+                    Button("Clear") { model.clearRecentQueries() }
+                        .font(OrbitTypography.footnote)
+                        .foregroundStyle(OrbitColor.textSecondary)
                 }
-            )
+                FlowSuggestions(queries: model.recentQueries, onTap: { runSuggestion($0) })
+            }
+            // Generic ideas only until Orbit knows your people, places and
+            // searches; the old list was hard-coded demo content.
+            if model.recentQueries.isEmpty && model.people.isEmpty && model.places.isEmpty {
+                OrbitSectionHeader("Try")
+                FlowSuggestions(
+                    queries: [
+                        "Things I need to do",
+                        "Voice notes from last week",
+                        "Ideas",
+                        "Places I saved",
+                    ],
+                    onTap: { runSuggestion($0) }
+                )
+            }
         }
         .padding(.top, OrbitSpacing.lg)
     }
@@ -166,6 +173,12 @@ public struct SearchView: View {
                 }
             }
         }
+    }
+
+    private func runSuggestion(_ suggestion: String) {
+        Haptics.play(.tap)
+        model.query = suggestion
+        model.queryDidChange()
     }
 
     private var searchingState: some View {

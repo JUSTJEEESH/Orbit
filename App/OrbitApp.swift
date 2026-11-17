@@ -2,6 +2,7 @@ import SwiftUI
 import OrbitKit
 import OrbitDesignSystem
 import OrbitStore
+import TipKit
 import os
 
 @main
@@ -32,6 +33,8 @@ struct OrbitApp: App {
 
         let config = AppConfig.resolveFromBundle()
         self.config = config
+        // One-at-a-time feature tips (e.g. hold-to-talk), at most weekly.
+        try? Tips.configure([.displayFrequency(.weekly)])
         self._launch = State(initialValue: Self.openLibrary(config: config))
         OrbitLog.app.notice("Orbit launched — env=\(config.environment.rawValue, privacy: .public)")
     }

@@ -30,7 +30,7 @@ public struct OrbitChip: View {
         HStack(spacing: OrbitSpacing.xxs) {
             if let systemImage {
                 Image(systemName: systemImage)
-                    .font(.system(size: 12, weight: .semibold))
+                    .scaledFont(size: 12, weight: .semibold)
             }
             Text(title)
                 .font(OrbitTypography.caption)
