@@ -171,6 +171,7 @@ private struct ContentRoot: View {
                 // Calendars change while Orbit is away; re-time person
                 // reminders to the latest events.
                 Task { await environment.refreshPersonReminders() }
+                Task { await environment.refreshMeetingBriefings() }
                 Task { await environment.remindersSync.pullCompletionUpdates() }
                 Task { await environment.captureInbox.drain() }
                 if environment.appLock.isLocked {

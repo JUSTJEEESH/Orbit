@@ -19,9 +19,11 @@ struct SettingsResurfacingSection: View {
     let notifications: NotificationService
     let onSetEnabled: @MainActor (Bool) async -> Void
     var screenshotInbox: SettingsToggleState?
+    var meetingBriefings: SettingsToggleState?
 
     @State private var isUpdating = false
     @State private var isUpdatingScreenshots = false
+    @State private var isUpdatingBriefings = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: OrbitSpacing.md) {
@@ -75,6 +77,32 @@ struct SettingsResurfacingSection: View {
                     }
                     .tint(OrbitColor.accentGreen)
                     .disabled(isUpdatingScreenshots)
+                }
+
+                if let meetingBriefings {
+                    OrbitDivider()
+                    Toggle(isOn: Binding(
+                        get: { meetingBriefings.isOn },
+                        set: { newValue in
+                            isUpdatingBriefings = true
+                            Task {
+                                await meetingBriefings.onSet(newValue)
+                                isUpdatingBriefings = false
+                            }
+                        }
+                    )) {
+                        VStack(alignment: .leading, spacing: OrbitSpacing.xxs) {
+                            Text("Before you meet")
+                                .font(OrbitTypography.bodyEmphasized)
+                                .foregroundStyle(OrbitColor.textPrimary)
+                            Text("30 minutes before a calendar event with someone you\u{2019}ve noted, a quiet briefing: open promises, things to bring up, gift ideas. Reads your calendar on this iPhone only.")
+                                .font(OrbitTypography.footnote)
+                                .foregroundStyle(OrbitColor.textSecondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    .tint(OrbitColor.accentGreen)
+                    .disabled(isUpdatingBriefings)
                 }
                 }
             }

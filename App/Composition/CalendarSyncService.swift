@@ -149,7 +149,8 @@ public final class CalendarSyncService {
                 id: event.eventIdentifier ?? UUID().uuidString,
                 title: event.title ?? "",
                 start: event.startDate,
-                attendeeNames: (event.attendees ?? []).compactMap(\.name)
+                attendeeNames: (event.attendees ?? []).compactMap(\.name),
+                isAllDay: event.isAllDay
             )
         }
     }

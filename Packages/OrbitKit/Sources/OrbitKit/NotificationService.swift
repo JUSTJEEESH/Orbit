@@ -28,6 +28,7 @@ public final class NotificationService {
     public nonisolated static let taskReminderPrefix = "com.orbit.task."
     public nonisolated static let arrivalReminderPrefix = "com.orbit.arrive."
     public nonisolated static let personReminderPrefix = "com.orbit.person."
+    public nonisolated static let briefingPrefix = "com.orbit.briefing."
     private static let resurfacingEnabledKey = "orbit.notifications.resurfacing.enabled"
 
     private static let enabledKey = "orbit.notifications.dailyRecap.enabled"
@@ -52,6 +53,9 @@ public final class NotificationService {
     /// Invoked when the user taps a notification about one memory (a
     /// resurfaced memory or an arriving letter / time capsule).
     public var onOpenMemory: (@MainActor (UUID) -> Void)?
+    /// Invoked when the user taps a before-you-meet briefing notification,
+    /// with the briefing's ID.
+    public var onOpenBriefing: (@MainActor (String) -> Void)?
 
     /// Whether the daily "Worth remembering" notification is on.
     public private(set) var isResurfacingEnabled: Bool
@@ -73,6 +77,9 @@ public final class NotificationService {
         }
         delegate.openMemory = { [weak self] id in
             Task { @MainActor in self?.onOpenMemory?(id) }
+        }
+        delegate.openBriefing = { [weak self] id in
+            Task { @MainActor in self?.onOpenBriefing?(id) }
         }
         center.delegate = delegate
     }
@@ -350,6 +357,54 @@ public final class NotificationService {
         }
     }
 
+    // MARK: - Before-you-meet briefings
+
+    /// One briefing notification: "Lunch with Alex in 30 minutes".
+    public struct BriefingItem: Sendable {
+        public let briefingID: String
+        public let title: String
+        public let body: String
+        public let fireDate: Date
+
+        public init(briefingID: String, title: String, body: String, fireDate: Date) {
+            self.briefingID = briefingID
+            self.title = title
+            self.body = body
+            self.fireDate = fireDate
+        }
+    }
+
+    /// Replaces every pending briefing notification. Briefings never ask
+    /// for notification permission themselves: they only ring if the user
+    /// already allowed Orbit's notifications.
+    public func replaceBriefings(_ items: [BriefingItem]) async {
+        let pending = await center.pendingNotificationRequests()
+        let stale = pending.map(\.identifier).filter { $0.hasPrefix(Self.briefingPrefix) }
+        center.removePendingNotificationRequests(withIdentifiers: stale)
+        guard !items.isEmpty else { return }
+        await refreshAuthorizationStatus()
+        guard isAuthorized else { return }
+        for item in items where item.fireDate > Date() {
+            let content = UNMutableNotificationContent()
+            content.title = item.title
+            content.body = item.body
+            // Silent: a heads-up before a meeting, not an alarm.
+            content.sound = nil
+            content.userInfo = ["kind": "briefing", "briefingID": item.briefingID]
+            let comps = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: item.fireDate)
+            let request = UNNotificationRequest(
+                identifier: Self.briefingPrefix + item.briefingID,
+                content: content,
+                trigger: UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
+            )
+            do {
+                try await center.add(request)
+            } catch {
+                OrbitLog.app.error("Failed to schedule briefing: \(String(describing: error), privacy: .public)")
+            }
+        }
+    }
+
     // MARK: - Resurfacing ("Worth remembering")
 
     /// One scheduled resurfacing notification.
@@ -455,6 +510,7 @@ public final class NotificationService {
     private final class Delegate: NSObject, UNUserNotificationCenterDelegate, @unchecked Sendable {
         var openRecap: (@Sendable () -> Void)?
         var openMemory: (@Sendable (UUID) -> Void)?
+        var openBriefing: (@Sendable (String) -> Void)?
 
         func userNotificationCenter(
             _ center: UNUserNotificationCenter,
@@ -470,6 +526,8 @@ public final class NotificationService {
             let request = response.notification.request
             if request.identifier == NotificationService.recapNotificationID {
                 openRecap?()
+            } else if let briefingID = request.content.userInfo["briefingID"] as? String {
+                openBriefing?(briefingID)
             } else if let raw = request.content.userInfo["memoryID"] as? String, let id = UUID(uuidString: raw) {
                 // Resurfaced memories and arriving letters / capsules open
                 // the memory itself. (1.x ignored taps on these.)

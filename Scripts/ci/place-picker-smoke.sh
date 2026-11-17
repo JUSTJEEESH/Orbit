@@ -5,9 +5,7 @@
 # Compile-only CI could not see the device freezes this catches.
 #
 # Usage: place-picker-smoke.sh [harness-argument] [log-file]
-#   harness-argument defaults to -OrbitPlacePickerHarness (the current
-#   picker); -OrbitPlacePickerHarnessLegacy runs the old SwiftUI Map picker,
-#   which this test is expected to flag.
+#   harness-argument defaults to -OrbitPlacePickerHarness.
 set -euo pipefail
 
 BUNDLE_ID="com.joshgreen.orbit"

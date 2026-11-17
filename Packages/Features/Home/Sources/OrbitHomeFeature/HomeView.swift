@@ -35,6 +35,8 @@ public struct HomeView: View {
     private let screenshotNudge: HomeScreenshotNudge?
     /// "Welcome back" after time away, when Orbit has one to show.
     private let welcomeBack: HomeWelcomeBack?
+    /// "Before you meet" in the hours before an event with someone noted.
+    private let meetingBriefing: HomeMeetingBriefing?
 
     @State private var memories: [Memory] = []
     @State private var loadState: LoadState = .idle
@@ -72,6 +74,7 @@ public struct HomeView: View {
         shouldShowYearInReviewBanner: Bool = false,
         screenshotNudge: HomeScreenshotNudge? = nil,
         widgetNudge: HomeWidgetNudge? = nil,
+        meetingBriefing: HomeMeetingBriefing? = nil,
         welcomeBack: HomeWelcomeBack? = nil
     ) {
         self.listMemories = listMemories
@@ -96,6 +99,7 @@ public struct HomeView: View {
         self.widgetNudge = widgetNudge
         self.screenshotNudge = screenshotNudge
         self.welcomeBack = welcomeBack
+        self.meetingBriefing = meetingBriefing
     }
 
     public var body: some View {
@@ -318,6 +322,11 @@ public struct HomeView: View {
             if shouldShowYearInReviewBanner {
                 yearInReviewBanner
             }
+            // Time-sensitive, so it leads.
+            if let meetingBriefing {
+                MeetingBriefingCard(model: meetingBriefing, accent: themeAccent)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
             if let welcomeBack {
                 WelcomeBackCard(model: welcomeBack, accent: themeAccent)
                     .transition(.opacity.combined(with: .move(edge: .top)))
@@ -325,15 +334,21 @@ public struct HomeView: View {
             todaySection
             // Returning after time away is the moment to stay calm: the
             // welcome card speaks alone, and the nudges wait for next time.
-            if welcomeBack == nil, let screenshotNudge {
+            if showsNudges, let screenshotNudge {
                 ScreenshotNudgeCard(nudge: screenshotNudge, accent: themeAccent)
             }
-            if welcomeBack == nil, let widgetNudge {
+            if showsNudges, let widgetNudge {
                 WidgetNudgeCard(nudge: widgetNudge, accent: themeAccent)
             }
             contextualSurface
             recentSection
         }
+    }
+
+    /// Nudges wait while a welcome or a briefing is showing, so Home never
+    /// stacks cards.
+    private var showsNudges: Bool {
+        welcomeBack == nil && meetingBriefing == nil
     }
 
     // MARK: - One contextual surface

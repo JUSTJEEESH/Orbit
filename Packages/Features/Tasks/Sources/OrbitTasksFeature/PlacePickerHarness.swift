@@ -11,15 +11,11 @@ import OrbitKit
 /// and that compile-only CI couldn't see.
 public struct PlacePickerHarness: View {
     public static let launchArgument = "-OrbitPlacePickerHarness"
-    /// Runs the old SwiftUI `Map` picker instead, to prove the smoke test
-    /// catches the hang it had.
-    static let legacyArgument = "-OrbitPlacePickerHarnessLegacy"
 
     /// True only in Debug builds launched with the harness argument.
     public static var isRequested: Bool {
         #if DEBUG
-        let arguments = ProcessInfo.processInfo.arguments
-        return arguments.contains(launchArgument) || arguments.contains(legacyArgument)
+        return ProcessInfo.processInfo.arguments.contains(launchArgument)
         #else
         false
         #endif
@@ -30,20 +26,10 @@ public struct PlacePickerHarness: View {
 
     public init() {}
 
-    @ViewBuilder
+    // The old SwiftUI `Map` picker (LegacyMapPickerRepro, now removed)
+    // was run here too until the fix shipped: this test flagged it every
+    // time (main thread stuck, ~97% CPU), proving it can see that hang.
     private var pickerUnderTest: some View {
-        #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains(Self.legacyArgument) {
-            LegacyMapPickerRepro()
-        } else {
-            currentPicker
-        }
-        #else
-        currentPicker
-        #endif
-    }
-
-    private var currentPicker: some View {
         PlacePickerSheet(
             placeName: "Mom\u{2019}s",
             finder: finder,

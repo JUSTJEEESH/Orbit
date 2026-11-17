@@ -137,11 +137,18 @@ struct RootView: View {
                         onSet: { on in
                             if on { await env.screenshotInbox.enable() } else { env.screenshotInbox.disable() }
                         }
+                    ),
+                    meetingBriefings: SettingsToggleState(
+                        isOn: env.meetingBriefingsActive,
+                        onSet: { on in await env.setMeetingBriefingsEnabled(on) }
                     )
                 )
                 .presentationDetents([.large])
             case .weeklyReview:
                 WeeklyReviewView(onDismiss: { env.requestedModal = nil })
+                    .presentationDetents([.large])
+            case .meetingBriefing(let id):
+                MeetingBriefingView(briefingID: id, onDismiss: { env.requestedModal = nil })
                     .presentationDetents([.large])
             case .recentlyDeleted:
                 RecentlyDeletedView(onDismiss: { env.requestedModal = nil })
@@ -372,6 +379,12 @@ struct RootView: View {
                             onDismiss: { env.dismissWidgetNudge() }
                         )
                         : nil,
+                    meetingBriefing: env.currentMeetingBriefing.map { briefing in
+                        HomeMeetingBriefing(
+                            briefing: briefing,
+                            onOpen: { env.requestedModal = .meetingBriefing(briefing.id) }
+                        )
+                    },
                     welcomeBack: env.welcomeBack.map { welcome in
                         HomeWelcomeBack(
                             welcome: welcome,

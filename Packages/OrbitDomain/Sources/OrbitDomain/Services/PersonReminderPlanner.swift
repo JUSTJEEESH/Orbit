@@ -6,12 +6,22 @@ public struct CalendarEventSummary: Sendable, Hashable {
     public let title: String
     public let start: Date
     public let attendeeNames: [String]
+    /// All-day events ("Alex's birthday") have a midnight start that
+    /// mustn't be used as an alert time.
+    public let isAllDay: Bool
 
-    public init(id: String, title: String, start: Date, attendeeNames: [String]) {
+    public init(id: String, title: String, start: Date, attendeeNames: [String], isAllDay: Bool = false) {
         self.id = id
         self.title = title
         self.start = start
         self.attendeeNames = attendeeNames
+        self.isAllDay = isAllDay
+    }
+
+    /// Unique per occurrence: every occurrence of a repeating event shares
+    /// the calendar's event identifier.
+    public var occurrenceID: String {
+        "\(id)@\(Int(start.timeIntervalSince1970))"
     }
 }
 
@@ -31,22 +41,40 @@ public struct PersonReminderPlan: Sendable, Equatable {
 public enum PersonReminderPlanner {
     /// How far ahead events are considered.
     public static let lookahead: TimeInterval = 7 * 24 * 60 * 60
+    /// All-day events ring at this hour on the day, not at midnight.
+    public static let allDayAlertHour = 9
 
-    public static func plan(tasks: [MemoryTask], events: [CalendarEventSummary], now: Date) -> [PersonReminderPlan] {
-        let upcoming = events.filter { $0.start > now }.sorted { $0.start < $1.start }
+    public static func plan(
+        tasks: [MemoryTask],
+        events: [CalendarEventSummary],
+        now: Date,
+        calendar: Calendar = .current
+    ) -> [PersonReminderPlan] {
+        let upcoming = events
+            .map { event in (event, alertDate(for: event, calendar: calendar)) }
+            .filter { $0.1 > now }
+            .sorted { $0.1 < $1.1 }
         return tasks.compactMap { task in
             guard !task.isCompleted, let person = task.cue?.personName,
-                  let event = upcoming.first(where: { includes(person, in: $0) })
+                  let match = upcoming.first(where: { includes(person, in: $0.0) })
             else { return nil }
+            let (event, fireDate) = match
             return PersonReminderPlan(
                 taskID: task.id,
                 taskTitle: task.title,
                 person: person,
                 eventTitle: event.title,
-                fireDate: event.start,
+                fireDate: fireDate,
                 linkedMemoryID: task.linkedMemoryID
             )
         }
+    }
+
+    /// When an event's alert rings: its start, or the morning of an
+    /// all-day event.
+    public static func alertDate(for event: CalendarEventSummary, calendar: Calendar = .current) -> Date {
+        guard event.isAllDay else { return event.start }
+        return calendar.date(bySettingHour: allDayAlertHour, minute: 0, second: 0, of: event.start) ?? event.start
     }
 
     /// Whole-word, case- and accent-insensitive: "Alex" matches "Lunch

@@ -21,6 +21,8 @@ extension AppEnvironment {
         // Always re-plan: the change may have removed a person cue, and the
         // refresh only asks for calendar access when one exists.
         await refreshPersonReminders()
+        // A new or finished promise changes what briefings say.
+        await refreshMeetingBriefings()
         guard let due = task.dueDate, !task.isCompleted, !remindersSync.isEnabled else {
             notifications.cancelTaskReminder(taskID: task.id)
             return

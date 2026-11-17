@@ -87,6 +87,7 @@ final class AppEnvironment {
     let listHabits: ListHabitsUseCase
     let loadPromiseLedger: LoadPromiseLedgerUseCase
     let loadWelcomeBack: LoadWelcomeBackUseCase
+    let loadMeetingBriefings: LoadMeetingBriefingsUseCase
     let generateWeeklyReview: GenerateWeeklyReviewUseCase
     let listCueSuggestions: ListCueSuggestionsUseCase
     let keepCueReminder: KeepCueReminderUseCase
@@ -121,6 +122,14 @@ final class AppEnvironment {
 
     /// Home's "Welcome back" after time away, until dismissed.
     var welcomeBack: WelcomeBack?
+
+    /// Before-you-meet briefings for the next couple of days, soonest
+    /// first. Rebuilt on launch and foreground.
+    var meetingBriefings: [MeetingBriefing] = []
+    /// The user's briefings switch. On by default, but briefings only run
+    /// once calendar access exists: Orbit never asks for the calendar just
+    /// for this.
+    var meetingBriefingsEnabled: Bool = AppEnvironment.storedMeetingBriefingsPreference
 
     /// Memories 1.x's Siri intent had hidden that this launch recovered.
     /// Observed by What's New ("We found 4 memories you saved with Siri").
@@ -452,6 +461,7 @@ final class AppEnvironment {
         self.listHabits = ListHabitsUseCase(memories: memories, clock: clock)
         self.loadPromiseLedger = LoadPromiseLedgerUseCase(memories: memories, tasks: tasks)
         self.loadWelcomeBack = LoadWelcomeBackUseCase(tasks: tasks)
+        self.loadMeetingBriefings = LoadMeetingBriefingsUseCase(memories: memories, tasks: tasks)
         self.generateWeeklyReview = GenerateWeeklyReviewUseCase(memories: memories, tasks: tasks, clock: clock)
         self.listCueSuggestions = ListCueSuggestionsUseCase(memories: memories, tasks: tasks)
         self.keepCueReminder = KeepCueReminderUseCase(tasks: tasks, clock: clock)
@@ -477,6 +487,9 @@ final class AppEnvironment {
         }
         self.notifications.onOpenMemory = { [weak self] id in
             self?.pendingMemoryLink = id
+        }
+        self.notifications.onOpenBriefing = { [weak self] id in
+            self?.requestedModal = .meetingBriefing(id)
         }
 
         // Same pattern for the watch session — the receiver needs to nudge
