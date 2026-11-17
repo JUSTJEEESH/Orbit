@@ -86,6 +86,7 @@ final class AppEnvironment {
     let updateReadingItemStatus: UpdateReadingItemStatusUseCase
     let listHabits: ListHabitsUseCase
     let loadPromiseLedger: LoadPromiseLedgerUseCase
+    let loadWelcomeBack: LoadWelcomeBackUseCase
     let keepPromise: KeepPromiseUseCase
     let promiseDismissals: any PromiseDismissalStore
     let listReminderSuggestions: ListReminderSuggestionsUseCase
@@ -112,6 +113,9 @@ final class AppEnvironment {
 
     /// Whether Home should suggest adding the Orbit widget.
     var showsWidgetNudge = false
+
+    /// Home's "Welcome back" after time away, until dismissed.
+    var welcomeBack: WelcomeBack?
 
     /// Memories 1.x's Siri intent had hidden that this launch recovered.
     /// Observed by What's New ("We found 4 memories you saved with Siri").
@@ -442,6 +446,7 @@ final class AppEnvironment {
         self.updateReadingItemStatus = UpdateReadingItemStatusUseCase(memories: memories, clock: clock)
         self.listHabits = ListHabitsUseCase(memories: memories, clock: clock)
         self.loadPromiseLedger = LoadPromiseLedgerUseCase(memories: memories, tasks: tasks)
+        self.loadWelcomeBack = LoadWelcomeBackUseCase(tasks: tasks)
         self.keepPromise = KeepPromiseUseCase(tasks: tasks, clock: clock)
         self.promiseDismissals = UserDefaultsPromiseDismissalStore()
         self.listReminderSuggestions = ListReminderSuggestionsUseCase(

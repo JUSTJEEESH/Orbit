@@ -367,7 +367,19 @@ struct RootView: View {
                             onShowHow: { env.requestedModal = .widgetHowTo },
                             onDismiss: { env.dismissWidgetNudge() }
                         )
-                        : nil
+                        : nil,
+                    welcomeBack: env.welcomeBack.map { welcome in
+                        HomeWelcomeBack(
+                            welcome: welcome,
+                            onOpenTasks: {
+                                env.dismissWelcomeBack()
+                                selectedTab = .tasks
+                            },
+                            onDismiss: {
+                                withAnimation(OrbitMotion.smooth) { env.dismissWelcomeBack() }
+                            }
+                        )
+                    }
                 )
                 .navigationTitle("")
                 .navigationBarTitleDisplayMode(.inline)

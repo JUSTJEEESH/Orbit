@@ -15,13 +15,17 @@ public struct MentionedEntity: Identifiable, Sendable, Hashable {
     public let key: String
     public let memoryCount: Int
     public let lastMentioned: Date
+    /// People only: the latest memory that was time spent with them
+    /// ("had dinner with Sam"), as opposed to merely mentioning them.
+    public let lastContact: Date?
 
-    public init(kind: Kind, name: String, key: String, memoryCount: Int, lastMentioned: Date) {
+    public init(kind: Kind, name: String, key: String, memoryCount: Int, lastMentioned: Date, lastContact: Date? = nil) {
         self.kind = kind
         self.name = name
         self.key = key
         self.memoryCount = memoryCount
         self.lastMentioned = lastMentioned
+        self.lastContact = lastContact
     }
 
     static func key(for name: String) -> String {
@@ -40,6 +44,18 @@ extension Memory {
             var names = ai.extractedLocations
             if case .location(let name?, _, _) = content { names.append(name) }
             return names
+        }
+    }
+
+    /// The words a memory holds, for on-device text analysis.
+    var analyzableText: String {
+        switch content {
+        case .text(let text):                 return text
+        case .voiceNote(let transcript, _):   return transcript ?? ""
+        case .image(let caption):             return caption ?? ""
+        case .link(_, let title, let summary): return [title, summary].compactMap { $0 }.joined(separator: " ")
+        case .screenshot(let text):           return text ?? ""
+        case .location(let name, _, _):       return name ?? ""
         }
     }
 }
@@ -64,6 +80,7 @@ public struct ListMentionedEntitiesUseCase: Sendable {
             var spellings: [String: Int] = [:]
             var memoryIDs: Set<UUID> = []
             var last: Date = .distantPast
+            var lastContact: Date?
         }
         var tallies: [String: Tally] = [:]
         for memory in memories {
@@ -75,6 +92,11 @@ public struct ListMentionedEntitiesUseCase: Sendable {
                 tally.spellings[name, default: 0] += 1
                 tally.memoryIDs.insert(memory.id)
                 tally.last = max(tally.last, memory.createdAt)
+                if kind == .person,
+                   memory.createdAt > (tally.lastContact ?? .distantPast),
+                   ContactMomentDetector.isContact(with: name, in: memory.analyzableText) {
+                    tally.lastContact = memory.createdAt
+                }
                 tallies[key] = tally
             }
         }
@@ -84,7 +106,8 @@ public struct ListMentionedEntitiesUseCase: Sendable {
                 name: tally.spellings.max { $0.value < $1.value || ($0.value == $1.value && $0.key > $1.key) }?.key ?? key,
                 key: key,
                 memoryCount: tally.memoryIDs.count,
-                lastMentioned: tally.last
+                lastMentioned: tally.last,
+                lastContact: tally.lastContact
             )
         }
         .sorted { ($0.memoryCount, $0.lastMentioned) > ($1.memoryCount, $1.lastMentioned) }

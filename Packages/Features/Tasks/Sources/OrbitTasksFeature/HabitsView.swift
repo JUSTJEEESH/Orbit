@@ -70,7 +70,7 @@ struct HabitsView: View {
                             .foregroundStyle(OrbitColor.textSecondary)
                         Text("·")
                             .foregroundStyle(OrbitColor.textTertiary)
-                        Text(habit.lastMentionedAt.formatted(.relative(presentation: .named)))
+                        Text(TimeSince.phrase(from: habit.lastMentionedAt, to: Date()))
                             .font(OrbitTypography.footnote)
                             .foregroundStyle(OrbitColor.textSecondary)
                     }
@@ -82,7 +82,7 @@ struct HabitsView: View {
             }
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(habit.habit). \(habit.totalMentions) mentions. Last \(habit.lastMentionedAt.formatted(.relative(presentation: .named))).")
+        .accessibilityLabel("\(habit.habit). \(habit.totalMentions) mentions. Last \(TimeSince.phrase(from: habit.lastMentionedAt, to: Date())).")
     }
 
     private func sparkline(for habit: HabitStats) -> some View {

@@ -31,6 +31,8 @@ public struct HomeView: View {
     private let widgetNudge: HomeWidgetNudge?
     /// "N new screenshots to sort", when the Screenshot Inbox has some.
     private let screenshotNudge: HomeScreenshotNudge?
+    /// "Welcome back" after time away, when Orbit has one to show.
+    private let welcomeBack: HomeWelcomeBack?
 
     @State private var memories: [Memory] = []
     @State private var loadState: LoadState = .idle
@@ -66,7 +68,8 @@ public struct HomeView: View {
         onPresentCapture: @escaping @MainActor () -> Void,
         shouldShowYearInReviewBanner: Bool = false,
         screenshotNudge: HomeScreenshotNudge? = nil,
-        widgetNudge: HomeWidgetNudge? = nil
+        widgetNudge: HomeWidgetNudge? = nil,
+        welcomeBack: HomeWelcomeBack? = nil
     ) {
         self.listMemories = listMemories
         self.generateInsights = generateInsights
@@ -88,6 +91,7 @@ public struct HomeView: View {
         self.shouldShowYearInReviewBanner = shouldShowYearInReviewBanner
         self.widgetNudge = widgetNudge
         self.screenshotNudge = screenshotNudge
+        self.welcomeBack = welcomeBack
     }
 
     public var body: some View {
@@ -190,17 +194,14 @@ public struct HomeView: View {
     // MARK: - Gratitude pill
 
     /// Daily ritual entry point. Reads as "Three things you're grateful for"
-    /// when the user hasn't logged today; shifts to a streak-celebrating
-    /// "logged today · 12-day streak" pill once they have. Either way it
-    /// stays a quiet, low-pressure surface — never red badges, never
-    /// "you missed a day" guilt copy.
+    /// when the user hasn't logged today, and "logged for today" once they
+    /// have. Deliberately no streak count: a streak is something to break,
+    /// and breaking one is the guilt that makes people leave journaling
+    /// apps. Never red badges, never "you missed a day" copy.
     private var gratitudePill: some View {
         let themeColor = themeAccent
         let label: String = {
             if gratitudeStatus.hasEntryToday {
-                if gratitudeStatus.streak >= 2 {
-                    return "Gratitude logged · \(gratitudeStatus.streak)-day streak"
-                }
                 return "Gratitude logged for today"
             }
             return "Three things you're grateful for"
@@ -313,11 +314,17 @@ public struct HomeView: View {
             if shouldShowYearInReviewBanner {
                 yearInReviewBanner
             }
+            if let welcomeBack {
+                WelcomeBackCard(model: welcomeBack, accent: themeAccent)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+            }
             todaySection
-            if let screenshotNudge {
+            // Returning after time away is the moment to stay calm: the
+            // welcome card speaks alone, and the nudges wait for next time.
+            if welcomeBack == nil, let screenshotNudge {
                 ScreenshotNudgeCard(nudge: screenshotNudge, accent: themeAccent)
             }
-            if let widgetNudge {
+            if welcomeBack == nil, let widgetNudge {
                 WidgetNudgeCard(nudge: widgetNudge, accent: themeAccent)
             }
             contextualSurface

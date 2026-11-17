@@ -46,10 +46,19 @@ struct EntityMemoriesView: View {
         }
     }
 
+    /// "Last together 23 days ago · 12 memories". Time together is the
+    /// figure that helps with time blindness, so it leads when Orbit has
+    /// seen one; otherwise the last mention, which is always true.
     private var subtitle: String {
         let count = memories.isEmpty ? entity.memoryCount : memories.count
         let noun = count == 1 ? "memory" : "memories"
-        let last = entity.lastMentioned.formatted(date: .abbreviated, time: .omitted)
-        return "\(count) \(noun) · last mentioned \(last)"
+        let now = Date()
+        let lead: String
+        if let contact = entity.lastContact {
+            lead = "Last together \(TimeSince.phrase(from: contact, to: now))"
+        } else {
+            lead = "Last mentioned \(TimeSince.phrase(from: entity.lastMentioned, to: now))"
+        }
+        return "\(lead) · \(count) \(noun)"
     }
 }

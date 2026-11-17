@@ -140,6 +140,8 @@ private struct ContentRoot: View {
         .task {
             await environment.account.refreshCredentialState()
             await environment.notifications.bootstrap()
+            // Before anything else updates the visit time.
+            await environment.noteVisit()
             // Start listening for watch transfers. Safe to call repeatedly —
             // WCSession activation is idempotent and any queued files from a
             // prior cold-start arrive after this call.
@@ -160,6 +162,7 @@ private struct ContentRoot: View {
             // Re-pull on every foreground so completions + clips surface
             // promptly.
             if newPhase == .active {
+                Task { await environment.noteVisit() }
                 Task { await environment.remindersSync.pullCompletionUpdates() }
                 Task { await environment.captureInbox.drain() }
                 if environment.appLock.isLocked {
