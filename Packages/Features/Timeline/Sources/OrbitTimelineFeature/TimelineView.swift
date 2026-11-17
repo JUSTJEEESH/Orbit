@@ -161,11 +161,17 @@ public struct TimelineView: View {
         .refreshable { await reload() }
         // VoiceOver: flick between days with the rotor instead of every row.
         .accessibilityRotor("Days") {
-            ForEach(sections, id: \.id) { section in
-                if let first = section.memories.first {
-                    AccessibilityRotorEntry(section.title, id: first.id)
-                }
+            ForEach(dayRotorEntries, id: \.memoryID) { entry in
+                AccessibilityRotorEntry(entry.title, id: entry.memoryID)
             }
+        }
+    }
+
+    /// One rotor stop per day, at its first memory. Built up front because
+    /// an `if` inside rotor content needs iOS 27 on newer SDKs.
+    private var dayRotorEntries: [(title: String, memoryID: UUID)] {
+        sections.compactMap { section in
+            section.memories.first.map { (title: section.title, memoryID: $0.id) }
         }
     }
 
