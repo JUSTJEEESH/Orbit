@@ -5,6 +5,11 @@ import SwiftUI
 public struct RecordingIndicator: View {
     private let isActive: Bool
     @State private var pulse: Bool = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// One breath of the pulse. A looping pulse needs a timing curve:
+    /// springs settle, so they can't breathe continuously.
+    private static let pulseDuration: Double = 0.9
 
     public init(isActive: Bool) {
         self.isActive = isActive
@@ -24,7 +29,12 @@ public struct RecordingIndicator: View {
     }
 
     private func startPulse() {
-        withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
+        // Reduce Motion: a steady, full-strength dot still says "recording".
+        guard !reduceMotion else {
+            pulse = true
+            return
+        }
+        withAnimation(.easeInOut(duration: Self.pulseDuration).repeatForever(autoreverses: true)) {
             pulse = true
         }
     }

@@ -2,6 +2,7 @@ import Foundation
 import Observation
 import RevenueCat
 import OrbitKit
+import os
 
 /// Observable wrapper around RevenueCat's `customerInfoStream`. Owns one
 /// job: answer "is this user Orbit Pro right now?" — exposed via

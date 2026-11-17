@@ -4,6 +4,7 @@ import OrbitDesignSystem
 import OrbitKit
 import OrbitAccount
 import OrbitStore
+import os
 
 public struct SettingsView: View {
     private let appConfig: AppConfig

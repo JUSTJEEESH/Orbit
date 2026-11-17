@@ -3,6 +3,7 @@ import OrbitDesignSystem
 import OrbitDomain
 import OrbitKit
 import OrbitMemoryDetailFeature
+import os
 
 public struct TimelineView: View {
     private let listMemories: ListMemoriesUseCase

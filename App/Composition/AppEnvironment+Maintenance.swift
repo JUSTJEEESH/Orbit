@@ -3,6 +3,7 @@ import OrbitKit
 import OrbitDomain
 import OrbitPersistence
 import OrbitMedia
+import os
 
 /// Background upkeep that repairs data left incomplete by Orbit 1.x — and by
 /// any capture interrupted since (app killed mid-enrichment, extension saves

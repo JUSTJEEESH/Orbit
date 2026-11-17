@@ -1,6 +1,7 @@
 import Foundation
 import LocalAuthentication
 import Observation
+import os
 
 /// Optional Face ID / Touch ID / passcode lock for the whole app.
 ///

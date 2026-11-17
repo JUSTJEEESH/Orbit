@@ -1,6 +1,7 @@
 import UIKit
 import Observation
 import OrbitKit
+import os
 
 /// Manages the home-screen icon variant. Wraps
 /// `UIApplication.setAlternateIconName(_:)` and exposes an `Observable`

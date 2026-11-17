@@ -9,6 +9,7 @@ import OrbitAI
 import OrbitAccount
 import OrbitStore
 import OrbitCaptureFeature
+import os
 
 /// The composition root. Holds long-lived services (repositories, clocks,
 /// media services, AI) and pre-constructed use cases ready to be invoked by

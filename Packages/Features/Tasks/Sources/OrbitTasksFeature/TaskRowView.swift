@@ -56,9 +56,13 @@ struct TaskRowView: View {
         .accessibilityAction(named: task.isCompleted ? "Mark incomplete" : "Mark complete", onToggle)
     }
 
+    @ScaledMetric(relativeTo: .body) private var checkboxDiameter: CGFloat = 22
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// The ring "pops" when a task is completed — one small, satisfying
+    /// moment (Things 3, Tiimo) rather than a silent state flip.
     private var completeButton: some View {
         Button {
-            Haptics.play(.selection)
             onToggle()
         } label: {
             ZStack {
@@ -67,16 +71,31 @@ struct TaskRowView: View {
                         task.isCompleted ? orbitTheme.primary : OrbitColor.separator,
                         lineWidth: 1.5
                     )
-                    .frame(width: 22, height: 22)
+                    .frame(width: checkboxDiameter, height: checkboxDiameter)
+                    .keyframeAnimator(initialValue: 1.0, trigger: task.isCompleted) { ring, scale in
+                        ring.scaleEffect(scale)
+                    } keyframes: { _ in
+                        // Pops only when completing, and never with Reduce Motion.
+                        SpringKeyframe(task.isCompleted && !reduceMotion ? 1.18 : 1.0, duration: 0.14)
+                        SpringKeyframe(1.0, duration: 0.28)
+                    }
                 if task.isCompleted {
                     Image(systemName: "checkmark")
                         .scaledFont(size: 11, weight: .bold)
                         .foregroundStyle(orbitTheme.primary)
+                        .transition(.scale.combined(with: .opacity))
                 }
             }
+            .animation(OrbitMotion.respectfully(OrbitMotion.snap, reduceMotion: reduceMotion), value: task.isCompleted)
             .padding(.top, 2)
+            // The ring stays small; the tap target meets the 44-pt minimum.
+            .frame(minWidth: OrbitHitTarget.minimum, minHeight: OrbitHitTarget.minimum, alignment: .top)
+            .contentShape(.rect)
         }
         .buttonStyle(.plain)
+        .sensoryFeedback(trigger: task.isCompleted) { _, completed in
+            completed ? .success : .selection
+        }
         .accessibilityLabel(task.isCompleted ? "Mark incomplete" : "Mark complete")
     }
 

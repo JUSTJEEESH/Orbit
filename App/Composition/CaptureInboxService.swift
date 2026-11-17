@@ -3,6 +3,7 @@ import Foundation
 import OrbitDomain
 import OrbitMedia
 import OrbitKit
+import os
 
 /// Drains capture payloads that arrived while the host app was off-screen.
 ///

@@ -11,6 +11,7 @@ public struct MemoryDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var showDeleteConfirmation = false
     @State private var editingMemory: Memory?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private let onDeleted: @MainActor () -> Void
 
     public init(
@@ -125,17 +126,27 @@ public struct MemoryDetailView: View {
         VStack(alignment: .leading, spacing: OrbitSpacing.xl) {
             header(memory)
             primaryContent(memory)
+            // When Orbit finishes organizing a memory, its summary, tags and
+            // connections settle in softly instead of popping into place.
             if hasAIMetadata(memory) {
                 aiSection(memory)
+                    .transition(Self.revealTransition)
             }
             if !memory.tags.isEmpty {
                 tagsSection(memory)
+                    .transition(Self.revealTransition)
             }
             if !model.connected.isEmpty {
                 connectedSection
+                    .transition(Self.revealTransition)
             }
         }
+        .animation(OrbitMotion.respectfully(OrbitMotion.smooth, reduceMotion: reduceMotion), value: hasAIMetadata(memory))
+        .animation(OrbitMotion.respectfully(OrbitMotion.smooth, reduceMotion: reduceMotion), value: memory.tags.count)
+        .animation(OrbitMotion.respectfully(OrbitMotion.smooth, reduceMotion: reduceMotion), value: model.connected.count)
     }
+
+    private static let revealTransition: AnyTransition = .opacity.combined(with: .offset(y: OrbitSpacing.xxs))
 
     /// "Connected memories" — backlinks surface. Renders 1-3 memory cards
     /// the SuggestionEngine has scored as related to the one on screen.
@@ -199,7 +210,7 @@ public struct MemoryDetailView: View {
                         .transition(.opacity)
                 }
             }
-            .animation(.easeOut(duration: 0.25), value: hasReason)
+            .animation(OrbitMotion.smooth, value: hasReason)
         }
     }
 

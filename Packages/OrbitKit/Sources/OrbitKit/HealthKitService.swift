@@ -2,6 +2,7 @@ import Foundation
 import HealthKit
 import Observation
 import UIKit
+import os
 
 /// Read-only HealthKit wrapper. Surfaces three signals to the rest of
 /// Orbit:

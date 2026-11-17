@@ -2,6 +2,7 @@ import AppIntents
 import OrbitDomain
 import OrbitPersistence
 import OrbitKit
+import os
 
 /// "Capture to Orbit" — invokable from Shortcuts, Siri, the Action Button,
 /// or anywhere `AppIntent` is surfaced. Spins up a short-lived SwiftData

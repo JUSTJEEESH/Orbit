@@ -4,6 +4,7 @@ import OrbitDesignSystem
 import OrbitDomain
 import OrbitKit
 import OrbitPersistence
+import os
 
 /// `@unchecked Sendable` wrapper around WidgetKit's non-Sendable completion
 /// handlers. The handler is documented to be invoked exactly once after the

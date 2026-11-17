@@ -2,6 +2,7 @@ import SwiftUI
 import OrbitDesignSystem
 import OrbitKit
 import OrbitPersistence
+import os
 
 /// Shown instead of the app when the memory library can't be opened.
 ///

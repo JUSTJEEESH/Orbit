@@ -33,6 +33,8 @@ enum AppTab: Hashable, CaseIterable {
 /// instead of free-form sheet bindings.
 enum AppModal: Hashable, Identifiable {
     case capture
+    /// Capture, opened ready to record a voice note.
+    case captureVoice
     case settings
     case paywall
     case dailyRecap

@@ -1,6 +1,7 @@
 import Foundation
 import RevenueCat
 import OrbitKit
+import os
 
 /// One-call configuration of the RevenueCat SDK. Call this once at app
 /// launch, before any other RevenueCat API is touched (typically from

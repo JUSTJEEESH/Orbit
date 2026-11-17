@@ -1,6 +1,7 @@
 import Foundation
 import OrbitKit
 import OrbitSettingsFeature
+import os
 
 /// Whether the open store is being mirrored to the user's iCloud.
 enum SyncStatus: Equatable {

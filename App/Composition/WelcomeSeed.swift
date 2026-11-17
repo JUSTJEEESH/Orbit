@@ -1,6 +1,7 @@
 import Foundation
 import OrbitDomain
 import OrbitKit
+import os
 
 /// Production-safe welcome seeder. Plants three short intro memories
 /// the first time onboarding completes so the user never lands on a

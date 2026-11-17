@@ -2,6 +2,7 @@ import Foundation
 import Observation
 import OrbitDomain
 import OrbitKit
+import os
 
 /// Owns the list of insights for the patterns surface and the rotating
 /// preview card on Home. Recomputes from the repository on demand; the

@@ -1,6 +1,7 @@
 import Foundation
 import OrbitKit
 import OrbitDomain
+import os
 
 /// What the Undo toast needs to describe the deletion it can reverse.
 struct TrashNotice: Identifiable, Equatable {

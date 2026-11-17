@@ -26,7 +26,8 @@ public struct CaptureMemoryUseCase: Sendable {
         media: [MediaAsset] = [],
         surfaceDate: Date? = nil,
         isLetter: Bool = false,
-        createdAt: Date? = nil
+        createdAt: Date? = nil,
+        transcriptSegments: [TranscriptSegment] = []
     ) async throws -> Memory {
         let now = clock.now()
         // Optional override lets demo seeders and import flows backdate a
@@ -48,7 +49,8 @@ public struct CaptureMemoryUseCase: Sendable {
             media: media,
             ai: .pending,
             surfaceDate: effectiveSurfaceDate,
-            isLetter: isLetter
+            isLetter: isLetter,
+            transcriptSegments: transcriptSegments
         )
         memory.ai.signals = signalExtractor.extract(from: memory)
         try await repository.save(memory)

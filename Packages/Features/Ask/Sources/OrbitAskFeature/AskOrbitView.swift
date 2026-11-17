@@ -209,8 +209,8 @@ public struct AskOrbitView: View {
     private var thinkingView: some View {
         OrbitCard(elevation: .resting) {
             HStack(spacing: OrbitSpacing.sm) {
-                ProgressView()
-                Text("Thinking…")
+                OrbitThinkingDots()
+                Text("Looking through your memories…")
                     .font(OrbitTypography.callout)
                     .foregroundStyle(OrbitColor.textSecondary)
             }

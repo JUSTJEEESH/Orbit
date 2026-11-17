@@ -3,6 +3,7 @@ import OrbitDesignSystem
 import OrbitDomain
 import OrbitKit
 import OrbitMemoryDetailFeature
+import os
 
 public struct HomeView: View {
     private let listMemories: ListMemoriesUseCase
@@ -134,6 +135,8 @@ public struct HomeView: View {
             Text(headline)
                 .font(OrbitTypography.largeTitle)
                 .foregroundStyle(OrbitColor.textPrimary)
+                // The count rolls to its new value after a capture.
+                .contentTransition(.numericText(value: Double(memories.count)))
         }
     }
 
@@ -158,11 +161,20 @@ public struct HomeView: View {
     @ViewBuilder
     private var content: some View {
         switch loadState {
-        case .idle:
-            emptyState
-        case .loading, .loaded:
+        case .idle, .loading:
+            // First load: a quiet skeleton. Showing the empty state here made
+            // every returning user glimpse "your second brain is empty".
+            // Later refreshes keep the current content on screen instead.
+            if memories.isEmpty {
+                HomeSkeleton()
+                    .transition(.opacity)
+            } else {
+                loadedContent
+            }
+        case .loaded:
             if memories.isEmpty {
                 emptyState
+                    .transition(.opacity)
             } else {
                 loadedContent
             }
@@ -722,21 +734,27 @@ public struct HomeView: View {
     }
 
     private func reload() async {
-        loadState = .loading
+        // Only the very first load shows the skeleton; refreshes (every
+        // capture bumps `refreshToken`) keep what's on screen.
+        if loadState == .idle { loadState = .loading }
         do {
-            memories = try await listMemories()
-            loadState = .loaded
+            let loaded = try await listMemories()
+            withAnimation(OrbitMotion.smooth) {
+                memories = loaded
+                loadState = .loaded
+            }
         } catch {
             OrbitLog.persistence.error("Home load failed: \(String(describing: error), privacy: .public)")
             loadState = .failed("Couldn't load your memories. Try again in a moment.")
         }
-        // Insights + On This Day + gratitude + suggestions run in parallel
-        // with the list; failures are silent because their absence is the
-        // natural fallback (the section simply hides).
-        await reloadInsights()
-        await reloadOnThisDay()
-        await reloadGratitudeStatus()
-        await reloadSuggestions()
+        // Insights, On This Day, gratitude and suggestions load concurrently
+        // (1.x ran them one after another despite this comment's claim);
+        // failures are silent because their absence is the natural fallback.
+        async let insights: Void = reloadInsights()
+        async let onThisDay: Void = reloadOnThisDay()
+        async let gratitude: Void = reloadGratitudeStatus()
+        async let suggestions: Void = reloadSuggestions()
+        _ = await (insights, onThisDay, gratitude, suggestions)
     }
 
     private func reloadSuggestions() async {

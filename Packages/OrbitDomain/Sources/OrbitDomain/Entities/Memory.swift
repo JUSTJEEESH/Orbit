@@ -27,6 +27,9 @@ public struct Memory: Identifiable, Sendable, Hashable {
     /// surface until it's restored or permanently removed. Deleting from the
     /// UI only ever sets this, so an accidental swipe is always undoable.
     public var deletedAt: Date?
+    /// For voice notes: the transcript split into timed segments, so search
+    /// can jump to the moment something was said. Empty when unknown.
+    public var transcriptSegments: [TranscriptSegment]
 
     public init(
         id: UUID = UUID(),
@@ -40,7 +43,8 @@ public struct Memory: Identifiable, Sendable, Hashable {
         embedding: [Float] = [],
         surfaceDate: Date? = nil,
         isLetter: Bool = false,
-        deletedAt: Date? = nil
+        deletedAt: Date? = nil,
+        transcriptSegments: [TranscriptSegment] = []
     ) {
         self.id = id
         self.content = content
@@ -54,6 +58,7 @@ public struct Memory: Identifiable, Sendable, Hashable {
         self.surfaceDate = surfaceDate
         self.isLetter = isLetter
         self.deletedAt = deletedAt
+        self.transcriptSegments = transcriptSegments
     }
 
     /// True while the memory sits in Recently Deleted.

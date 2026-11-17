@@ -6,6 +6,7 @@ import SwiftData
 /// Changes from V1 are strictly additive so every 1.x store upgrades with a
 /// lightweight migration — no row is rewritten, renamed or dropped:
 /// - `MemoryEntity.deletedAt: Date?` — powers Recently Deleted.
+/// - `MemoryEntity.transcriptSegmentsJSON: Data?` — voice-note word timings.
 ///
 /// The models listed here are the live, top-level classes. When a V3 is
 /// needed, freeze copies of these models inside this enum first (exactly as

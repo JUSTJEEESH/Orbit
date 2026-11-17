@@ -1,5 +1,6 @@
 import Foundation
 import ActivityKit
+import os
 
 /// Wraps the ActivityKit start / end calls for the capture Live Activity so
 /// `CaptureViewModel` doesn't need to know the framework directly.

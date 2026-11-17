@@ -61,7 +61,7 @@ public struct TasksView: View {
                         case .habits:  HabitsView(model: habitsModel)
                         }
                     }
-                    .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: section)
+                    .animation(reduceMotion ? nil : OrbitMotion.snap, value: section)
                 }
             }
             .navigationTitle(section.title)
@@ -267,7 +267,7 @@ public struct TasksView: View {
     private var completedSection: some View {
         VStack(alignment: .leading, spacing: OrbitSpacing.md) {
             Button {
-                withAnimation(OrbitMotion.respectfully(.easeInOut(duration: 0.2), reduceMotion: reduceMotion)) {
+                withAnimation(OrbitMotion.respectfully(OrbitMotion.snap, reduceMotion: reduceMotion)) {
                     showingCompleted.toggle()
                 }
             } label: {

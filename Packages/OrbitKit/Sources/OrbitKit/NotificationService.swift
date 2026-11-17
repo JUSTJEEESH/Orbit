@@ -2,6 +2,7 @@ import Foundation
 import UserNotifications
 import UIKit
 import Observation
+import os
 
 /// Owns the user's local-notification preferences and scheduling. Today the
 /// only notification is the Daily Recap nudge; the surface stays narrow on

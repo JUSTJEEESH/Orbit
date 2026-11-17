@@ -18,6 +18,7 @@ import OrbitTasksFeature
 import OrbitAskFeature
 import OrbitYearInReviewFeature
 import OrbitWellnessFeature
+import os
 
 struct RootView: View {
     @Environment(AppEnvironment.self) private var env
@@ -37,48 +38,16 @@ struct RootView: View {
         // share the same sheet binding the UI drives.
         @Bindable var bindableEnv = env
 
-        ZStack(alignment: .bottom) {
+        ZStack(alignment: .top) {
             tabContent
-            captureFAB
             undoToast
         }
         .animation(OrbitMotion.respectfully(OrbitMotion.smooth, reduceMotion: reduceMotion), value: env.trashNotice)
         .orbitTheme(env.themeService.theme)
         .sheet(item: $bindableEnv.requestedModal) { modal in
             switch modal {
-            case .capture:
-                CaptureView(
-                    viewModel: CaptureViewModel(
-                        captureMemory: env.captureMemory,
-                        mediaStorage: env.mediaStorage,
-                        speechTranscriber: env.speechTranscriber,
-                        linkFetcher: env.linkFetcher,
-                        // Evaluated every recorder tick so a Pro
-                        // upgrade lifts the cap mid-recording.
-                        voiceCapProvider: {
-                            env.proGates.canAccess(.voiceLength)
-                                ? nil
-                                : ProGateService.freeVoiceSeconds
-                        }
-                    ),
-                    onCompleted: { memoryID in
-                        env.memoriesDidChange()
-                        env.scheduleEnrichment(for: memoryID)
-                        env.scheduleSealedDeliveryIfNeeded(for: memoryID)
-                        env.requestedModal = nil
-                        considerReviewPrompt(after: .memoryCaptured)
-                    },
-                    onCancel: { env.requestedModal = nil },
-                    onPresentPaywall: {
-                        env.requestedModal = nil
-                        Task { @MainActor in
-                            try? await Task.sleep(for: .milliseconds(280))
-                            env.requestedModal = .paywall
-                        }
-                    }
-                )
-                .presentationDetents([.large])
-                .presentationDragIndicator(.visible)
+            case .capture, .captureVoice:
+                captureSheet(startInVoice: modal == .captureVoice)
             case .settings:
                 SettingsView(
                     appConfig: env.appConfig,
@@ -352,6 +321,7 @@ struct RootView: View {
             // Each tab wraps in a NavigationStack so the profile toolbar
             // has a navigation bar to live in. Timeline already manages
             // its own stack for memory-detail navigation.
+            Tab(AppTab.home.title, systemImage: AppTab.home.systemImage, value: AppTab.home) {
             NavigationStack {
                 HomeView(
                     listMemories: env.listMemories,
@@ -383,10 +353,9 @@ struct RootView: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar { profileToolbar }
             }
-            .safeAreaPadding(.bottom, FABLayout.contentClearance)
-            .tag(AppTab.home)
-            .tabItem { Label(AppTab.home.title, systemImage: AppTab.home.systemImage) }
+            }
 
+            Tab(AppTab.timeline.title, systemImage: AppTab.timeline.systemImage, value: AppTab.timeline) {
             TimelineView(
                 listMemories: env.listMemories,
                 removeMemory: { id in try await env.removeMemory(id: id) },
@@ -395,11 +364,10 @@ struct RootView: View {
                 onPresentCapture: { env.requestedModal = .capture },
                 path: $timelinePath
             )
-                .safeAreaPadding(.bottom, FABLayout.contentClearance)
-                .tag(AppTab.timeline)
-                .tabItem { Label(AppTab.timeline.title, systemImage: AppTab.timeline.systemImage) }
                 .toolbar { profileToolbar }
+            }
 
+            Tab(AppTab.tasks.title, systemImage: AppTab.tasks.systemImage, value: AppTab.tasks) {
             TasksView(
                 viewModel: TasksViewModel(
                     listTasks: env.listTasks,
@@ -431,11 +399,11 @@ struct RootView: View {
                 refreshToken: env.memoryListVersion,
                 makeDetailViewModel: makeDetailViewModel
             )
-                .safeAreaPadding(.bottom, FABLayout.contentClearance)
-                .tag(AppTab.tasks)
-                .tabItem { Label(AppTab.tasks.title, systemImage: AppTab.tasks.systemImage) }
                 .toolbar { profileToolbar }
+            }
 
+            // The search role sets Search apart in the iOS 26 tab bar.
+            Tab(value: AppTab.search, role: .search) {
             NavigationStack {
                 SearchView(
                     viewModel: SearchViewModel(
@@ -450,8 +418,17 @@ struct RootView: View {
                     .navigationTitle("Search")
                     .toolbar { profileToolbar }
             }
-            .tag(AppTab.search)
-            .tabItem { Label(AppTab.search.title, systemImage: AppTab.search.systemImage) }
+            }
+        }
+        // iOS 26 Liquid Glass: the tab bar tucks away while reading, and
+        // capture lives in the system bottom accessory above it — native
+        // glass, correct insets for every list, no hand-placed button.
+        .tabBarMinimizeBehavior(.onScrollDown)
+        .tabViewBottomAccessory {
+            CaptureAccessory(
+                onCapture: { env.requestedModal = .capture },
+                onVoiceCapture: { env.requestedModal = .captureVoice }
+            )
         }
         .tint(OrbitColor.textPrimary)
     }
@@ -470,25 +447,17 @@ struct RootView: View {
         }
     }
 
-    private enum FABLayout {
-        /// Lifts the button clear of the system tab bar.
-        static let tabBarClearance: CGFloat = 72
-        /// Extra bottom safe area for tab content, so the last rows (and
-        /// their swipe actions) can scroll above the button instead of
-        /// sitting underneath it.
-        static let contentClearance: CGFloat = OrbitCaptureFAB.diameter + OrbitSpacing.md
-    }
-
-    /// Undo for the most recent delete. Sits just above the capture button
-    /// and disappears on its own after `undoToastLifetime`.
+    /// Undo for the most recent delete. Drops in below the navigation bar,
+    /// clear of the tab bar and capture accessory, and disappears on its
+    /// own after `undoToastLifetime`.
     @ViewBuilder
     private var undoToast: some View {
         if let notice = env.trashNotice {
             UndoDeleteToast {
                 Task { try? await env.restoreMemory(id: notice.memoryID) }
             }
-            .padding(.bottom, FABLayout.tabBarClearance + OrbitCaptureFAB.diameter + OrbitSpacing.md)
-            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .padding(.top, OrbitSpacing.sm)
+            .transition(.move(edge: .top).combined(with: .opacity))
             .task(id: notice.id) {
                 AccessibilityNotification.Announcement("Memory deleted. Undo available.").post()
                 try? await Task.sleep(for: Self.undoToastLifetime)
@@ -521,12 +490,43 @@ struct RootView: View {
         }
     }
 
-    private var captureFAB: some View {
-        OrbitCaptureFAB {
-            env.requestedModal = .capture
-        }
-        .padding(.bottom, FABLayout.tabBarClearance)
-        .allowsHitTesting(true)
+    /// The capture sheet. `startInVoice` opens it ready to record (the
+    /// capture accessory's mic button).
+    private func captureSheet(startInVoice: Bool) -> some View {
+        let model = CaptureViewModel(
+            captureMemory: env.captureMemory,
+            mediaStorage: env.mediaStorage,
+            speechTranscriber: env.speechTranscriber,
+            linkFetcher: env.linkFetcher,
+            // Evaluated every recorder tick so a Pro
+            // upgrade lifts the cap mid-recording.
+            voiceCapProvider: {
+                env.proGates.canAccess(.voiceLength)
+                    ? nil
+                    : ProGateService.freeVoiceSeconds
+            }
+        )
+        if startInVoice { model.mode = .voice }
+        return CaptureView(
+            viewModel: model,
+            onCompleted: { memoryID in
+                env.memoriesDidChange()
+                env.scheduleEnrichment(for: memoryID)
+                env.scheduleSealedDeliveryIfNeeded(for: memoryID)
+                env.requestedModal = nil
+                considerReviewPrompt(after: .memoryCaptured)
+            },
+            onCancel: { env.requestedModal = nil },
+            onPresentPaywall: {
+                env.requestedModal = nil
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(280))
+                    env.requestedModal = .paywall
+                }
+            }
+        )
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
     }
 
     @MainActor

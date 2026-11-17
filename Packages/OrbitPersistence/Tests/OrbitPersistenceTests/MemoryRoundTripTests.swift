@@ -159,5 +159,21 @@ extension StoreBackedTests {
             #expect(try await repo.list(filter: .recentlyDeleted).map(\.id) == [trashed.id])
             #expect(try await repo.memory(with: trashed.id)?.deletedAt == deletedAt)
         }
-    }
+    
+        @Test func transcriptSegmentsSurviveRoundTrip() async throws {
+            let repo = SwiftDataMemoryRepository(modelContainer: try makeContainer())
+            let segments = [
+                TranscriptSegment(text: "Found a tiny bookshop", start: 0, end: 1.6),
+                TranscriptSegment(text: "on Calle 8", start: 1.6, end: 2.4),
+            ]
+            let memory = Memory(
+                content: .voiceNote(transcript: "Found a tiny bookshop on Calle 8", duration: 2.4),
+                createdAt: .now, updatedAt: .now, transcriptSegments: segments
+            )
+            try await repo.save(memory)
+            let fetched = try #require(try await repo.memory(with: memory.id))
+            #expect(fetched.transcriptSegments == segments)
+            #expect(fetched.transcriptSegments.startTime(of: "calle") == 1.6)
+        }
+}
 }

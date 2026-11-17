@@ -49,7 +49,7 @@ public struct OrbitTextField: View {
         .padding(.horizontal, OrbitSpacing.md)
         .frame(minHeight: 48)
         .background(OrbitColor.surfaceMuted, in: .rect(cornerRadius: OrbitRadius.md))
-        .animation(.easeInOut(duration: 0.12), value: text.isEmpty)
+        .animation(OrbitMotion.snap, value: text.isEmpty)
     }
 
     @ViewBuilder

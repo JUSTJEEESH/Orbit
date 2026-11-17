@@ -32,6 +32,9 @@ extension MemoryEntity {
         self.surfaceDate = memory.surfaceDate
         self.isLetter = memory.isLetter
         self.deletedAt = memory.deletedAt
+        self.transcriptSegmentsJSON = memory.transcriptSegments.isEmpty
+            ? nil
+            : try? JSONEncoder().encode(memory.transcriptSegments)
         self.applyContent(memory.content)
         self.applyAI(memory.ai)
         self.tags = resolvedTags
@@ -59,7 +62,9 @@ extension MemoryEntity {
             embedding: embedding,
             surfaceDate: surfaceDate,
             isLetter: isLetter,
-            deletedAt: deletedAt
+            deletedAt: deletedAt,
+            transcriptSegments: transcriptSegmentsJSON
+                .flatMap { try? JSONDecoder().decode([TranscriptSegment].self, from: $0) } ?? []
         )
     }
 

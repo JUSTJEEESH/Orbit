@@ -38,13 +38,18 @@ public struct OrbitEmptyState: View {
         self.action = action
     }
 
+    @ScaledMetric(relativeTo: .largeTitle) private var iconSize: CGFloat = 44
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     public var body: some View {
         VStack(spacing: OrbitSpacing.md) {
             if let systemImage {
                 Image(systemName: systemImage)
-                    .font(.system(size: 44, weight: .light))
+                    .font(.system(size: iconSize, weight: .light))
                     .foregroundStyle(OrbitColor.textTertiary)
                     .symbolRenderingMode(.hierarchical)
+                    // A slow breath keeps the empty screen from feeling dead.
+                    .symbolEffect(.breathe, isActive: !reduceMotion)
                     .padding(.bottom, OrbitSpacing.xs)
                     .accessibilityHidden(true)
             }

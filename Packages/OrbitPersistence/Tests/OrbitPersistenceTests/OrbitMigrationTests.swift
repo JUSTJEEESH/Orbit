@@ -184,6 +184,7 @@ extension StoreBackedTests {
             #expect(text.tags?.map(\.name) == ["travel"])
             // The V2 field arrives empty: nothing migrates as "deleted".
             #expect(text.deletedAt == nil)
+            #expect(text.transcriptSegmentsJSON == nil)
 
             let voice = try #require(try fetchMemory(Fixture.voiceID, in: context))
             #expect(voice.voiceTranscript == "Found a tiny bookshop on Calle 8")

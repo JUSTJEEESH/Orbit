@@ -68,7 +68,7 @@ struct OnboardingView: View {
                     )
                 )
             }
-            .animation(reduceMotion ? nil : .easeInOut(duration: 0.42), value: stage)
+            .animation(reduceMotion ? nil : OrbitMotion.smooth, value: stage)
         }
         .task {
             await permissions.refreshAll()
@@ -384,7 +384,7 @@ struct OnboardingView: View {
                 RoundedRectangle(cornerRadius: OrbitRadius.md)
                     .fill(isSelected ? theme.primary.opacity(0.08) : Color.clear)
             )
-            .animation(reduceMotion ? nil : .easeOut(duration: 0.22), value: isSelected)
+            .animation(reduceMotion ? nil : OrbitMotion.snap, value: isSelected)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("\(theme.name) theme")

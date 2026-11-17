@@ -2,6 +2,7 @@ import Foundation
 import Observation
 import OrbitDomain
 import OrbitKit
+import os
 
 @MainActor
 @Observable

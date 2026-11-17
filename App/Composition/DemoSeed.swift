@@ -2,6 +2,7 @@
 import Foundation
 import OrbitDomain
 import OrbitKit
+import os
 
 /// One-shot programmatic seeder for screenshot prep. Bypasses voice
 /// recording entirely — every memory's content (including voice-note

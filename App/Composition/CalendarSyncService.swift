@@ -4,6 +4,7 @@ import UIKit
 import Observation
 import OrbitDomain
 import OrbitKit
+import os
 
 /// Two-way mirror between Orbit tasks and iOS Calendar.
 ///

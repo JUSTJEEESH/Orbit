@@ -60,6 +60,9 @@ public final class MemoryEntity {
     /// swipe is never permanent. Optional so every V1 row migrates as "not
     /// deleted" without a custom migration stage.
     public var deletedAt: Date?
+    /// JSON-encoded `[TranscriptSegment]` for voice notes (word timings).
+    /// Opaque blob, optional, so it adds no relationship or migration work.
+    public var transcriptSegmentsJSON: Data?
 
     // MARK: - Relationships (must be optional for CloudKit)
     @Relationship(deleteRule: .cascade, inverse: \MediaAssetEntity.memory)

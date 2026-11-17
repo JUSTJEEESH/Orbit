@@ -1,5 +1,6 @@
 import SwiftUI
 import PhotosUI
+import UIKit
 import Foundation
 import OrbitDesignSystem
 import OrbitDomain
@@ -197,7 +198,7 @@ public struct CaptureView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .animation(.easeInOut(duration: 0.18), value: model.voiceRemainingSeconds.map { Int($0) })
+            .animation(OrbitMotion.snap, value: model.voiceRemainingSeconds.map { Int($0) })
         case .transcribing(_, let duration, _):
             HStack(spacing: OrbitSpacing.sm) {
                 ProgressView()

@@ -2,6 +2,7 @@ import SwiftUI
 import OrbitKit
 import OrbitDesignSystem
 import OrbitStore
+import os
 
 @main
 struct OrbitApp: App {
