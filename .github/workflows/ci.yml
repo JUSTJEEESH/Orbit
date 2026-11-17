@@ -88,6 +88,18 @@ jobs:
       - name: Place picker smoke test (simulator)
         run: Scripts/ci/place-picker-smoke.sh
 
+      # Sensitivity check: the old SwiftUI Map picker (which froze on
+      # device) must be flagged, or a passing smoke test proves nothing.
+      # Report-only; remove with LegacyMapPickerRepro once 2.0 ships.
+      - name: Smoke test sensitivity check (old picker, expected to fail)
+        if: always()
+        run: |
+          if Scripts/ci/place-picker-smoke.sh -OrbitPlacePickerHarnessLegacy legacy-smoke.log; then
+            echo "::warning::The smoke test did NOT flag the old picker; it may be blind to the device hang."
+          else
+            echo "Good: the smoke test flags the old picker."
+          fi
+
       - name: Upload smoke test log
         if: failure()
         uses: actions/upload-artifact@v4

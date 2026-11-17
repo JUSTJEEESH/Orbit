@@ -11,11 +11,15 @@ import OrbitKit
 /// and that compile-only CI couldn't see.
 public struct PlacePickerHarness: View {
     public static let launchArgument = "-OrbitPlacePickerHarness"
+    /// Runs the old SwiftUI `Map` picker instead, to prove the smoke test
+    /// catches the hang it had.
+    static let legacyArgument = "-OrbitPlacePickerHarnessLegacy"
 
     /// True only in Debug builds launched with the harness argument.
     public static var isRequested: Bool {
         #if DEBUG
-        ProcessInfo.processInfo.arguments.contains(launchArgument)
+        let arguments = ProcessInfo.processInfo.arguments
+        return arguments.contains(launchArgument) || arguments.contains(legacyArgument)
         #else
         false
         #endif
@@ -26,17 +30,34 @@ public struct PlacePickerHarness: View {
 
     public init() {}
 
+    @ViewBuilder
+    private var pickerUnderTest: some View {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains(Self.legacyArgument) {
+            LegacyMapPickerRepro()
+        } else {
+            currentPicker
+        }
+        #else
+        currentPicker
+        #endif
+    }
+
+    private var currentPicker: some View {
+        PlacePickerSheet(
+            placeName: "Mom\u{2019}s",
+            finder: finder,
+            onPick: { _, _ in print("ORBIT_HARNESS_PICKED") },
+            onCancel: { isPresented = false },
+            harnessMovesCamera: true
+        )
+    }
+
     public var body: some View {
         Color.clear
             .sheet(isPresented: $isPresented) {
-                PlacePickerSheet(
-                    placeName: "Mom\u{2019}s",
-                    finder: finder,
-                    onPick: { _, _ in print("ORBIT_HARNESS_PICKED") },
-                    onCancel: { isPresented = false },
-                    harnessMovesCamera: true
-                )
-                .presentationDetents([.large])
+                pickerUnderTest
+                    .presentationDetents([.large])
             }
             .task {
                 MainThreadWatchdog.shared.start()
@@ -55,6 +76,9 @@ final class MainThreadWatchdog: @unchecked Sendable {
     private static let pingInterval: TimeInterval = 0.25
     private static let hangThreshold: TimeInterval = 2
     private static let heartbeatInterval: TimeInterval = 2
+    /// The first MapKit load on a cold simulator can stall briefly; stalls
+    /// this early are reported separately, not as hangs.
+    private static let warmUp: TimeInterval = 8
 
     private let lock = NSLock()
     private var lastPong = Date()
@@ -71,6 +95,7 @@ final class MainThreadWatchdog: @unchecked Sendable {
 
     private func run() {
         var lastHeartbeat = Date()
+        let startedAt = Date()
         while true {
             Thread.sleep(forTimeInterval: Self.pingInterval)
             DispatchQueue.main.async { [self] in
@@ -82,7 +107,12 @@ final class MainThreadWatchdog: @unchecked Sendable {
             let silence = Date().timeIntervalSince(lastPong)
             lock.unlock()
             if silence > Self.hangThreshold {
-                print("ORBIT_HARNESS_HANG main thread unresponsive for \(String(format: "%.1f", silence))s")
+                let seconds = String(format: "%.1f", silence)
+                if Date().timeIntervalSince(startedAt) < Self.warmUp {
+                    print("ORBIT_HARNESS_WARMUP_STALL \(seconds)s")
+                } else {
+                    print("ORBIT_HARNESS_HANG main thread unresponsive for \(seconds)s")
+                }
             } else if Date().timeIntervalSince(lastHeartbeat) >= Self.heartbeatInterval {
                 print("ORBIT_HARNESS_ALIVE")
                 lastHeartbeat = Date()
