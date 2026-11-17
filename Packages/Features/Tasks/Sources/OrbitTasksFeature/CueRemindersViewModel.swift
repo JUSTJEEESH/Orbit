@@ -55,7 +55,7 @@ public final class CueRemindersViewModel {
     }
 
     /// Called by the picker with the confirmed spot.
-    public func keep(_ suggestion: ListCueSuggestionsUseCase.Suggestion, at candidate: PlaceCandidate, name: String) async {
+    func keep(_ suggestion: ListCueSuggestionsUseCase.Suggestion, at candidate: PlaceCandidate, radius: ReminderRadius) async {
         pickingPlaceFor = nil
         // Arrival alerts need location access; ask now if the user chose
         // a Maps result without granting it yet.
@@ -63,7 +63,7 @@ public final class CueRemindersViewModel {
             errorMessage = "Turn on Location for Orbit in Settings so iPhone can remind you when you arrive."
             return
         }
-        let place = PlaceCue(name: name, latitude: candidate.latitude, longitude: candidate.longitude)
+        let place = PlaceCue(name: candidate.name, latitude: candidate.latitude, longitude: candidate.longitude, radius: radius.rawValue)
         await keep(suggestion, place: place)
     }
 

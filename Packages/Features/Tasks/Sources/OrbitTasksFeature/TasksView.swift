@@ -93,9 +93,9 @@ public struct TasksView: View {
                 PlacePickerSheet(
                     placeName: name,
                     finder: cueModel.placeFinder,
-                    onPick: { candidate in
+                    onPick: { candidate, radius in
                         Task {
-                            await cueModel.keep(suggestion, at: candidate, name: name)
+                            await cueModel.keep(suggestion, at: candidate, radius: radius)
                             await model.load()
                         }
                     },

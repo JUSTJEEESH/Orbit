@@ -30,8 +30,6 @@ public final class PlaceFinder {
         case unavailable
     }
 
-    /// How far around the user Maps results are favored.
-    private static let searchRadiusMeters: CLLocationDistance = 50_000
     private static let resultLimit = 8
 
     public init() {}
@@ -79,18 +77,15 @@ public final class PlaceFinder {
         }
     }
 
-    /// Apple Maps search, favoring results near the user when known.
-    public func search(_ query: String, near: (latitude: Double, longitude: Double)? = nil) async throws -> [PlaceCandidate] {
+    /// Apple Maps search limited to `region` (the part of the map the user
+    /// is looking at). Without the limit, a personal name like "Mom's"
+    /// matches a "Moms Rd" hundreds of miles away.
+    public func search(_ query: String, within region: MKCoordinateRegion) async throws -> [PlaceCandidate] {
         let request = MKLocalSearch.Request()
         request.naturalLanguageQuery = query
         request.resultTypes = [.pointOfInterest, .address]
-        if let near {
-            request.region = MKCoordinateRegion(
-                center: CLLocationCoordinate2D(latitude: near.latitude, longitude: near.longitude),
-                latitudinalMeters: Self.searchRadiusMeters,
-                longitudinalMeters: Self.searchRadiusMeters
-            )
-        }
+        request.region = region
+        request.regionPriority = .required
         let response = try await MKLocalSearch(request: request).start()
         return response.mapItems.prefix(Self.resultLimit).map { item in
             PlaceCandidate(
