@@ -14,5 +14,15 @@ struct OrbitShortcuts: AppShortcutsProvider {
             shortTitle: "Capture",
             systemImageName: "plus.circle.fill"
         )
+        AppShortcut(
+            intent: FindItemIntent(),
+            phrases: [
+                "Find something in \(.applicationName)",
+                "Where did I put something in \(.applicationName)",
+                "Ask \(.applicationName) where something is",
+            ],
+            shortTitle: "Where Is It?",
+            systemImageName: "magnifyingglass"
+        )
     }
 }

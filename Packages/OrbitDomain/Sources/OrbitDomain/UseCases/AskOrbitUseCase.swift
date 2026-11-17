@@ -41,6 +41,19 @@ public struct AskOrbitUseCase: Sendable {
         let trimmed = question.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { throw AskOrbitError.emptyQuestion }
 
+        // "Where's my passport?" has an exact answer in the user's own
+        // words; answer it directly instead of asking the model to
+        // paraphrase (and possibly blur) where something is.
+        if let found = try? await FindPlacementUseCase(memories: memories)(question: trimmed) {
+            let noted = TimeSince.phrase(from: found.memory.createdAt, to: clock.now())
+            return AskOrbitAnswer(
+                question: trimmed,
+                narrative: "\(found.placement.sentence) You noted this \(noted).",
+                sourceMemoryIDs: [found.memory.id],
+                generatedAt: clock.now()
+            )
+        }
+
         let hits = try await search.search(SearchQuery(text: trimmed, limit: retrievalLimit))
         // Fetch full memories in hit order; drop any that have disappeared
         // between indexing and now (deleted but not yet de-indexed) AND any
