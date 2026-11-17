@@ -213,6 +213,33 @@ iPhone. That's Orbit 2.0's position.
 
 ---
 
+## Saved for later: your requests (don't forget)
+
+Added Nov 17, 2026. Do these once the 2.0 features are done.
+
+1. **Custom alert sounds.** Orbit's own calm sounds for its notifications
+   (place and person reminders, task alerts, the daily recap), with a
+   choice in Settings. iOS supports this: short sound files bundled with
+   the app (under 30 seconds) and set on each notification. The sounds
+   must be original or licensed.
+2. **Website overhaul** (`docs/marketing/website/`, orbitbrain2.netlify.app).
+   Cover every 2.0 feature and make it the strongest site in the "second
+   brain / memory app" category for search: technical SEO (speed, schema
+   markup, sitemap, meta tags, Open Graph), clear feature pages, and App
+   Store links.
+3. **Lots of blog articles.** A large library of genuinely useful
+   articles that people searching this category actually look for
+   (remembering things, second brain, voice journaling, where-did-I-put-it,
+   promises and follow-ups, and so on). Each should be useful on its own,
+   not filler.
+4. **App Store screenshots, made by Claude.** A complete, polished set,
+   from real app screens on the current design. They must look great to
+   potential customers.
+5. **Website header and search-result assets.** A world-class hero/header
+   for the site, plus the images that show in Google results and link
+   previews: Open Graph and Twitter cards, favicon, Apple touch icon.
+6. **More to come.** You have more ideas; add them here as they come.
+
 ## Decisions for you
 
 1. **Approve A–F (items 1–41)?** My recommendation: yes.
