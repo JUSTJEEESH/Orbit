@@ -1,5 +1,8 @@
 import Foundation
+import os
 import SwiftData
+
+private let log = Logger(subsystem: "com.joshgreen.orbit", category: "persistence")
 
 /// Produces `ModelContainer` instances tuned for one of the runtime modes.
 ///
@@ -37,11 +40,48 @@ public enum ModelContainerFactory {
         snapshotBeforeOpening(mode: mode)
         let schema = Schema(versionedSchema: OrbitCurrentSchema.self)
         let configuration = try makeConfiguration(mode: mode, schema: schema)
-        return try ModelContainer(
-            for: schema,
-            migrationPlan: OrbitMigrationPlan.self,
-            configurations: [configuration]
-        )
+        do {
+            return try ModelContainer(
+                for: schema,
+                migrationPlan: OrbitMigrationPlan.self,
+                configurations: [configuration]
+            )
+        } catch {
+            return try openWithInferredMigration(schema: schema, configuration: configuration, planError: error)
+        }
+    }
+
+    /// Second attempt for a store whose schema matches no version in the
+    /// migration plan.
+    ///
+    /// A migration plan only recognizes stores whose model hash equals one
+    /// of its listed versions. A store written by an unreleased 2.0 build
+    /// (TestFlight or a developer's device, before later optional fields
+    /// were added) matches none of them, so the plan refuses it with
+    /// `unknownDataStoreSchema`. SQLite stores carry a copy of the model
+    /// that wrote them, so opening without the plan lets Core Data infer a
+    /// lightweight migration from that copy. Every 2.0 change is an added
+    /// optional attribute, which lightweight migration fills with nil.
+    ///
+    /// This never deletes or recreates the store: if Core Data can't infer
+    /// a safe migration it throws, and the caller shows the recovery
+    /// screen with the original file untouched (and already snapshotted).
+    private static func openWithInferredMigration(
+        schema: Schema,
+        configuration: ModelConfiguration,
+        planError: any Error
+    ) throws -> ModelContainer {
+        log.error("Migration plan couldn't open the store: \(String(describing: planError), privacy: .public). Trying inferred migration.")
+        do {
+            let container = try ModelContainer(for: schema, configurations: [configuration])
+            log.notice("Store opened with inferred lightweight migration.")
+            return container
+        } catch {
+            log.error("Inferred migration failed too: \(String(describing: error), privacy: .public)")
+            // Report the plan's error: it describes why the normal path
+            // failed, which is what support needs to see.
+            throw planError
+        }
     }
 
     private static func makeConfiguration(
