@@ -235,9 +235,12 @@ Added Nov 17, 2026. Do these once the 2.0 features are done.
 4. **App Store screenshots, made by Claude.** A complete, polished set,
    from real app screens on the current design. They must look great to
    potential customers.
-5. **Website header and search-result assets.** A world-class hero/header
-   for the site, plus the images that show in Google results and link
-   previews: Open Graph and Twitter cards, favicon, Apple touch icon.
+5. **App Store Connect Header and Search Results assets.** World-class
+   images for the Header and Search Results slots in App Store Connect,
+   alongside the screenshots (item 4). These are App Store assets, not
+   website ones. Check Apple's current sizes and rules for each slot
+   when we build them. (The website still gets its own link-preview
+   images as part of item 2.)
 6. **More to come.** You have more ideas; add them here as they come.
 
 ## Decisions for you
