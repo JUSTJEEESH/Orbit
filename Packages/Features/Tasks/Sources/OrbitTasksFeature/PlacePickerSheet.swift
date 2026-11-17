@@ -56,11 +56,29 @@ struct PlacePickerSheet: View {
     @State private var results: [PlaceCandidate] = []
     @State private var isSearching = false
     @State private var locationMessage: String?
+    @State private var notificationsAreOff = false
+    /// Where the user is, once known: tells them when they're already
+    /// inside the circle (an arrival alert only rings on the way in).
+    @State private var userCoordinate: CLLocationCoordinate2D?
+    /// The street address under the pin, so they can see it's right.
+    @State private var pinAddress: String?
+    @State private var isFindingAddress = false
+    @State private var addressLookup: Task<Void, Never>?
+    /// The pin lifts while the map moves and settles when it stops.
+    @State private var isMapMoving = false
     @Environment(\.orbitTheme) private var orbitTheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// How far a search result zooms in.
     private static let resultSpanMeters: CLLocationDistance = 800
     private static let pinSize: CGFloat = 36
+    /// How high the pin lifts while the map moves.
+    private static let pinLift: CGFloat = 10
+    private static let pinShadowSize: CGFloat = 8
+    private static let pinShadowOpacity = 0.25
+    /// Waits for the map to rest before looking up the address, so a
+    /// drag doesn't fire a lookup per frame.
+    private static let addressLookupDelay: Duration = .milliseconds(350)
 
     /// - Parameter current: the place being changed, so the map opens on
     ///   it (with its area) instead of on the user's location.
@@ -110,6 +128,7 @@ struct PlacePickerSheet: View {
         }
         .background(OrbitColor.surfaceElevated)
         .task {
+            notificationsAreOff = await finder.notificationsAreOff()
             // Arrival alerts need location anyway; asking here also lets
             // the map open on where the user is.
             let allowed = await finder.ensureAuthorization()
@@ -117,7 +136,13 @@ struct PlacePickerSheet: View {
                 locationMessage = "Location is off for Orbit, so iPhone can\u{2019}t remind you on arrival. You can turn it on in Settings."
                 return
             }
-            if !startsAtExistingPlace {
+            if startsAtExistingPlace {
+                // Still learn where the user is, for the "you're inside
+                // the circle" note, without moving the map.
+                if let here = try? await finder.currentCoordinate() {
+                    userCoordinate = CLLocationCoordinate2D(latitude: here.latitude, longitude: here.longitude)
+                }
+            } else {
                 await centerOnUser(animated: false)
             }
             if harnessMovesCamera {
@@ -164,6 +189,7 @@ struct PlacePickerSheet: View {
 
     private func centerOnUser(animated: Bool) async {
         guard let here = try? await finder.currentCoordinate() else { return }
+        userCoordinate = CLLocationCoordinate2D(latitude: here.latitude, longitude: here.longitude)
         let region = MKCoordinateRegion(
             center: CLLocationCoordinate2D(latitude: here.latitude, longitude: here.longitude),
             latitudinalMeters: Self.resultSpanMeters,
@@ -199,19 +225,34 @@ struct PlacePickerSheet: View {
             cameraRequest: cameraRequest,
             radius: radius.rawValue,
             accent: orbitTheme.primary,
+            onMoveStart: {
+                // The old address no longer describes where the pin is.
+                addressLookup?.cancel()
+                pinAddress = nil
+                withAnimation(OrbitMotion.respectfully(OrbitMotion.snap, reduceMotion: reduceMotion)) { isMapMoving = true }
+            },
             onCenterChange: { newCenter, region in
                 center = newCenter
                 visibleRegion = region
+                withAnimation(OrbitMotion.respectfully(OrbitMotion.snap, reduceMotion: reduceMotion)) { isMapMoving = false }
+                lookUpAddress(at: newCenter)
             }
         )
         .overlay {
-            // Fixed pin: the map moves under it. The tip sits on the center.
-            Image(systemName: "mappin")
-                .font(.system(size: Self.pinSize, weight: .semibold))
-                .foregroundStyle(orbitTheme.primary)
-                .offset(y: -Self.pinSize / 2)
-                .allowsHitTesting(false)
-                .accessibilityHidden(true)
+            // Fixed pin: the map moves under it. The tip sits on the
+            // center; it lifts while the map moves, over a small shadow
+            // marking the exact spot, and sets down when the map rests.
+            ZStack {
+                Ellipse()
+                    .fill(OrbitColor.textPrimary.opacity(Self.pinShadowOpacity))
+                    .frame(width: Self.pinShadowSize, height: Self.pinShadowSize / 2)
+                Image(systemName: "mappin")
+                    .font(.system(size: Self.pinSize, weight: .semibold))
+                    .foregroundStyle(orbitTheme.primary)
+                    .offset(y: -Self.pinSize / 2 - (isMapMoving ? Self.pinLift : 0))
+            }
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Map. Move it to put the pin on the place.")
@@ -296,6 +337,9 @@ struct PlacePickerSheet: View {
 
     private func select(_ candidate: PlaceCandidate) {
         Haptics.play(.selection)
+        if name.trimmingCharacters(in: .whitespaces).isEmpty {
+            name = candidate.name
+        }
         cameraRequest = PlaceMapCameraRequest(
             latitude: candidate.latitude,
             longitude: candidate.longitude,
@@ -323,22 +367,34 @@ struct PlacePickerSheet: View {
 
     private var controls: some View {
         VStack(alignment: .leading, spacing: OrbitSpacing.md) {
-            if let locationMessage {
-                Text(locationMessage)
+            ForEach(warnings, id: \.self) { warning in
+                Label(warning, systemImage: "exclamationmark.circle")
                     .font(OrbitTypography.footnote)
                     .foregroundStyle(OrbitColor.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            pinAddressRow
             TextField("Name, like Mom\u{2019}s house", text: $name)
                 .font(OrbitTypography.bodyEmphasized)
                 .textInputAutocapitalization(.words)
                 .submitLabel(.done)
-            Picker("Reminder area", selection: $radius) {
-                ForEach(ReminderRadius.allCases) { option in
-                    Text("\(option.label) \u{00B7} \(option.distanceLabel)").tag(option)
+            VStack(alignment: .leading, spacing: OrbitSpacing.xs) {
+                Text("Remind me within")
+                    .font(OrbitTypography.footnote)
+                    .foregroundStyle(OrbitColor.textSecondary)
+                // Distances only: "Medium · 200 m" truncated in three
+                // segments on smaller iPhones.
+                Picker("Remind me within", selection: $radius) {
+                    ForEach(ReminderRadius.allCases) { option in
+                        Text(option.distanceLabel)
+                            .accessibilityLabel("\(option.label), \(option.distanceLabel)")
+                            .tag(option)
+                    }
                 }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .sensoryFeedback(.selection, trigger: radius)
             }
-            .pickerStyle(.segmented)
             OrbitButton("Remind Me Here", style: .primary) {
                 confirm()
             }
@@ -351,12 +407,70 @@ struct PlacePickerSheet: View {
         .background(OrbitColor.surfaceElevated)
     }
 
+    @ViewBuilder
+    private var pinAddressRow: some View {
+        HStack(spacing: OrbitSpacing.xs) {
+            Image(systemName: "mappin.circle.fill")
+                .foregroundStyle(orbitTheme.primary)
+                .accessibilityHidden(true)
+            if let pinAddress {
+                Text(pinAddress)
+                    .foregroundStyle(OrbitColor.textPrimary)
+            } else {
+                Text(pinStatus)
+                    .foregroundStyle(OrbitColor.textSecondary)
+            }
+        }
+        .font(OrbitTypography.footnote)
+        .lineLimit(1)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(pinAddress.map { "Pin is at \($0)" } ?? pinStatus)
+    }
+
+    /// What the address row says before (or without) an address.
+    private var pinStatus: String {
+        if isFindingAddress || isMapMoving { return "Finding the address\u{2026}" }
+        // Maps had no street address here (a park, a field): the pin
+        // still works, like a dropped pin in Maps.
+        return center == nil ? "Move the map to put the pin on the place" : "Dropped pin"
+    }
+
+    /// Things that would stop the reminder ringing, or delay it, said
+    /// before saving rather than discovered later.
+    private var warnings: [String] {
+        var lines: [String] = []
+        if let locationMessage { lines.append(locationMessage) }
+        if notificationsAreOff {
+            lines.append("Notifications are off for Orbit, so this reminder can\u{2019}t ring. You can turn them on in Settings.")
+        }
+        if let userCoordinate, let center,
+           CLLocation(latitude: userCoordinate.latitude, longitude: userCoordinate.longitude)
+               .distance(from: CLLocation(latitude: center.latitude, longitude: center.longitude)) <= radius.rawValue {
+            lines.append("You\u{2019}re inside this circle now, so the first reminder comes the next time you arrive.")
+        }
+        return lines
+    }
+
+    private func lookUpAddress(at coordinate: CLLocationCoordinate2D) {
+        addressLookup?.cancel()
+        pinAddress = nil
+        isFindingAddress = true
+        addressLookup = Task {
+            try? await Task.sleep(for: Self.addressLookupDelay)
+            guard !Task.isCancelled else { return }
+            let address = await finder.address(latitude: coordinate.latitude, longitude: coordinate.longitude)
+            guard !Task.isCancelled else { return }
+            pinAddress = address
+            isFindingAddress = false
+        }
+    }
+
     private func confirm() {
         guard let center else { return }
         Haptics.play(.success)
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         onPick(
-            PlaceCandidate(name: trimmed, subtitle: nil, latitude: center.latitude, longitude: center.longitude),
+            PlaceCandidate(name: trimmed, subtitle: pinAddress, latitude: center.latitude, longitude: center.longitude),
             radius
         )
     }

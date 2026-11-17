@@ -29,6 +29,8 @@ struct PlaceMapView: UIViewRepresentable {
     let cameraRequest: PlaceMapCameraRequest?
     let radius: CLLocationDistance
     let accent: Color
+    /// The map started moving (a drag, pinch or camera request).
+    let onMoveStart: @MainActor () -> Void
     /// Center and visible region after the user (or a request) moves the map.
     let onCenterChange: @MainActor (CLLocationCoordinate2D, MKCoordinateRegion) -> Void
 
@@ -53,6 +55,7 @@ struct PlaceMapView: UIViewRepresentable {
     func updateUIView(_ map: MKMapView, context: Context) {
         let coordinator = context.coordinator
         coordinator.onCenterChange = onCenterChange
+        coordinator.onMoveStart = onMoveStart
         coordinator.accent = UIColor(accent)
 
         if let cameraRequest, cameraRequest.id != coordinator.appliedRequestID {
@@ -73,6 +76,7 @@ struct PlaceMapView: UIViewRepresentable {
     @MainActor
     final class Coordinator: NSObject, @preconcurrency MKMapViewDelegate {
         var onCenterChange: (@MainActor (CLLocationCoordinate2D, MKCoordinateRegion) -> Void)?
+        var onMoveStart: (@MainActor () -> Void)?
         var appliedRequestID: UUID?
         var radius: CLLocationDistance = 0
         var accent: UIColor = .tintColor
@@ -85,6 +89,13 @@ struct PlaceMapView: UIViewRepresentable {
             let next = MKCircle(center: map.centerCoordinate, radius: radius)
             map.addOverlay(next)
             circle = next
+        }
+
+        func mapView(_ mapView: MKMapView, regionWillChangeAnimated animated: Bool) {
+            // Deferred for the same reason as `regionDidChangeAnimated`.
+            Task { @MainActor [weak self] in
+                self?.onMoveStart?()
+            }
         }
 
         func mapView(_ mapView: MKMapView, regionDidChangeAnimated animated: Bool) {

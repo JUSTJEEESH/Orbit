@@ -5,11 +5,16 @@ import OrbitDomain
 /// `InsightsEngine`: an actor so concurrent reads serialize, plus pure
 /// detector helpers that take a memory list and a clock-supplied `now`.
 ///
-/// Ranking model (composite score against the anchor):
-///     score = 0.55 · cosineSim(anchor.embedding, candidate.embedding)
-///           + 0.30 · entityOverlap(anchor, candidate)        // Jaccard
+/// Qualifying: a candidate must share something real with the anchor (a
+/// person, a place or a subject word; see `ConnectionEvidence`). Embedding
+/// similarity and recency never qualify a memory on their own: in 2.0 they
+/// did, and unrelated "remind me…" notes all connected to each other.
+///
+/// Ranking model (for candidates that qualify):
+///     score = 0.50 · semanticRelevance(anchor, candidate)    // floor-rescaled cosine
+///           + 0.35 · evidence.strength                       // shared people/places/words
 ///           + 0.15 · recencyDecay(candidate.createdAt)       // newer = higher
-///           − penalties (same day, < 7 days apart, sealed, anchor itself)
+///           − exclusions (< min separation, sealed, anchor itself)
 ///
 /// All knobs are tuned for the <5k-memory regime documented in the search
 /// service. At larger corpora we'd want HNSW + candidate pruning before the
@@ -31,9 +36,12 @@ public actor SuggestionEngine: SuggestionGenerator {
     private let homeMinSeparationDays: Int = 7
     /// Max related memories to return. Three keeps the surface calm.
     private let maxRelated: Int = 3
-    /// Floor below which a candidate doesn't qualify. Empirical — anything
-    /// below ~0.35 reads as random on real corpora.
-    private let scoreFloor: Double = 0.35
+
+    private enum Weight {
+        static let semantic = 0.50
+        static let evidence = 0.35
+        static let recency = 0.15
+    }
 
     public init(calendar: Calendar = .current) {
         self.calendar = calendar
@@ -131,19 +139,19 @@ public actor SuggestionEngine: SuggestionGenerator {
         now: Date,
         minSeparationDays: Int
     ) -> [MemorySuggestionFeed.Related] {
-        let anchorEntities = entitySet(for: anchor)
-
         let scored: [MemorySuggestionFeed.Related] = candidates.compactMap { candidate in
             guard candidate.id != anchor.id else { return nil }
             let daysApart = abs(daysBetween(candidate.createdAt, anchor.createdAt))
             guard daysApart >= minSeparationDays else { return nil }
 
-            let semantic = cosineSimilarity(anchor.embedding, candidate.embedding)
-            let entity = jaccard(anchorEntities, entitySet(for: candidate))
-            let recency = recencyDecay(candidate.createdAt, now: now)
-            let score = 0.55 * semantic + 0.30 * entity + 0.15 * recency
+            let evidence = ConnectionEvidence(anchor, candidate)
+            guard evidence.isConnected else { return nil }
 
-            guard score >= scoreFloor else { return nil }
+            let semantic = SearchScoring.semanticRelevance(
+                cosine: SearchScoring.cosineSimilarity(anchor.embedding, candidate.embedding)
+            )
+            let recency = recencyDecay(candidate.createdAt, now: now)
+            let score = Weight.semantic * semantic + Weight.evidence * evidence.strength + Weight.recency * recency
             return MemorySuggestionFeed.Related(memory: candidate, score: score)
         }
 
@@ -155,34 +163,6 @@ public actor SuggestionEngine: SuggestionGenerator {
 
     // MARK: - Score helpers
 
-    /// Cosine similarity mapped from [-1, 1] to [0, 1]. Mirrors the
-    /// LocalSearchService formula so the two surfaces agree on what
-    /// "similar" means.
-    private func cosineSimilarity(_ lhs: [Float], _ rhs: [Float]) -> Double {
-        guard !lhs.isEmpty, lhs.count == rhs.count else { return 0 }
-        var dot: Float = 0
-        var lhsMag: Float = 0
-        var rhsMag: Float = 0
-        for i in 0..<lhs.count {
-            dot += lhs[i] * rhs[i]
-            lhsMag += lhs[i] * lhs[i]
-            rhsMag += rhs[i] * rhs[i]
-        }
-        let magnitude = (lhsMag * rhsMag).squareRoot()
-        guard magnitude > 0 else { return 0 }
-        let raw = Double(dot / magnitude)
-        return max(0, min(1, (raw + 1) / 2))
-    }
-
-    /// Jaccard similarity over the merged people-and-locations sets.
-    private func jaccard(_ lhs: Set<String>, _ rhs: Set<String>) -> Double {
-        guard !lhs.isEmpty || !rhs.isEmpty else { return 0 }
-        let intersection = lhs.intersection(rhs).count
-        let union = lhs.union(rhs).count
-        guard union > 0 else { return 0 }
-        return Double(intersection) / Double(union)
-    }
-
     /// 1.0 today, ~0.7 at 30 days, ~0.5 at 90 days, ~0.2 at one year.
     /// Smooths to 0 at 2 years.
     private func recencyDecay(_ date: Date, now: Date) -> Double {
@@ -190,17 +170,6 @@ public actor SuggestionEngine: SuggestionGenerator {
         if days >= 730 { return 0 }
         // Exponential with half-life ~120 days.
         return pow(0.5, Double(days) / 120.0)
-    }
-
-    private func entitySet(for memory: Memory) -> Set<String> {
-        // Lowercase + trim so casing/whitespace doesn't fragment the set.
-        let people = memory.ai.extractedPeople.map { normalize($0) }
-        let places = memory.ai.extractedLocations.map { normalize($0) }
-        return Set((people + places).filter { !$0.isEmpty })
-    }
-
-    private func normalize(_ s: String) -> String {
-        s.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
     }
 
     private func daysBetween(_ a: Date, _ b: Date) -> Int {

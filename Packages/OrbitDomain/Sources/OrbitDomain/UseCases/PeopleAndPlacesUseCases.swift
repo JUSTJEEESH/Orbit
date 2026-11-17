@@ -48,7 +48,7 @@ extension Memory {
     }
 
     /// The words a memory holds, for on-device text analysis.
-    var analyzableText: String {
+    public var analyzableText: String {
         switch content {
         case .text(let text):                 return text
         case .voiceNote(let transcript, _):   return transcript ?? ""

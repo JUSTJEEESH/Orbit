@@ -1,6 +1,7 @@
 import CoreLocation
 import Foundation
 import MapKit
+import UserNotifications
 
 /// A place the user can pick for an arrival reminder.
 public struct PlaceCandidate: Sendable, Hashable, Identifiable {
@@ -75,6 +76,23 @@ public final class PlaceFinder {
                 return false
             }
         }
+    }
+
+    /// Whether the user turned Orbit's notifications off. Arrival alerts
+    /// are notifications, so a place reminder can't ring while this is
+    /// true. Undecided is not "off": saving asks.
+    public func notificationsAreOff() async -> Bool {
+        await UNUserNotificationCenter.current().notificationSettings().authorizationStatus == .denied
+    }
+
+    /// The street address at a point ("412 Oak St"), so the user can see
+    /// the pin is where they meant. Nil when Maps doesn't know or is
+    /// offline; the picker just shows nothing then.
+    public func address(latitude: Double, longitude: Double) async -> String? {
+        let location = CLLocation(latitude: latitude, longitude: longitude)
+        guard let request = MKReverseGeocodingRequest(location: location),
+              let item = try? await request.mapItems.first else { return nil }
+        return item.address?.shortAddress ?? item.name
     }
 
     /// Apple Maps search limited to `region` (the part of the map the user
