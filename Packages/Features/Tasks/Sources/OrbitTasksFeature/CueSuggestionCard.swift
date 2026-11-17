@@ -31,6 +31,12 @@ struct CueSuggestionCard: View {
                     .foregroundStyle(OrbitColor.textPrimary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)
+                if case .person(let name) = suggestion.hint.target {
+                    Text("Reminds you when an event with \(name) on your calendar starts.")
+                        .font(OrbitTypography.footnote)
+                        .foregroundStyle(OrbitColor.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 HStack(spacing: OrbitSpacing.sm) {
                     Spacer()
                     Button("Not now") { onDismiss() }

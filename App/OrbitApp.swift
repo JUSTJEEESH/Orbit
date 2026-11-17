@@ -163,6 +163,9 @@ private struct ContentRoot: View {
             // promptly.
             if newPhase == .active {
                 Task { await environment.noteVisit() }
+                // Calendars change while Orbit is away; re-time person
+                // reminders to the latest events.
+                Task { await environment.refreshPersonReminders() }
                 Task { await environment.remindersSync.pullCompletionUpdates() }
                 Task { await environment.captureInbox.drain() }
                 if environment.appLock.isLocked {

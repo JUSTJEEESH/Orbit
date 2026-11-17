@@ -119,6 +119,41 @@ public final class CalendarSyncService {
         authorizationStatus = EKEventStore.authorizationStatus(for: .event)
     }
 
+    // MARK: - Reading events (person reminders)
+
+    /// Asks for calendar access if the user hasn't decided yet, without
+    /// turning on task mirroring. Person reminders read events; they
+    /// never write them.
+    @discardableResult
+    public func requestAccessIfUndecided() async -> Bool {
+        refreshAuthorizationStatus()
+        guard authorizationStatus == .notDetermined else { return isAuthorized }
+        do {
+            _ = try await store.requestFullAccessToEvents()
+        } catch {
+            OrbitLog.app.error("Calendar access request failed: \(String(describing: error), privacy: .public)")
+        }
+        refreshAuthorizationStatus()
+        return isAuthorized
+    }
+
+    /// Events between the dates, excluding Orbit's own mirrored calendar
+    /// (those are the user's tasks, not meetings with people).
+    public func events(from start: Date, to end: Date) -> [CalendarEventSummary] {
+        guard isAuthorized else { return [] }
+        let calendars = store.calendars(for: .event).filter { $0.title != Self.orbitCalendarTitle }
+        guard !calendars.isEmpty else { return [] }
+        let predicate = store.predicateForEvents(withStart: start, end: end, calendars: calendars)
+        return store.events(matching: predicate).map { event in
+            CalendarEventSummary(
+                id: event.eventIdentifier ?? UUID().uuidString,
+                title: event.title ?? "",
+                start: event.startDate,
+                attendeeNames: (event.attendees ?? []).compactMap(\.name)
+            )
+        }
+    }
+
     public func openSystemSettings() {
         guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
         UIApplication.shared.open(url)

@@ -30,6 +30,7 @@ extension AppEnvironment {
         await refreshResurfacing()
         await evaluateWidgetNudge()
         await screenshotInbox.scan()
+        await refreshPersonReminders()
     }
 
     // MARK: - Legacy store rescue

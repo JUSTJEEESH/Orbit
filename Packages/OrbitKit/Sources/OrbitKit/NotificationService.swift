@@ -27,6 +27,7 @@ public final class NotificationService {
     public nonisolated static let resurfacingPrefix = "com.orbit.resurface."
     public nonisolated static let taskReminderPrefix = "com.orbit.task."
     public nonisolated static let arrivalReminderPrefix = "com.orbit.arrive."
+    public nonisolated static let personReminderPrefix = "com.orbit.person."
     private static let resurfacingEnabledKey = "orbit.notifications.resurfacing.enabled"
 
     private static let enabledKey = "orbit.notifications.dailyRecap.enabled"
@@ -294,6 +295,59 @@ public final class NotificationService {
 
     public func cancelArrivalReminder(taskID: UUID) {
         center.removePendingNotificationRequests(withIdentifiers: [Self.arrivalReminderPrefix + taskID.uuidString])
+    }
+
+    // MARK: - Person reminders
+
+    /// One "you're seeing Alex" alert, timed to a calendar event.
+    public struct PersonReminderItem: Sendable {
+        public let taskID: UUID
+        public let title: String
+        public let body: String
+        public let fireDate: Date
+        public let linkedMemoryID: UUID?
+
+        public init(taskID: UUID, title: String, body: String, fireDate: Date, linkedMemoryID: UUID?) {
+            self.taskID = taskID
+            self.title = title
+            self.body = body
+            self.fireDate = fireDate
+            self.linkedMemoryID = linkedMemoryID
+        }
+    }
+
+    /// Replaces every pending person reminder with `items`, so moved,
+    /// cancelled or completed ones never ring stale.
+    public func replacePersonReminders(_ items: [PersonReminderItem]) async {
+        let pending = await center.pendingNotificationRequests()
+        let stale = pending.map(\.identifier).filter { $0.hasPrefix(Self.personReminderPrefix) }
+        center.removePendingNotificationRequests(withIdentifiers: stale)
+        guard !items.isEmpty else { return }
+        await refreshAuthorizationStatus()
+        if authorizationStatus == .notDetermined {
+            _ = await requestAuthorization()
+        }
+        guard isAuthorized else { return }
+        for item in items where item.fireDate > Date() {
+            let content = UNMutableNotificationContent()
+            content.title = item.title
+            content.body = item.body
+            content.sound = .default
+            var info: [String: String] = ["kind": "person", "taskID": item.taskID.uuidString]
+            if let linkedMemoryID = item.linkedMemoryID { info["memoryID"] = linkedMemoryID.uuidString }
+            content.userInfo = info
+            let comps = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: item.fireDate)
+            let request = UNNotificationRequest(
+                identifier: Self.personReminderPrefix + item.taskID.uuidString,
+                content: content,
+                trigger: UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
+            )
+            do {
+                try await center.add(request)
+            } catch {
+                OrbitLog.app.error("Failed to schedule person reminder: \(String(describing: error), privacy: .public)")
+            }
+        }
     }
 
     // MARK: - Resurfacing ("Worth remembering")
