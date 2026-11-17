@@ -7,6 +7,10 @@ import PackageDescription
 
 let swiftSettings: [SwiftSetting] = [
     .enableUpcomingFeature("ExistentialAny"),
+    // Each file must import the modules whose members it uses. Newer Xcode
+    // releases enforce this by default; enabling it here makes CI catch
+    // the same errors developers see locally.
+    .enableUpcomingFeature("MemberImportVisibility"),
 ]
 
 let package = Package(
