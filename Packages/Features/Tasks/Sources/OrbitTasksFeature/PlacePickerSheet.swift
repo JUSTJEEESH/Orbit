@@ -123,9 +123,16 @@ struct PlacePickerSheet: View {
             MapUserLocationButton()
             MapCompass()
         }
-        .onMapCameraChange(frequency: .continuous) { context in
-            center = context.region.center
-            visibleRegion = context.region
+        // `.onEnd`, not `.continuous`: writing state on every camera frame
+        // re-renders the sheet, which nudges the map's layout, which moves
+        // the camera again — a layout feedback loop that froze the sheet.
+        // The pin is a fixed overlay, so it tracks the finger regardless;
+        // only the circle and the confirmed spot wait for the drag to end.
+        .onMapCameraChange(frequency: .onEnd) { context in
+            let region = context.region
+            if let visibleRegion, Self.isNegligibleChange(from: visibleRegion, to: region) { return }
+            center = region.center
+            visibleRegion = region
         }
         .overlay {
             // Fixed pin: the map moves under it. The tip sits on the center.
@@ -137,6 +144,17 @@ struct PlacePickerSheet: View {
                 .accessibilityHidden(true)
         }
         .accessibilityLabel("Map. Move it to put the pin on the place.")
+    }
+
+    /// Camera moves smaller than this (degrees, about a meter) are layout
+    /// jitter, not the user moving the map.
+    private static let negligibleDegrees = 0.000_01
+
+    private static func isNegligibleChange(from old: MKCoordinateRegion, to new: MKCoordinateRegion) -> Bool {
+        abs(old.center.latitude - new.center.latitude) < negligibleDegrees
+            && abs(old.center.longitude - new.center.longitude) < negligibleDegrees
+            && abs(old.span.latitudeDelta - new.span.latitudeDelta) < negligibleDegrees
+            && abs(old.span.longitudeDelta - new.span.longitudeDelta) < negligibleDegrees
     }
 
     // MARK: - Search

@@ -29,7 +29,7 @@ public enum ContactMomentDetector {
             .map { NSRegularExpression.escapedPattern(for: $0).replacingOccurrences(of: " ", with: "\\s+") }
             .joined(separator: "|")
         let pattern = "\\b(?:\(verbAlternatives))\\s+(?:up\\s+)?(?:with\\s+)?(?:my\\s+)?\(NSRegularExpression.escapedPattern(for: trimmed))\\b"
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else { return false }
+        guard let regex = RegexCache.regex(pattern, options: [.caseInsensitive]) else { return false }
         return regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) != nil
     }
 }

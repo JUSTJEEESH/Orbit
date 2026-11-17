@@ -152,7 +152,7 @@ public enum PlacementParser {
     /// Capture groups of every match (empty string for a group that
     /// didn't participate).
     private static func matches(of pattern: String, in text: String) -> [[String]] {
-        guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
+        guard let regex = RegexCache.regex(pattern) else { return [] }
         let range = NSRange(text.startIndex..<text.endIndex, in: text)
         return regex.matches(in: text, range: range).map { match in
             (1..<match.numberOfRanges).map { index in

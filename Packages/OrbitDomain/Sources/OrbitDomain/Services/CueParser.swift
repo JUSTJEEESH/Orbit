@@ -79,7 +79,7 @@ public enum CueParser {
         var hints: [CueHint] = []
         var seen: Set<String> = []
         for (kind, pattern, targetIndex, actionIndex) in rules {
-            guard let regex = try? NSRegularExpression(pattern: pattern) else { continue }
+            guard let regex = RegexCache.regex(pattern) else { continue }
             let range = NSRange(text.startIndex..<text.endIndex, in: text)
             for match in regex.matches(in: text, range: range) {
                 let groups: [String] = (1..<match.numberOfRanges).map { index in
