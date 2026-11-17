@@ -40,7 +40,10 @@ struct PlacePickerSheet: View {
     let onCancel: @MainActor () -> Void
 
     @State private var name: String
-    @State private var position: MapCameraPosition = .userLocation(fallback: .automatic)
+    @State private var position: MapCameraPosition = .automatic
+    /// Changing an existing place opens on it; otherwise the map centers on
+    /// the user once, after location access is settled.
+    private let startsAtExistingPlace: Bool
     @State private var center: CLLocationCoordinate2D?
     @State private var visibleRegion: MKCoordinateRegion?
     @State private var radius: ReminderRadius = .medium
@@ -68,6 +71,7 @@ struct PlacePickerSheet: View {
         self.onPick = onPick
         self.onCancel = onCancel
         self._name = State(initialValue: placeName)
+        self.startsAtExistingPlace = current != nil
         if let current {
             let coordinate = CLLocationCoordinate2D(latitude: current.latitude, longitude: current.longitude)
             self._position = State(initialValue: .region(MKCoordinateRegion(
@@ -80,17 +84,21 @@ struct PlacePickerSheet: View {
         }
     }
 
+    // A plain stack: search field, map, controls. An earlier version put
+    // the controls in a bottom safe-area inset alongside `.searchable`,
+    // whose iOS 26 search bar also lives at the bottom; each kept
+    // re-laying-out the other, an observation feedback loop that froze the
+    // sheet. Nothing here competes for the same edge.
     var body: some View {
         NavigationStack {
-            map
-                .safeAreaInset(edge: .bottom) { controls }
-                .overlay(alignment: .top) { searchResults }
-                .searchable(text: $query, prompt: "Search nearby in Maps")
-                .onSubmit(of: .search) { Task { await search() } }
-                .onChange(of: query) { _, newValue in
-                    if newValue.isEmpty { results = [] }
-                }
-                .navigationTitle(placeName.isEmpty ? "Choose a Place" : "Where is \(placeName)?")
+            VStack(spacing: 0) {
+                searchBar
+                map
+                    .overlay(alignment: .top) { searchResults }
+                controls
+            }
+            .background(OrbitColor.surfaceElevated)
+            .navigationTitle(placeName.isEmpty ? "Choose a Place" : "Where is \(placeName)?")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
@@ -101,8 +109,16 @@ struct PlacePickerSheet: View {
                     // Arrival alerts need location anyway; asking here also
                     // lets the map open on where the user is.
                     let allowed = await finder.ensureAuthorization()
-                    if !allowed {
+                    guard allowed else {
                         locationMessage = "Location is off for Orbit, so iPhone can\u{2019}t remind you on arrival. You can turn it on in Settings."
+                        return
+                    }
+                    if !startsAtExistingPlace, let here = try? await finder.currentCoordinate() {
+                        position = .region(MKCoordinateRegion(
+                            center: CLLocationCoordinate2D(latitude: here.latitude, longitude: here.longitude),
+                            latitudinalMeters: Self.resultSpanMeters,
+                            longitudinalMeters: Self.resultSpanMeters
+                        ))
                     }
                 }
         }
@@ -158,6 +174,35 @@ struct PlacePickerSheet: View {
     }
 
     // MARK: - Search
+
+    private var searchBar: some View {
+        HStack(spacing: OrbitSpacing.sm) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(OrbitColor.textSecondary)
+                .accessibilityHidden(true)
+            TextField("Search nearby in Maps", text: $query)
+                .font(OrbitTypography.body)
+                .submitLabel(.search)
+                .autocorrectionDisabled()
+                .onSubmit { Task { await search() } }
+            if !query.isEmpty {
+                Button {
+                    query = ""
+                    results = []
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(OrbitColor.textTertiary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Clear search")
+            }
+        }
+        .padding(.horizontal, OrbitSpacing.md)
+        .padding(.vertical, OrbitSpacing.sm)
+        .background(OrbitColor.surfaceMuted, in: .capsule)
+        .padding(.horizontal, OrbitSpacing.md)
+        .padding(.vertical, OrbitSpacing.sm)
+    }
 
     @ViewBuilder
     private var searchResults: some View {
