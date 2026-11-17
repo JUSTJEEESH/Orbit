@@ -8,6 +8,11 @@ public struct PromiseLedger: Sendable, Equatable {
         public let memory: Memory
         public let promise: PromiseHint
         public var id: UUID { promise.id }
+
+        public init(memory: Memory, promise: PromiseHint) {
+            self.memory = memory
+            self.promise = promise
+        }
     }
 
     public var suggestions: [Suggestion]
@@ -15,6 +20,12 @@ public struct PromiseLedger: Sendable, Equatable {
     public var open: [MemoryTask]
     /// Kept promises you've closed, most recent first.
     public var kept: [MemoryTask]
+
+    public init(suggestions: [Suggestion], open: [MemoryTask], kept: [MemoryTask]) {
+        self.suggestions = suggestions
+        self.open = open
+        self.kept = kept
+    }
 }
 
 public struct LoadPromiseLedgerUseCase: Sendable {
